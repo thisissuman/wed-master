@@ -44,3 +44,9 @@ A feature is complete when requested behavior, type safety, mobile interaction, 
 - `npm run format:check`
 
 Use `npm run format` only for deliberate formatting changes. Do not run dependency upgrades or automated audit fixes as a substitute for reviewing compatibility.
+
+# First local product slice
+
+Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, and Zod. Native date selection and category management are intentionally not expanded beyond this first vertical slice; dates currently accept validated `YYYY-MM-DD` input.
+
+Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.

@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type PropsWithChildren, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { RepositoryProvider } from "@/features/workspace";
+
 import { SessionProvider } from "./session-provider";
 import { ThemeProvider } from "./theme-provider";
 
@@ -22,7 +24,9 @@ export function AppProviders({ children }: PropsWithChildren) {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <RepositoryProvider>{children}</RepositoryProvider>
+          </SessionProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

@@ -32,3 +32,13 @@ npm run typecheck
 npm test -- --runInBand
 npx expo-doctor
 ```
+
+# Wed Master
+
+## Local prototype
+
+The app opens directly into a persisted demo workspace for **Suman & Sumita**, an editable Odia Hindu wedding in Berhampur. It includes events, tasks, and a paise-accurate budget/expense slice. No authentication or Supabase data access is active.
+
+Run it with `npm install`, then `npm run android` (development build) or `npm run web`. Run quality checks with `npm run lint`, `npm run typecheck`, and `npm test -- --runInBand`.
+
+The local workspace is stored in AsyncStorage. Clearing app storage resets the seeded demo data.

@@ -45,3 +45,11 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 **Consequence:** What becomes easier, harder, or intentionally deferred.
 ```
+
+# ADR — local workspace persistence for the prototype
+
+**Decision:** use Expo-compatible AsyncStorage for the unauthenticated prototype workspace.
+
+**Why:** it is the smallest stable persisted key-value solution for a single local demo workspace. SecureStore remains reserved for sensitive credentials; it is not a general application database.
+
+**Deferred:** cloud storage, Supabase tables, synchronisation, conflict handling, background work, and local-to-remote migration UX. These require an authenticated multi-device product decision.

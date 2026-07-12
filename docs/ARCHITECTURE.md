@@ -164,3 +164,11 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY
 ```
 
 They are public client configuration values, not secrets. Never add a service-role key or provider secret to `.env` values exposed to the app. Generate Supabase database types only after the first schema exists; until then, the client intentionally has no application-table contract.
+
+# Local prototype workspace
+
+The first product slice is deliberately local-first. `src/features/workspace` owns the wedding, event, task, budget-category, and expense contracts. Screens use `useWorkspace` and `useWorkspaceMutation`; they never access AsyncStorage or Supabase directly.
+
+`LocalWorkspaceStore` persists one versioned `WorkspaceSnapshot` in AsyncStorage (`@wed-master/local-workspace/v1`). Repositories are assembled by `RepositoryProvider`. A future Supabase implementation must satisfy the existing `WeddingRepository`, `EventRepository`, `TaskRepository`, `BudgetRepository`, and `ExpenseRepository` contracts, then replace only the registry composition. It must not introduce a sync queue, background sync, conflict resolution, or realtime behavior without a separately approved design.
+
+Money is stored as integer paise. UI formatting is a presentation concern only.
