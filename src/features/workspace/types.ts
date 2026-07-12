@@ -70,6 +70,7 @@ export type EventRepository = {
   createEvent(event: Omit<WeddingEvent, "id" | "sortOrder">): Promise<WorkspaceSnapshot>;
   updateEvent(event: WeddingEvent): Promise<WorkspaceSnapshot>;
   deleteEvent(id: string): Promise<WorkspaceSnapshot>;
+  moveEvent(id: string, direction: "earlier" | "later"): Promise<WorkspaceSnapshot>;
 };
 export type TaskRepository = {
   listTasks(): Promise<Task[]>;

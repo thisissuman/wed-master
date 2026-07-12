@@ -59,6 +59,20 @@ export default function EventDetail() {
         ) : null}
         <View className="gap-sm">
           <Button
+            label="Move earlier"
+            onPress={() =>
+              mutation.mutate((repositories) => repositories.events.moveEvent(event.id, "earlier"))
+            }
+            variant="secondary"
+          />
+          <Button
+            label="Move later"
+            onPress={() =>
+              mutation.mutate((repositories) => repositories.events.moveEvent(event.id, "later"))
+            }
+            variant="secondary"
+          />
+          <Button
             label="Edit event"
             onPress={() =>
               router.push({ pathname: "/events/edit", params: { id: event.id } } as never)

@@ -75,6 +75,19 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
             task.eventId === id ? { ...task, eventId: undefined } : task,
           );
         }),
+      moveEvent: (id, direction) =>
+        store.update((s) => {
+          const ordered = [...s.events].sort(
+            (a, b) => a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder,
+          );
+          const index = ordered.findIndex((event) => event.id === id);
+          const target = direction === "earlier" ? index - 1 : index + 1;
+          if (index < 0 || target < 0 || target >= ordered.length) return;
+          const current = ordered[index];
+          ordered[index] = ordered[target];
+          ordered[target] = current;
+          s.events = ordered.map((event, sortOrder) => ({ ...event, sortOrder }));
+        }),
     },
     tasks: {
       listTasks: async () => (await store.getSnapshot()).tasks,

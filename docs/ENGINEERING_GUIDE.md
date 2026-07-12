@@ -47,6 +47,8 @@ Use `npm run format` only for deliberate formatting changes. Do not run dependen
 
 # First local product slice
 
-Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, and Zod. Native date selection and category management are intentionally not expanded beyond this first vertical slice; dates currently accept validated `YYYY-MM-DD` input.
+Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, and the native Android date picker. Budget-category management remains deferred beyond this first vertical slice.
+
+The Plan tab supports filters for task status, priority, related event, and overdue state. The Budget tab supports category and payment-status filters. Event detail includes simple persisted earlier/later ordering controls; gesture reordering remains deferred until a real need is validated.
 
 Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.

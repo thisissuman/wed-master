@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { router } from "expo-router";
-import { AppText, Button, EmptyState, LoadingState, Screen } from "@/components/ui";
-import { useWorkspace } from "@/features/workspace";
+import { AppText, Button, EmptyState, LoadingState, Screen, SelectField } from "@/components/ui";
+import { isOverdue, taskPriorities, taskStatuses, useWorkspace } from "@/features/workspace";
 import { EventCard, PageHeader, TaskCard } from "@/features/workspace/ui";
 
 export default function PlanScreen() {
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [priorityFilter, setPriorityFilter] = useState("All");
+  const [eventFilter, setEventFilter] = useState("All");
+  const [overdueOnly, setOverdueOnly] = useState("No");
   const { data, isLoading } = useWorkspace();
   if (isLoading || !data)
     return (
@@ -16,7 +21,12 @@ export default function PlanScreen() {
     (a, b) => a.date.localeCompare(b.date) || a.sortOrder - b.sortOrder,
   );
   const tasks = [...data.tasks]
-    .filter((task) => task.status !== "Cancelled")
+    .filter((task) => statusFilter === "All" || task.status === statusFilter)
+    .filter((task) => priorityFilter === "All" || task.priority === priorityFilter)
+    .filter((task) => eventFilter === "All" || task.eventId === eventFilter)
+    .filter(
+      (task) => overdueOnly === "No" || (task.status !== "Completed" && isOverdue(task.dueDate)),
+    )
     .sort((a, b) => (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31"));
   return (
     <Screen>
@@ -49,6 +59,45 @@ export default function PlanScreen() {
           <View className="flex-row items-center justify-between">
             <AppText variant="heading">Tasks</AppText>
             <Button label="Add task" onPress={() => router.push("/tasks/new")} />
+          </View>
+          <View className="gap-sm">
+            <SelectField
+              label="Status"
+              onChange={setStatusFilter}
+              options={[
+                { label: "All statuses", value: "All" },
+                ...taskStatuses.map((value) => ({ label: value, value })),
+              ]}
+              value={statusFilter}
+            />
+            <SelectField
+              label="Priority"
+              onChange={setPriorityFilter}
+              options={[
+                { label: "All priorities", value: "All" },
+                ...taskPriorities.map((value) => ({ label: value, value })),
+              ]}
+              value={priorityFilter}
+            />
+            <SelectField
+              label="Event"
+              onChange={setEventFilter}
+              options={[
+                { label: "All events", value: "All" },
+                { label: "General tasks", value: "" },
+                ...data.events.map((event) => ({ label: event.name, value: event.id })),
+              ]}
+              value={eventFilter}
+            />
+            <SelectField
+              label="Overdue"
+              onChange={setOverdueOnly}
+              options={[
+                { label: "All tasks", value: "No" },
+                { label: "Overdue only", value: "Yes" },
+              ]}
+              value={overdueOnly}
+            />
           </View>
           {tasks.length ? (
             tasks.map((task) => (
