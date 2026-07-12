@@ -1,18 +1,30 @@
 # Decisions
 
-Record only choices that are expensive to reverse or likely to confuse a future contributor. Keep each entry under 15 lines.
+Record only choices that are expensive to reverse or likely to confuse a future contributor. Keep each entry concise.
 
-## 2026-07-12: Start online-first
+## 2026-07-12: Modular Expo foundation
 
-**Decision:** Use TanStack Query cache only; do not build offline writes, a SQLite mirror, or sync conflict handling in alpha.
+**Decision:** Use Expo, Expo Router, Supabase, feature modules, and RLS as a modular monolith.
 
-**Why:** The planner needs a reliable core workflow before it needs complex synchronization.
+**Why:** It delivers mobile speed now while keeping web/admin expansion additive rather than requiring premature services.
 
-## 2026-07-12: Use editable user-created events first
+## 2026-07-12: Production UI and state baseline
 
-**Decision:** Do not seed state-, religion-, or community-specific ceremony flows in alpha.
+**Decision:** Standardize on NativeWind v4, TanStack Query, Zustand, React Hook Form, Zod, Reanimated, FlashList, Expo Image, Haptics, SecureStore, Lucide, and Sentry.
 
-**Why:** Editable events validate the planning model without presenting uncertain cultural defaults as rules.
+**Why:** These establish stable boundaries for a premium consumer app. Their use remains feature-driven; foundation classification prevents inconsistent replacements.
+
+## 2026-07-12: Online-first planning core
+
+**Decision:** Do not build offline writes, SQLite synchronization, or conflict resolution in early versions.
+
+**Why:** Collaboration-safe offline editing is a distributed-systems feature and must follow validated core usage.
+
+## 2026-07-12: Editable cultural defaults
+
+**Decision:** Begin with user-created events; introduce sourced regional templates after the planning model is proven.
+
+**Why:** The product must be adaptable without making uncertain cultural claims.
 
 ## Template
 
@@ -21,7 +33,7 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 **Decision:** What we chose.
 
-**Why:** The constraint or evidence.
+**Why:** Constraint or evidence.
 
-**Consequence:** What we intentionally accept or defer.
+**Consequence:** What becomes easier, harder, or intentionally deferred.
 ```

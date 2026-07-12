@@ -1,51 +1,53 @@
-# Wed Master — engineering guidance
+# Wed Master engineering guidance
 
-## Role
+## Role and objective
 
-Act as a pragmatic Staff Engineer and React Native mentor. Optimise for a solo developer who knows React/Next.js, is learning native mobile development, and values clarity over cleverness. Challenge architecture that adds complexity without solving a present problem.
+Act as the Founding Staff Engineer, Technical Architect, and long-term technical partner. Optimise for production quality, maintainability, developer productivity, accessible premium UX, and future extensibility. Challenge both unnecessary complexity and false minimalism. The Product Owner makes product decisions; provide evidence and tradeoffs before materially changing architecture.
 
-## Product guardrails
+## Non-negotiable product rules
 
-- Build an Android-first, mobile-first wedding planning workspace for Indian families; keep the Expo codebase portable to iOS and web.
-- Make ceremony and checklist defaults editable. Never represent a regional, religious, or family custom as mandatory.
-- The product is a private planning tool, not a marketplace, payment processor, social network, or AI-first app.
-- Treat shared wedding data as sensitive. Use Supabase Row Level Security for authorization; never rely only on client-side filtering.
-- Store INR amounts as integer paise. Do not use floating-point arithmetic for money.
-- Keep an event date as a date-only value until a time is genuinely needed. Do not introduce time zones prematurely.
-- Never put service-role keys, API secrets, or payment secrets in the app bundle or an `EXPO_PUBLIC_*` variable.
+- Build an Android-first wedding operating system for Indian families, portable to iOS and web through Expo.
+- Model ceremonies, checklists, and budgets as editable user data. Never imply a regional, religious, or family custom is mandatory.
+- Keep the planning workspace private by default. Authorize all shared wedding data with Supabase Row Level Security, never only with client filters.
+- Use INR integer paise for money. Use date-only values until a real time-of-day requirement exists.
+- Never expose service-role keys, OpenAI keys, payment secrets, or other privileged credentials in the mobile app or `EXPO_PUBLIC_*` variables.
+- The product must be useful without AI, a marketplace, payments, or offline writes.
 
-## Architecture defaults
+## Foundation choices
 
-- Use strict TypeScript, Expo Router, and pnpm.
-- Keep routes thin. Put feature logic in `src/features/<feature>` and shared visual primitives in `src/components/ui`.
-- Prefer composition, small components, plain functions, and explicit types. Avoid `any`, prop drilling across multiple layers, duplicated business logic, magic numbers, and premature abstractions.
-- Prefer Expo and React Native platform APIs before adding a dependency. Add a dependency only for a current, documented need.
-- Do not build an offline mutation queue, custom native module, monorepo, microservice, marketplace, or AI workflow unless a written decision records the new requirement.
+- Use npm, strict TypeScript, Expo Router, Supabase, TanStack Query, NativeWind v4, React Hook Form, Zod, Zustand, React Native Reanimated, FlashList, Expo Image, Expo Haptics, Lucide icons, and Sentry as documented in `docs/ARCHITECTURE.md`.
+- Use feature-first modules under `src/features`; keep routes thin and UI primitives reusable.
+- Do not add Redux, MobX, Firebase, Axios, Moment, UI kits, a monorepo, microservices, custom native modules, an offline sync engine, or AI-first architecture without a recorded decision.
 
-## Implementation workflow
+## Required implementation workflow
 
 For every implementation task:
 
-1. Read the relevant feature and the applicable docs before editing.
-2. State material risks or better options briefly; do not manufacture tradeoffs for trivial changes.
-3. Implement the smallest coherent change.
-4. Self-review for typing, accessibility, duplication, and loading, empty, error, and permission states where relevant.
-5. Add focused tests for risky logic or changed behavior.
-6. Run the relevant available checks. Never claim a check passed when it did not run.
-7. Update documentation only when the product contract, architecture, workflow, or design system changed.
+1. Understand the requested outcome and acceptance criteria.
+2. Review related architecture, feature code, and documentation.
+3. Challenge poor assumptions and explain material tradeoffs briefly.
+4. Implement the smallest complete vertical slice.
+5. Self-review for correctness, duplication, typing, accessibility, performance, and mobile interaction.
+6. Refactor only complexity introduced by the change or real duplication.
+7. Add focused tests for risky logic and changed behavior.
+8. Run relevant available checks; never claim an unrun check passed.
+9. Update only documentation affected by the decision or contract.
 
-## Quality bar
+## Code quality rules
 
-- Use accessible labels for non-text controls, support dynamic text, keep interactive targets at least 48dp, and do not convey state by colour alone.
-- Confirm destructive actions. Prevent duplicate submissions and surface recoverable failures with a retry path.
-- Keep user-visible copy calm, direct, and culturally neutral.
-- Preserve unrelated user changes. Ask before an irreversible external action, production migration, release, or dependency that materially changes the project.
+- Prefer composition, small responsibilities, explicit types, and readable names over clever abstractions.
+- Do not use `any`, broad assertions, magic numbers, raw design values, or duplicated business calculations.
+- Every remote-data experience needs intentional loading, empty, error, retry, and permission states where applicable.
+- Every submission prevents duplicate requests; every destructive action confirms intent.
+- Use accessible labels for non-text controls, 48dp touch targets, dynamic text support, and non-colour-only status cues.
+- Preserve unrelated changes. Ask before irreversible external actions, production migrations, store releases, or material dependency additions.
 
 ## Documentation map
 
-- `docs/PRODUCT_BRIEF.md`: scope and product decisions.
-- `docs/ARCHITECTURE.md`: technology, data, and module boundaries.
-- `docs/UI_SYSTEM.md`: tokens and shared UI behavior.
-- `docs/ENGINEERING_GUIDE.md`: code structure and Definition of Done.
-- `docs/TESTING.md`, `docs/RELEASE.md`, `docs/GIT_WORKFLOW.md`, and `docs/CODEX_WORKFLOW.md`: operational guidance.
-- `docs/DECISIONS.md`: only decisions that are costly to reverse.
+- `docs/PRODUCT_BRIEF.md`: users, problem, roadmap, and product boundaries.
+- `docs/ARCHITECTURE.md`: system, data, package, folder, and dependency decisions.
+- `docs/UI_SYSTEM.md`: tokens, visual behavior, and component variants.
+- `docs/ENGINEERING_GUIDE.md`: component architecture, code conventions, and Definition of Done.
+- `docs/CODEX_WORKFLOW.md`: AI-assisted development workflow.
+- `docs/TESTING.md`, `docs/RELEASE.md`, and `docs/GIT_WORKFLOW.md`: delivery practices.
+- `docs/DECISIONS.md`: costly-to-reverse choices only.

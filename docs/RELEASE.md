@@ -1,26 +1,23 @@
 # Release guide
 
-## Before the first beta
+## Before beta
 
-- Verify the three alpha flows on a physical Android device.
-- Run lint, typecheck, unit tests, and available smoke tests.
-- Check loading, empty, error, and retry states.
-- Check TalkBack labels, 48dp targets, large text, and 360dp width.
-- Confirm no secrets, guest data, financial data, or tokens appear in logs, screenshots, or analytics.
-- Set app name, icon, package identifier, privacy policy, and support contact.
-- Add Sentry before inviting external testers.
+- Configure Sentry with PII scrubbing and verify no tokens, guest details, financial information, or documents leak into logs.
+- Verify primary flows on a physical Android device.
+- Run npm lint, typecheck, unit tests, and available smoke tests.
+- Verify loading, empty, error, retry, permissions, large text, TalkBack, and 360dp layouts.
+- Set package identifier, app name, icon, support contact, privacy policy, and version strategy.
 
 ## Release checklist
 
-- Review unresolved crashes and high-severity bugs.
-- Test upgrade from the previous build if storage or schema changed.
-- Increment Android version code and user-visible version deliberately.
-- Write concise release notes focused on user-visible changes.
-- Keep a rollback path: retain the prior tested build and avoid irreversible remote migrations without a backup plan.
+- Review unresolved crashes and high-severity defects.
+- Test upgrade from the preceding build when schema/storage changes.
+- Increment version code and user-visible version deliberately.
+- Produce concise release notes and preserve a rollback path.
+- Confirm database migrations are reviewed, reversible where possible, and target the correct environment.
 
-## Performance checklist
+## Quality constraints
 
-- Use standard lists first; profile before adding performance libraries.
-- Keep images sized for their display area.
-- Avoid unnecessary renders in long lists and avoid expensive calculations during render.
-- Measure a slow Android device before optimizing.
+- Never release with development logging or test credentials.
+- Do not enable analytics, AI, payment, or public sharing without privacy review and user-facing disclosure.
+- Keep performance budgets evidence-based; test slow devices before declaring an experience polished.

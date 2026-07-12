@@ -1,36 +1,35 @@
 # Engineering guide
 
-## Code structure
+## File and naming conventions
 
-- Routes coordinate navigation and screen composition; they do not contain business logic.
-- A feature owns its screens, components, hooks, queries, schemas, and domain helpers until another feature genuinely needs them.
-- Put visual primitives in `src/components/ui`. Keep them presentational and typed.
-- Put cross-cutting integrations in `src/lib`, such as the Supabase client and INR/date formatters.
+- Route files follow Expo Router requirements and may default-export a screen.
+- All other components use named exports and `PascalCase.tsx` files.
+- Hooks use `useX.ts`; schemas use `schema.ts`; feature queries/mutations live in `api/`; feature types live in `types.ts`.
+- Use `camelCase` for functions/variables, `PascalCase` for types/components, and `UPPER_SNAKE_CASE` only for genuine immutable constants.
+- Prefer path aliases after scaffolding; do not use deep relative imports across feature boundaries.
 
-## Component guidelines
+## Component and hook conventions
 
-- Prefer a small component with a clear responsibility over a configurable mega-component.
-- Extract a component when it has a distinct responsibility, meaningful reuse, or makes the parent easier to read—not merely because JSX has several lines.
-- Prefer composition and named props over boolean-prop combinations.
-- Keep domain calculations outside render functions and test them directly.
-- Comments should explain a non-obvious constraint or decision, never restate code.
+- A screen composes sections; a section arranges a coherent area; a feature component owns domain presentation; a UI primitive owns visual/accessibility behavior.
+- Extract code for a distinct responsibility, meaningful reuse, or readability—not simply to reduce file length.
+- Prefer composition and explicit variant props over inheritance or boolean-prop matrices.
+- Hooks orchestrate state and side effects. Pure calculations live in domain utilities and are unit tested.
+- Feature `index.ts` files expose the supported public API. Do not import another feature's internal files.
 
-## TypeScript rules
+## Error handling and logging
 
-- Keep `strict` enabled. Do not use `any` or broad type assertions to silence errors.
-- Validate untrusted form and network input at the boundary.
-- Use discriminated unions for finite UI states when they clarify behavior.
-- Represent money and date-only values deliberately; do not hide conversions in components.
+- Validate untrusted input at form and network boundaries.
+- Normalize provider/database errors into safe, actionable user messages.
+- Never silently swallow an error. Provide retry or clear next action when possible.
+- Do not log names, phone numbers, financial data, documents, tokens, or secrets. Configure Sentry with data scrubbing before beta.
+
+## Documentation standards
+
+- Update product docs for user-facing scope changes.
+- Update architecture docs for boundary, dependency, data, or platform decisions.
+- Update UI docs for new primitive contracts or token changes.
+- Add a short decision only when reversal would be expensive or confusing.
 
 ## Definition of Done
 
-A feature is done when its requested behavior works, type errors are resolved, risky logic has focused tests, relevant loading/empty/error states exist, accessibility basics are present, and the affected documentation is accurate. Run only the checks that exist and are relevant; record what could not be verified.
-
-## Feature development guide
-
-1. State the user outcome and acceptance criteria.
-2. Inspect the closest existing feature and relevant docs.
-3. Make a small plan only when the work has multiple moving parts.
-4. Implement the vertical slice, keeping data and UI changes together.
-5. Self-review and test the behavior.
-6. Refactor only duplication or complexity introduced by the slice.
+A feature is complete when requested behavior, type safety, mobile interaction, focused tests, relevant loading/empty/error/permission states, accessibility basics, and documentation impact have all been reviewed. Verification must state what ran and what did not.

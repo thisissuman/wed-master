@@ -1,60 +1,147 @@
 # Architecture
 
-## Baseline
+## System boundary
 
-Use Expo, React Native, strict TypeScript, Expo Router, Supabase, and pnpm. This keeps one understandable codebase while preserving Android, iOS, and web options.
+Start as a modular Expo application backed by Supabase. This is a deliberate **modular monolith**, not a temporary prototype: feature boundaries, RLS, typed data contracts, and a stable navigation shell make later web/admin products additive rather than a rewrite.
 
 ```text
-Expo app
-  ├─ routes in src/app
-  ├─ feature modules in src/features
-  ├─ shared UI in src/components/ui
-  ├─ small shared utilities in src/lib
-  └─ Supabase: Auth + Postgres + RLS
+Expo mobile / universal client
+  ├── Expo Router navigation
+  ├── NativeWind v4 design system and UI primitives
+  ├── feature modules
+  ├── TanStack Query server-state boundary
+  └── Supabase
+        ├── Auth
+        ├── Postgres + RLS
+        ├── Storage (when receipts/documents exist)
+        └── Edge Functions (trusted integrations later)
 ```
 
-The app is online-first. TanStack Query may cache server data, but there is no offline mutation queue, local database mirror, or conflict-resolution system in alpha.
+The app is online-first. Query caching improves responsiveness but does not create an offline write queue, local database mirror, or sync-conflict system.
 
-## Folder structure
+Use an Expo development build as the normal local runtime once the application is scaffolded. Expo Go is useful for quick experiments, but a development build exercises the native dependency set that the production app actually ships.
+
+## Future expansion without premature infrastructure
+
+- **iOS and web:** retain Expo-compatible APIs and responsive layouts.
+- **Admin dashboard:** build a separate Next.js app when admin workflows become real; consume the same database contracts or a dedicated API boundary.
+- **Marketplace and AI:** add Edge Functions or a dedicated backend service only when privileged workflows, provider integrations, moderation, or rate limiting require it.
+- **Monorepo:** wait until mobile and another deployed app have enough shared domain/UI code to justify a npm workspace. Do not create one now.
+
+## Data model direction
+
+```text
+profiles ──< wedding_members >── weddings
+                                  ├── events ──< tasks
+                                  ├── budget_categories ──< expenses
+                                  ├── vendors ──< vendor_payments       (v1)
+                                  ├── households ──< guests             (v1)
+                                  ├── documents                         (v1)
+                                  └── activity_entries                  (v1)
+```
+
+### Conventions
+
+- Plural `snake_case` database tables; UUID primary keys.
+- Wedding-owned rows carry `wedding_id`, `created_at`, `updated_at`, and `created_by` where relevant.
+- `wedding_members` is the authorization boundary. Begin with owner/editor/viewer roles.
+- Use INR integer paise and database `date` values. Do not introduce time zones, multi-currency, event sourcing, or generic workflow engines before demand exists.
+- Compute summaries from source records before considering stored aggregates.
+
+## Production folder structure
 
 ```text
 src/
-  app/                 Expo Router routes and layouts only
+  app/                         Expo Router routes, layouts, and route guards
   features/
     wedding/
+      api/                     feature-scoped query and mutation functions
+      components/              wedding-specific UI
+      hooks/                   feature orchestration hooks
+      schemas/                 validation at feature boundaries
+      types.ts                 feature-owned domain types
+      index.ts                 feature public API
     events/
     tasks/
     budget/
-  components/ui/       reusable visual primitives
-  lib/                 Supabase client, formatting, small utilities
-  types/               shared domain types only when genuinely shared
+  components/
+    ui/                        reusable visual primitives and variants
+  providers/                   app-wide providers only
+  lib/
+    supabase/                  client and generated database types
+    money/                     INR parsing, arithmetic, formatting
+    dates/                     date-only rules and formatting
+    errors/                    user-safe error normalization
+  theme/                       tokens and NativeWind theme mapping
+  types/                       truly cross-feature types only
+  test/                        shared test utilities and factories
 ```
 
-Keep a feature's screen-specific components, hooks, schemas, and queries in that feature folder. Do not create `services`, `helpers`, `constants`, or `hooks` folders merely because they are common in templates.
+### Ownership and dependency direction
 
-## Data rules
+```text
+app routes → features → components/ui + lib + theme
+features   → their own internals + public APIs of other features
+components/ui → theme only
+lib        → external SDKs and pure utilities
+```
 
-- Every shared row belongs to a `wedding_id`. Start with RLS when the first shared table is created.
-- Alpha supports INR only. Store values as integer paise; keep calculation and formatting in one tested budget module.
-- Store event and due dates as database `date` values unless time-of-day is needed.
-- Start with user-created events. Add regional template content only after the core workflow is validated.
-- Do not add realtime collaboration, file storage, notifications, or Edge Functions until a user-facing feature requires them.
+- Routes never contain database calls, money calculations, or reusable component logic.
+- Features do not reach into another feature's internal folders; import only its `index.ts` public API.
+- `components/ui` never imports a feature.
+- `lib` does not import screens or feature components.
+- Tests live alongside the code they verify; `src/test` contains only shared setup/factories.
 
-## Dependencies by timing
+### Anti-patterns
 
-| Timing | Dependency | Reason |
-|---|---|---|
-| Day one | Expo Router | Expo-native, file-based navigation. |
-| First authenticated screen | `@supabase/supabase-js`, `expo-secure-store` | Auth, database access, and secure token storage. |
-| First server-backed feature | `@tanstack/react-query` | Query, mutation, retry, and cache lifecycle. |
-| First substantial form | `zod`, then `react-hook-form` if form state becomes repetitive | Keep validation explicit; avoid form machinery for tiny screens. |
-| First polished UI pass | `lucide-react-native` and its SVG dependency | Consistent, accessible icons. |
-| Closed beta | `@sentry/react-native` | Actionable production crash reports. |
-| Proven need | FlashList, Reanimated, Bottom Sheet, Expo Image, Haptics, Notifications, document/media packages | Add only with the feature that needs it. |
+- Global `services`, `helpers`, `hooks`, or `constants` dumping folders
+- Feature-specific cards inside `components/ui`
+- Deep imports across feature internals
+- Database types manually duplicated in multiple features
+- Reusable component props that become a list of boolean flags
 
-Do not use NativeWind v5 while it is pre-release. Use token-based `StyleSheet` first. Do not add Zustand until React state, route params, and TanStack Query no longer express a real global UI state cleanly.
+## Component architecture
 
-## Explicitly deferred
+```text
+Application
+  → Route screen
+    → Feature section
+      → Feature component
+        → Reusable component
+          → UI primitive
+            → Design tokens
+```
 
-- MMKV, SQLite sync, Moti, Skia, Lottie, Blur, audio/video, custom native modules, Redux, Firebase, Axios, Moment, monorepo, microservices, marketplace, payments, and AI workflows.
-- If audio/video becomes necessary, use `expo-audio` or `expo-video`; do not use deprecated `expo-av`.
+Each layer owns one concern: routes compose navigation, sections arrange a screen, feature components express domain behavior, reusable components package repeatable patterns, primitives define accessible visual contracts, and tokens define appearance. Move code downward only when it is truly reusable without domain knowledge.
+
+## Package catalogue
+
+Install Foundation packages together when scaffolding; their classification establishes standards, not a mandate to use every API on the first screen. Use `npm` and `npx expo install` for Expo-compatible versions.
+
+| Package | Purpose and rationale | Alternative / tradeoff | Timing |
+|---|---|---|---|
+| Expo, React Native, TypeScript, Expo Router | universal native client with stable file-based navigation | native Kotlin/Swift offers more control but raises delivery cost | Foundation |
+| `@supabase/supabase-js` | Auth, Postgres, RLS, Storage, Realtime path | Firebase is less aligned with relational finance/workspace data | Foundation |
+| `@tanstack/react-query` | server cache, mutations, retries, invalidation | direct effects create inconsistent loading and cache behavior | Foundation |
+| `react-hook-form` + `zod` | scalable, typed mobile forms and input validation | hand-managed form state becomes repetitive and error-prone | Foundation |
+| `zustand` | small explicit global client-state boundary | Context is adequate for providers but weak for evolving app UI state | Foundation; use sparingly |
+| NativeWind v4 | stable Tailwind workflow and token-friendly UI speed | StyleSheet is simpler but slower for a Tailwind-fluent product team; v5 is pre-release | Foundation |
+| `react-native-reanimated` | performant interactions, layout transitions, Bottom Sheet dependency | React Native Animated is less capable for premium interaction | Foundation |
+| `@gorhom/bottom-sheet` | production-grade contextual create/edit experience | native Modal is simpler but less consistent for dense workflows | Foundation; use selectively |
+| `@shopify/flash-list` | scalable task, vendor, and guest lists | FlatList is fine for tiny lists but creates migration churn later | Foundation |
+| `expo-image` | performant cross-platform image rendering and caching | React Native Image has fewer caching/transition controls | Foundation |
+| `expo-haptics` | meaningful tactile confirmation on supported devices | no dependency means less native feedback | Foundation; use rarely |
+| `lucide-react-native` + `react-native-svg` | consistent accessible icon system | emoji/platform icons are inconsistent | Foundation |
+| `expo-secure-store` | encrypted token/small-secret persistence | AsyncStorage and MMKV are not a secure token store | Foundation |
+| `@sentry/react-native` | release health and error visibility | console logs are not production observability | Foundation, configure before beta |
+| Jest + React Native Testing Library | domain and component confidence | snapshots alone do not test behavior | Foundation dev tooling |
+| Maestro | realistic mobile smoke journeys | unit tests cannot validate navigation/device behavior | V1 after flows stabilize |
+| MMKV | fast non-sensitive local key/value persistence | unnecessary before a proven low-latency persistence need; never use for tokens or sync | Later |
+| `expo-notifications` | task reminders | requires stable task model and permission UX | V1 |
+| Document/Image picker and FileSystem | receipts and documents | adds permission and storage responsibilities | V1 |
+| `expo-localization` + i18n library | multi-language support | adding translations before content stabilizes creates churn | V2 |
+| PostHog or equivalent | consented product analytics | analytics before privacy/event design creates noisy data | Beta |
+| Moti, Skia, Lottie, Blur | optional visual polish | duplicate abstractions or decorative cost | Later only with approved design need |
+| `expo-av` | legacy media API | deprecated; use `expo-audio`/`expo-video` if required | Never |
+
+Do not add Redux, MobX, Firebase, Axios, Moment, NativeBase, React Native Paper, React Native Elements, SQLite sync, custom native modules, microservices, or an AI SDK to the client foundation.

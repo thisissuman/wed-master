@@ -1,7 +1,13 @@
 # Wed Master
 
-An Android-first wedding planning workspace for Indian families.
+Wed Master is an Android-first wedding planning workspace for Indian families. It will grow from a trusted planning product into a collaborative platform, while keeping cultural workflows editable and private by default.
 
-## Current stage
+## Status
 
-Foundation only. See `docs/PRODUCT_BRIEF.md` and `docs/ARCHITECTURE.md` before adding features.
+Repository foundation and product architecture are complete. No Expo application code has been scaffolded yet.
+
+## Start here
+
+1. Read [Product Brief](docs/PRODUCT_BRIEF.md).
+2. Read [Architecture](docs/ARCHITECTURE.md).
+3. Follow [Codex Workflow](docs/CODEX_WORKFLOW.md) before implementation.

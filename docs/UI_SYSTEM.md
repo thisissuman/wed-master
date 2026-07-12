@@ -1,66 +1,59 @@
 # UI system
 
-Wed Master should feel calm, precise, and warm—not ornate or generic. Use native mobile conventions, Material Design 3's clarity, and the information hierarchy of Reminders, Notion, and Linear. Do not imitate their brands.
+Wed Master should feel like a premium consumer product: calm like Reminders, structured like Linear, flexible like Notion, and clear like Material Design 3—without copying any product's visual identity or becoming a card-heavy CRUD UI.
 
-## Token rules
+## Single source of truth
 
-Use semantic tokens from one theme file. Components never contain hard-coded colours, spacing, corner radii, shadows, or animation durations.
+NativeWind v4 theme values and typed semantic tokens are the design source of truth. Screens and feature components use semantic component variants; they never introduce raw colours, spacing values, radius values, shadows, or motion durations.
 
-### Initial light tokens
+## Token foundation
 
-| Role | Value | Use |
+### Colour roles
+
+| Role | Light starting value | Meaning |
 |---|---|---|
-| `surface` | `#FFFBFF` | screen background |
-| `surfaceRaised` | `#FFFFFF` | cards, dialogs, sheets |
-| `textPrimary` | `#1D1B20` | primary text |
-| `textSecondary` | `#625B61` | supporting text |
-| `border` | `#E9E0E6` | subtle separation |
+| `surface` | `#FFFBFF` | app background |
+| `surfaceRaised` | `#FFFFFF` | cards, sheets, dialogs |
+| `textPrimary` | `#1D1B20` | main content |
+| `textSecondary` | `#625B61` | supporting content |
+| `border` | `#E9E0E6` | quiet separation |
 | `brand` | `#7A3854` | primary action and focus |
-| `brandOn` | `#FFFFFF` | text on brand |
-| `success` | `#167A3F` | completed state |
-| `warning` | `#A95B00` | attention state |
+| `success` | `#167A3F` | completed/safe state |
+| `warning` | `#A95B00` | attention-needed state |
 | `danger` | `#B3261E` | destructive state |
 | `info` | `#315DA8` | neutral information |
 
-Add dark tokens before enabling a theme switch. Never derive semantic states by changing opacity alone.
+Create a matching dark token set before enabling dark-mode selection. Do not use opacity as the only way to create a semantic state.
 
-### Layout tokens
+### Layout and typography
 
-- Spacing: `4, 8, 12, 16, 20, 24, 32, 40`.
-- Radius: `8, 12, 16, 24`; use 12 for controls and 16 for cards/sheets.
-- Minimum touch target: 48dp.
-- Use system typography initially. Add a custom font only after verifying legibility, script support, and bundle impact.
-- Prefer borders and tonal surfaces over heavy shadow. Use elevation only to establish a temporary layer such as a sheet or dialog.
+- Spacing scale: `4, 8, 12, 16, 20, 24, 32, 40`.
+- Radius scale: `8, 12, 16, 24`; controls use 12, cards/sheets use 16.
+- Use system typography first; define display, title, body, label, and caption roles. Add a custom font only after verifying multilingual coverage and performance.
+- Prefer tonal surfaces and subtle borders. Elevation is reserved for floating actions, sheets, and dialogs.
+- Interactive elements have a 48dp minimum target.
 
-### Motion tokens
+### Motion
 
-- Fast feedback: 120ms; standard transition: 180ms; sheet/dialog transition: 240ms.
-- Animate state changes, ordering, and feedback—not decoration.
-- Respect reduced-motion settings. Do not block interaction while an animation runs.
+- 120ms feedback, 180ms standard transitions, 240ms sheets/dialogs.
+- Animate feedback, order, and state changes. Do not animate decoration merely to make a screen feel busy.
+- Respect reduced-motion preferences and never delay interaction behind an animation.
 
-## Shared primitives
+## Component variants and states
 
-Build these before screen-specific visual variants: `Screen`, `Text`, `Button`, `IconButton`, `Card`, `TextField`, `SelectField`, `StatusBadge`, `ListRow`, `EmptyState`, `ErrorState`, and `LoadingState`.
+Build primitives before feature screens: `Screen`, `Text`, `Button`, `IconButton`, `Card`, `TextField`, `SelectField`, `StatusBadge`, `ListRow`, `Dialog`, `Snackbar`, `LoadingState`, `EmptyState`, and `ErrorState`.
 
-Each primitive owns its accessibility behavior and states. Screens compose primitives; they do not recreate button, field, or empty-state styling.
+- Buttons have primary, secondary, destructive, and ghost variants; pending state prevents duplicate submit.
+- Inputs always include a visible label, helper/error text, a suitable keyboard mode, and accessible error semantics.
+- Cards group information; they are not default page decoration.
+- Skeletons preserve layout while data is expected shortly. Use loading state when the shape is unknown or the delay is meaningful.
+- Empty states explain the absence and offer one clear action.
+- Error states name the failure safely and provide retry when recovery is possible.
+- Snackbars acknowledge completed actions or non-blocking recovery; critical failures remain visible in the content area.
 
-## Component behavior
+## Accessibility and icon rules
 
-- **Buttons:** one primary action per visual area; show pending state and prevent repeat submission.
-- **Cards:** group related information; do not use cards as decoration for every row.
-- **Inputs:** visible label, optional helper text, inline error, and keyboard-appropriate input mode.
-- **Dialogs:** use for destructive confirmation or short decisions. The primary action must be explicit.
-- **Bottom sheets:** introduce only when an edit flow benefits from staying in context; provide a title, dismiss action, keyboard-safe layout, and unsaved-change behavior.
-- **Snackbars:** acknowledge completed actions or recoverable background failures; never hide a critical error only in a snackbar.
-
-## Required screen states
-
-Every data screen intentionally handles loading, empty, error, permission-denied when applicable, and success. Explain what an empty area is and offer one obvious next action. Give recoverable failures a retry action.
-
-## Accessibility baseline
-
-- Icon-only controls need an accessible label.
-- Labels and errors must be available to screen readers.
-- Status must use text or an icon as well as colour.
-- Support large system font sizes without clipping core actions.
-- Test a 360dp Android width before calling a screen complete.
+- Icon-only controls require an accessible label.
+- Use Lucide icons consistently; icons reinforce labels and never carry critical meaning alone.
+- Support large text, screen readers, keyboard-safe forms, 360dp Android width, and non-colour-only status signals.
+- Images that communicate meaning include an accessibility label; decorative images are hidden from assistive technology.

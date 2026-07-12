@@ -1,46 +1,59 @@
-# Wed Master product brief
+# Product brief
 
-## Problem
+## Vision
 
-Indian weddings are multi-event, multi-household projects. Generic checklists and Western templates do not fit varied rituals, shared responsibilities, or complex spending. Spreadsheets are flexible but hard to use and coordinate from a phone.
+Wed Master becomes the trusted operating system for Indian weddings: a private workspace for planning, collaboration, money, people, vendors, and documents. Over time it can add web, admin operations, marketplace, analytics, invitations, and AI assistance without diluting the planning core.
 
-## Product promise
+## Users and jobs
 
-Give a family one calm, trustworthy place to organise events, tasks, and spending—without forcing them into a fixed cultural template.
+| User | Primary job | Current pain |
+|---|---|---|
+| Couple or family planner | know the next important action and spending position | plans are split across chats, calls, notes, and spreadsheets |
+| Family collaborator | own and complete assigned work | responsibilities are vague and updates are hard to find |
+| Wedding planner | coordinate several workspaces | status and client communication are fragmented |
+| Vendor / admin | serve a limited future role | requires trust, verification, and permissions beyond the planning core |
 
-## Primary user and job
+Indian weddings are multi-event and multi-household. The product must accommodate variation rather than encode one definition of a wedding.
 
-**Primary user:** a couple or family planner organising an Indian wedding.
+## Product roadmap
 
-**Job:** “Help me understand the next important action and our spending position, while letting my family customise the plan to fit us.”
+### Alpha: validate the planning loop
 
-## Alpha scope
+1. Account, wedding creation, and editable events.
+2. Tasks with event, due date, priority, and status.
+3. INR budget categories, estimates, actual expenses, and simple totals.
 
-Build three complete vertical slices, in order:
+### V1: make the workspace shared and operational
 
-1. **Wedding setup:** sign in, create one wedding, add and reorder editable events.
-2. **Task planning:** create tasks, assign an event, set a due date and status, and see upcoming work.
-3. **Budget tracking:** create categories, record estimated and actual INR amounts, and see a simple total.
+- Invitations and roles: owner, editor, viewer
+- Vendors, payment schedules, attachments, receipts, and reminders
+- Guest households, RSVP, rooms, transport, and activity history
 
-The dashboard may show only information already supported by those slices. It must not become a separate feature.
+### V2: deepen the Indian-wedding advantage
 
-## Later, after the core is used
+- Sourced, editable ceremony templates
+- Jewellery, shopping, gifts, documents, packing, and spreadsheet import/export
+- Multi-language UI, richer reporting, and web companion
 
-- Family invitations and roles
-- Vendors and payment schedules
-- Guest households, RSVP, rooms, and transport
-- Documents, receipts, jewellery, shopping, gifts, packing, and reminders
-- Spreadsheet import, regional template library, multiple languages, and AI assistance
-- Vendor discovery, payments, marketplace features, and public sharing
+### V3: platform expansion
+
+- Admin dashboard, planner multi-workspace tooling, verified vendors, vendor portal, quote comparison, and marketplace foundations
+
+### Future
+
+- AI suggestions, receipt extraction, risk summaries, digital invitations, budget intelligence, and payment products
+
+Features belong later when they depend on usage data, operational trust, or regulated workflows. Marketplace, payment, and AI features must not delay a reliable planning experience.
 
 ## Product principles
 
-- **Editable defaults:** label cultural content as suggested; users can add, rename, reorder, or remove it.
-- **Financial clarity:** show the meaning of every amount. Never silently recalculate or overwrite an entered value.
-- **Progress over clutter:** show next actions before detailed management screens.
-- **Privacy by default:** share wedding data only through explicit roles.
-- **Online-first honesty:** show loading, failure, and retry states. Do not promise offline editing before it exists.
+- **Editable defaults:** all cultural content is suggested, editable, reorderable, and removable.
+- **Financial clarity:** distinguish estimate, commitment, payment, and actual cost; never silently alter user figures.
+- **Calm prioritisation:** Home shows useful next actions, not a dashboard of vanity metrics.
+- **Household-aware planning:** people, accommodation, transport, and invitations eventually support household decisions.
+- **Privacy by default:** roles are explicit; data is never public by accident.
+- **Honest resilience:** show loading, errors, and retry; do not claim offline editing before it exists.
 
 ## First success signal
 
-A new user can create their wedding, add an event and task, and record a first expense in one short session without needing a spreadsheet.
+A new user creates a wedding, adds an event and task, records an expense, and can immediately understand what to do next.

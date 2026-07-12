@@ -1,29 +1,19 @@
 # Testing strategy
 
-Test behavior that could cost users time, money, or trust. Do not chase coverage percentages.
+Test behavior that can cost users time, money, privacy, or trust. Do not optimise for a coverage percentage.
 
-## Start with unit tests
+## Foundation
 
-Add tests for INR paise calculations, date formatting/validation, form schemas, and any permission or status mapping. These should be fast and deterministic.
+- Unit-test money arithmetic, date-only rules, schema validation, permission mappings, and pure feature utilities.
+- Use React Native Testing Library for UI behavior: validation, pending state, retry, empty state, and accessibility labels.
+- Test through public feature APIs where practical; do not couple tests to private implementation detail.
 
-## Add component tests selectively
+## V1 and release testing
 
-Use React Native Testing Library for reusable UI behavior and important forms: validation feedback, disabled/pending submission, error retry, and accessible labels.
+- Add Maestro journeys after the first three flows stabilize: wedding setup, task completion, and expense creation.
+- Manually test 360dp Android width, large text, TalkBack, keyboard/back behavior, failing network, and rapid duplicate taps.
+- Add regression tests for every confirmed money, permission, or data-loss defect.
 
-## Add end-to-end tests after real flows exist
+## Performance testing
 
-Use Maestro after the app has a development build and at least two stable journeys. Begin with:
-
-1. Create a wedding and event.
-2. Create and complete a task.
-3. Create a budget category and expense.
-
-Run device checks on meaningful flow changes, not for every copy or styling adjustment. Add release-blocking E2E automation only after the flows are stable.
-
-## What to verify manually
-
-- 360dp Android width and large font scale
-- keyboard and back behavior in forms
-- slow/failing network behavior
-- no duplicate submit when tapping quickly
-- INR values and date-only fields
+Profile before optimizing. Test on a lower-end Android device when long lists, images, or animation become user-visible. FlashList and Expo Image establish a production path; they do not remove the need to measure render work and image sizes.

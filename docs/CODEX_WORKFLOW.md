@@ -1,40 +1,40 @@
 # Codex workflow
 
-## Use Codex as a technical partner
+## Working contract
 
-Ask for one user outcome at a time. Provide the screen or feature, constraints, acceptance criteria, and relevant paths. Ask Codex to inspect before editing.
+Use Codex as an architecture-aware implementation partner, not a prompt-to-code machine. Each task has one outcome, explicit constraints, acceptance criteria, and relevant paths. Codex reads `AGENTS.md` and applicable docs before editing.
 
-```text
-Implement the task creation flow.
-Read AGENTS.md, docs/UI_SYSTEM.md, and the tasks feature first.
-Use existing UI primitives. Include validation, pending submission, and error retry.
-Add focused tests for the task schema. Do not change unrelated routes.
-```
-
-## Review prompt
+## Implementation prompt shape
 
 ```text
-Review this change as a Staff React Native engineer. Look for real correctness,
-accessibility, Android interaction, typing, and test gaps. Do not edit files.
-Report evidence-backed findings ordered by severity.
+Outcome: Create the task creation vertical slice.
+Read: AGENTS.md, docs/ARCHITECTURE.md, docs/UI_SYSTEM.md, and src/features/tasks.
+Constraints: Use the established feature public API and UI primitives. Preserve INR/date rules.
+Acceptance: validation, pending submit prevention, error retry, accessible labels, focused tests.
+Do not: change unrelated routes, add a dependency, or rewrite existing primitives.
 ```
 
-## When to delegate
+## Review gates
 
-Use subagents only for independent, read-heavy work such as code exploration, API documentation research, or a review. Do not ask multiple agents to edit the same feature. Built-in Codex agents are enough until repeated work proves a dedicated agent is valuable.
+Request a separate review before:
 
-## Skills, plugins, MCP, and hooks
+- adding a production dependency
+- changing Supabase schema or RLS
+- changing route hierarchy or app-wide providers
+- enabling analytics, AI, payments, or external sharing
+- merging a complex user flow or preparing a beta release
 
-- Start with project docs and `AGENTS.md`.
-- Create a skill only after a workflow repeats and has stable inputs/outputs.
-- Create a plugin only when a workflow must be shared or bundled with an MCP app, connector, or hook.
-- Add MCP servers only for a current need; use official framework docs for implementation decisions.
-- Do not add hooks until a mechanical policy is repeatedly missed and can be enforced safely.
+Review findings must be evidence-based, prioritized by user risk, and separate real defects from style preferences.
+
+## Preventing architecture drift
+
+- Keep this documentation set as the repository source of truth.
+- Make one vertical slice at a time; avoid unrelated cleanup during feature work.
+- Record costly decisions in `DECISIONS.md`.
+- Create a skill only after a workflow repeats with stable inputs and outcomes.
+- Create a plugin only when a workflow must be shared or bundled with MCP/tools.
+- Use subagents only for independent, read-heavy exploration or reviews; never concurrent edits to the same feature.
 
 ## AI in the product
 
-The planner must work without AI. If AI is added later, call it through a server-side endpoint, request structured output, show users the proposed change, and require confirmation before writing data. Never send sensitive guest or finance data by default.
-
-## Prompt quality
-
-Good prompts name the outcome, the relevant files, constraints, and acceptance checks. They do not prescribe unnecessary implementation details. After Codex implements a slice, ask for a focused review rather than starting a new unrelated feature.
+AI is a future server-side feature. It must use structured output, show users a proposed result, require confirmation before data writes, avoid sensitive data by default, and have rate limits, moderation, and observability. The planner's core loop must remain useful when AI is unavailable.
