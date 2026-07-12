@@ -21,6 +21,14 @@ The app is online-first. Query caching improves responsiveness but does not crea
 
 Use an Expo development build as the normal local runtime once the application is scaffolded. Expo Go is useful for quick experiments, but a development build exercises the native dependency set that the production app actually ships.
 
+## Implemented foundation
+
+- `src/app` contains route groups for auth, onboarding, and app navigation, plus a four-tab placeholder shell and not-found route.
+- `src/providers` composes Query, theme, session, and safe-area boundaries without storing fetched data in Context.
+- `src/lib/supabase` validates public environment values and uses SecureStore-backed session persistence; it performs no schema or remote setup.
+- `src/theme/tokens.json` is the shared token source consumed by TypeScript and `tailwind.config.js`.
+- `src/components/ui` contains only domain-neutral primitives. Feature folders exist as ownership boundaries but contain no product implementation yet.
+
 ## Future expansion without premature infrastructure
 
 - **iOS and web:** retain Expo-compatible APIs and responsive layouts.
@@ -118,30 +126,41 @@ Each layer owns one concern: routes compose navigation, sections arrange a scree
 
 Install Foundation packages together when scaffolding; their classification establishes standards, not a mandate to use every API on the first screen. Use `npm` and `npx expo install` for Expo-compatible versions.
 
-| Package | Purpose and rationale | Alternative / tradeoff | Timing |
-|---|---|---|---|
-| Expo, React Native, TypeScript, Expo Router | universal native client with stable file-based navigation | native Kotlin/Swift offers more control but raises delivery cost | Foundation |
-| `@supabase/supabase-js` | Auth, Postgres, RLS, Storage, Realtime path | Firebase is less aligned with relational finance/workspace data | Foundation |
-| `@tanstack/react-query` | server cache, mutations, retries, invalidation | direct effects create inconsistent loading and cache behavior | Foundation |
-| `react-hook-form` + `zod` | scalable, typed mobile forms and input validation | hand-managed form state becomes repetitive and error-prone | Foundation |
-| `zustand` | small explicit global client-state boundary | Context is adequate for providers but weak for evolving app UI state | Foundation; use sparingly |
-| NativeWind v4 | stable Tailwind workflow and token-friendly UI speed | StyleSheet is simpler but slower for a Tailwind-fluent product team; v5 is pre-release | Foundation |
-| `react-native-reanimated` | performant interactions, layout transitions, Bottom Sheet dependency | React Native Animated is less capable for premium interaction | Foundation |
-| `@gorhom/bottom-sheet` | production-grade contextual create/edit experience | native Modal is simpler but less consistent for dense workflows | Foundation; use selectively |
-| `@shopify/flash-list` | scalable task, vendor, and guest lists | FlatList is fine for tiny lists but creates migration churn later | Foundation |
-| `expo-image` | performant cross-platform image rendering and caching | React Native Image has fewer caching/transition controls | Foundation |
-| `expo-haptics` | meaningful tactile confirmation on supported devices | no dependency means less native feedback | Foundation; use rarely |
-| `lucide-react-native` + `react-native-svg` | consistent accessible icon system | emoji/platform icons are inconsistent | Foundation |
-| `expo-secure-store` | encrypted token/small-secret persistence | AsyncStorage and MMKV are not a secure token store | Foundation |
-| `@sentry/react-native` | release health and error visibility | console logs are not production observability | Foundation, configure before beta |
-| Jest + React Native Testing Library | domain and component confidence | snapshots alone do not test behavior | Foundation dev tooling |
-| Maestro | realistic mobile smoke journeys | unit tests cannot validate navigation/device behavior | V1 after flows stabilize |
-| MMKV | fast non-sensitive local key/value persistence | unnecessary before a proven low-latency persistence need; never use for tokens or sync | Later |
-| `expo-notifications` | task reminders | requires stable task model and permission UX | V1 |
-| Document/Image picker and FileSystem | receipts and documents | adds permission and storage responsibilities | V1 |
-| `expo-localization` + i18n library | multi-language support | adding translations before content stabilizes creates churn | V2 |
-| PostHog or equivalent | consented product analytics | analytics before privacy/event design creates noisy data | Beta |
-| Moti, Skia, Lottie, Blur | optional visual polish | duplicate abstractions or decorative cost | Later only with approved design need |
-| `expo-av` | legacy media API | deprecated; use `expo-audio`/`expo-video` if required | Never |
+| Package                                     | Purpose and rationale                                                | Alternative / tradeoff                                                                 | Timing                               |
+| ------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------ |
+| Expo, React Native, TypeScript, Expo Router | universal native client with stable file-based navigation            | native Kotlin/Swift offers more control but raises delivery cost                       | Foundation                           |
+| `@supabase/supabase-js`                     | Auth, Postgres, RLS, Storage, Realtime path                          | Firebase is less aligned with relational finance/workspace data                        | Foundation                           |
+| `@tanstack/react-query`                     | server cache, mutations, retries, invalidation                       | direct effects create inconsistent loading and cache behavior                          | Foundation                           |
+| `react-hook-form` + `zod`                   | scalable, typed mobile forms and input validation                    | hand-managed form state becomes repetitive and error-prone                             | Foundation                           |
+| `zustand`                                   | small explicit global client-state boundary                          | Context is adequate for providers but weak for evolving app UI state                   | Foundation; use sparingly            |
+| NativeWind v4                               | stable Tailwind workflow and token-friendly UI speed                 | StyleSheet is simpler but slower for a Tailwind-fluent product team; v5 is pre-release | Foundation                           |
+| `react-native-reanimated`                   | performant interactions, layout transitions, Bottom Sheet dependency | React Native Animated is less capable for premium interaction                          | Foundation                           |
+| `@gorhom/bottom-sheet`                      | production-grade contextual create/edit experience                   | native Modal is simpler but less consistent for dense workflows                        | Foundation; use selectively          |
+| `@shopify/flash-list`                       | scalable task, vendor, and guest lists                               | FlatList is fine for tiny lists but creates migration churn later                      | Foundation                           |
+| `expo-image`                                | performant cross-platform image rendering and caching                | React Native Image has fewer caching/transition controls                               | Foundation                           |
+| `expo-haptics`                              | meaningful tactile confirmation on supported devices                 | no dependency means less native feedback                                               | Foundation; use rarely               |
+| `lucide-react-native` + `react-native-svg`  | consistent accessible icon system                                    | emoji/platform icons are inconsistent                                                  | Foundation                           |
+| `expo-secure-store`                         | encrypted token/small-secret persistence                             | AsyncStorage and MMKV are not a secure token store                                     | Foundation                           |
+| `@sentry/react-native`                      | release health and error visibility                                  | console logs are not production observability                                          | Foundation, configure before beta    |
+| Jest + React Native Testing Library         | domain and component confidence                                      | snapshots alone do not test behavior                                                   | Foundation dev tooling               |
+| Maestro                                     | realistic mobile smoke journeys                                      | unit tests cannot validate navigation/device behavior                                  | V1 after flows stabilize             |
+| MMKV                                        | fast non-sensitive local key/value persistence                       | unnecessary before a proven low-latency persistence need; never use for tokens or sync | Later                                |
+| `expo-notifications`                        | task reminders                                                       | requires stable task model and permission UX                                           | V1                                   |
+| Document/Image picker and FileSystem        | receipts and documents                                               | adds permission and storage responsibilities                                           | V1                                   |
+| `expo-localization` + i18n library          | multi-language support                                               | adding translations before content stabilizes creates churn                            | V2                                   |
+| PostHog or equivalent                       | consented product analytics                                          | analytics before privacy/event design creates noisy data                               | Beta                                 |
+| Moti, Skia, Lottie, Blur                    | optional visual polish                                               | duplicate abstractions or decorative cost                                              | Later only with approved design need |
+| `expo-av`                                   | legacy media API                                                     | deprecated; use `expo-audio`/`expo-video` if required                                  | Never                                |
 
 Do not add Redux, MobX, Firebase, Axios, Moment, NativeBase, React Native Paper, React Native Elements, SQLite sync, custom native modules, microservices, or an AI SDK to the client foundation.
+
+## Environment contract
+
+The only current runtime values are:
+
+```text
+EXPO_PUBLIC_SUPABASE_URL
+EXPO_PUBLIC_SUPABASE_ANON_KEY
+```
+
+They are public client configuration values, not secrets. Never add a service-role key or provider secret to `.env` values exposed to the app. Generate Supabase database types only after the first schema exists; until then, the client intentionally has no application-table contract.

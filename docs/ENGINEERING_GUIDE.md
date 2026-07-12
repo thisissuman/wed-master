@@ -15,6 +15,8 @@
 - Prefer composition and explicit variant props over inheritance or boolean-prop matrices.
 - Hooks orchestrate state and side effects. Pure calculations live in domain utilities and are unit tested.
 - Feature `index.ts` files expose the supported public API. Do not import another feature's internal files.
+- `src/theme/tokens.json` is the value source for both TypeScript and NativeWind. Do not add a second token map in a component or configuration file.
+- NativeWind class strings belong in primitives and feature components; extract a variant map before a class string becomes hard to read or is repeated.
 
 ## Error handling and logging
 
@@ -33,3 +35,12 @@
 ## Definition of Done
 
 A feature is complete when requested behavior, type safety, mobile interaction, focused tests, relevant loading/empty/error/permission states, accessibility basics, and documentation impact have all been reviewed. Verification must state what ran and what did not.
+
+## Quality commands
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm test -- --runInBand`
+- `npm run format:check`
+
+Use `npm run format` only for deliberate formatting changes. Do not run dependency upgrades or automated audit fixes as a substitute for reviewing compatibility.

@@ -6,12 +6,12 @@ Wed Master becomes the trusted operating system for Indian weddings: a private w
 
 ## Users and jobs
 
-| User | Primary job | Current pain |
-|---|---|---|
-| Couple or family planner | know the next important action and spending position | plans are split across chats, calls, notes, and spreadsheets |
-| Family collaborator | own and complete assigned work | responsibilities are vague and updates are hard to find |
-| Wedding planner | coordinate several workspaces | status and client communication are fragmented |
-| Vendor / admin | serve a limited future role | requires trust, verification, and permissions beyond the planning core |
+| User                     | Primary job                                          | Current pain                                                           |
+| ------------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| Couple or family planner | know the next important action and spending position | plans are split across chats, calls, notes, and spreadsheets           |
+| Family collaborator      | own and complete assigned work                       | responsibilities are vague and updates are hard to find                |
+| Wedding planner          | coordinate several workspaces                        | status and client communication are fragmented                         |
+| Vendor / admin           | serve a limited future role                          | requires trust, verification, and permissions beyond the planning core |
 
 Indian weddings are multi-event and multi-household. The product must accommodate variation rather than encode one definition of a wedding.
 

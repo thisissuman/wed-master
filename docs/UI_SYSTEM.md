@@ -4,24 +4,24 @@ Wed Master should feel like a premium consumer product: calm like Reminders, str
 
 ## Single source of truth
 
-NativeWind v4 theme values and typed semantic tokens are the design source of truth. Screens and feature components use semantic component variants; they never introduce raw colours, spacing values, radius values, shadows, or motion durations.
+`src/theme/tokens.json` is the single value source. TypeScript imports it through `src/theme/index.ts`, while `tailwind.config.js` consumes the same file for NativeWind v4. Screens and feature components use semantic component variants; they never introduce raw colours, spacing values, radius values, shadows, or motion durations.
 
 ## Token foundation
 
 ### Colour roles
 
-| Role | Light starting value | Meaning |
-|---|---|---|
-| `surface` | `#FFFBFF` | app background |
-| `surfaceRaised` | `#FFFFFF` | cards, sheets, dialogs |
-| `textPrimary` | `#1D1B20` | main content |
-| `textSecondary` | `#625B61` | supporting content |
-| `border` | `#E9E0E6` | quiet separation |
-| `brand` | `#7A3854` | primary action and focus |
-| `success` | `#167A3F` | completed/safe state |
-| `warning` | `#A95B00` | attention-needed state |
-| `danger` | `#B3261E` | destructive state |
-| `info` | `#315DA8` | neutral information |
+| Role            | Light starting value | Meaning                  |
+| --------------- | -------------------- | ------------------------ |
+| `surface`       | `#FFFBFF`            | app background           |
+| `surfaceRaised` | `#FFFFFF`            | cards, sheets, dialogs   |
+| `textPrimary`   | `#1D1B20`            | main content             |
+| `textSecondary` | `#625B61`            | supporting content       |
+| `border`        | `#E9E0E6`            | quiet separation         |
+| `brand`         | `#7A3854`            | primary action and focus |
+| `success`       | `#167A3F`            | completed/safe state     |
+| `warning`       | `#A95B00`            | attention-needed state   |
+| `danger`        | `#B3261E`            | destructive state        |
+| `info`          | `#315DA8`            | neutral information      |
 
 Create a matching dark token set before enabling dark-mode selection. Do not use opacity as the only way to create a semantic state.
 
@@ -42,6 +42,8 @@ Create a matching dark token set before enabling dark-mode selection. Do not use
 ## Component variants and states
 
 Build primitives before feature screens: `Screen`, `Text`, `Button`, `IconButton`, `Card`, `TextField`, `SelectField`, `StatusBadge`, `ListRow`, `Dialog`, `Snackbar`, `LoadingState`, `EmptyState`, and `ErrorState`.
+
+The current scaffold implements `Screen`, `AppText`, `Button`, `IconButton`, `Card`, `TextField`, `StatusBadge`, `ListRow`, `LoadingState`, `EmptyState`, and `ErrorState`. `SelectField`, `Dialog`, and `Snackbar` remain intentionally deferred until a real interaction requires their contract.
 
 - Buttons have primary, secondary, destructive, and ghost variants; pending state prevents duplicate submit.
 - Inputs always include a visible label, helper/error text, a suitable keyboard mode, and accessible error semantics.

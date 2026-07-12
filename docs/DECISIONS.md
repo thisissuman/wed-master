@@ -26,6 +26,14 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 **Why:** The product must be adaptable without making uncertain cultural claims.
 
+## 2026-07-12: Expo SDK 57 production scaffold
+
+**Decision:** Use npm, Expo Router with `src/app`, NativeWind v4, development-build scripts, SecureStore-backed Supabase session persistence, and the documented foundation package set.
+
+**Why:** The baseline provides compatible native tooling, typed routing, feature boundaries, consistent visual tokens, and a production path without implementing product features.
+
+**Consequence:** Android development requires a local SDK/emulator and Java runtime. Sentry is installed but remains unconfigured until a private-alpha project/DSN exists.
+
 ## Template
 
 ```md
