@@ -1,11 +1,14 @@
-import { ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AppText, Button, DateField, Screen, SelectField, TextField } from "@/components/ui";
+
+import { DateField, Disclosure, Screen, SelectField, TextField } from "@/components/ui";
+
 import { expenseFormSchema, fromPaise, toPaise, type ExpenseFormValues } from "./forms";
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 import { paymentStatuses, type Expense } from "./types";
+import { FormShell } from "./ui";
+
 export function ExpenseForm({ expense }: { expense?: Expense }) {
   const { data } = useWorkspace();
   const mutation = useWorkspaceMutation();
@@ -39,6 +42,7 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
           notes: "",
         },
   });
+
   const save = handleSubmit(async (values) => {
     const valuesForStore = {
       title: values.title,
@@ -58,6 +62,7 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
     );
     router.back();
   });
+
   const text = (
     name: keyof ExpenseFormValues,
     label: string,
@@ -82,6 +87,7 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
       )}
     />
   );
+
   const select = (
     name: "categoryId" | "paymentStatus",
     label: string,
@@ -101,30 +107,44 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
       )}
     />
   );
-  const dateField = (
+
+  const dueDateField = (
     <Controller
       control={control}
       name="dueDate"
       render={({ field }) => (
         <DateField
           error={errors.dueDate?.message}
-          label="Due date"
+          label="Payment due date"
           onChange={field.onChange}
           value={field.value}
         />
       )}
     />
   );
+
+  const detailsAlreadyAdded = expense
+    ? Boolean(
+        expense.estimatedPaise ||
+          expense.paidPaise ||
+          expense.paymentStatus !== "Not Paid" ||
+          expense.vendorName ||
+          expense.dueDate ||
+          expense.notes,
+      )
+    : false;
+
   return (
     <Screen>
-      <ScrollView contentContainerClassName="gap-lg p-md" keyboardShouldPersistTaps="handled">
-        <View className="gap-2xs">
-          <AppText variant="title">{expense ? "Edit expense" : "Add expense"}</AppText>
-          <AppText variant="caption">
-            Amounts are stored as integer paise for accurate totals.
-          </AppText>
-        </View>
-        {text("title", "Expense title")}
+      <FormShell
+        description="Record the cost first. Payment and planning details can wait until you need them."
+        isSubmitting={isSubmitting || mutation.isPending}
+        onCancel={() => router.back()}
+        onSubmit={save}
+        submitLabel={expense ? "Save changes" : "Create expense"}
+        title={expense ? "Edit expense" : "Add expense"}
+      >
+        {text("title", "What is this for?", "e.g. Venue advance")}
         {select(
           "categoryId",
           "Category",
@@ -133,25 +153,27 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
             value: category.id,
           })),
         )}
-        {text("estimated", "Estimated amount", "0.00", false, "decimal-pad")}
-        {text("actual", "Actual amount", "0.00", false, "decimal-pad")}
-        {text("paid", "Paid amount", "0.00", false, "decimal-pad")}
-        {select(
-          "paymentStatus",
-          "Payment status",
-          paymentStatuses.map((value) => ({ label: value, value })),
-        )}
-        {text("vendorName", "Vendor name")}
-        {dateField}
-        {text("notes", "Notes", undefined, true)}
-        <Button
-          disabled={isSubmitting || mutation.isPending}
-          label={expense ? "Save changes" : "Create expense"}
-          loading={isSubmitting || mutation.isPending}
-          onPress={save}
-        />
-        <Button label="Cancel" onPress={() => router.back()} variant="ghost" />
-      </ScrollView>
+        {text("actual", "Amount spent (₹)", "0.00", false, "decimal-pad")}
+        <Disclosure
+          description="Add planned, paid, due-date, payee, or note details."
+          initiallyExpanded={detailsAlreadyAdded}
+          title="Add payment and planning details"
+        >
+          {text("estimated", "Planned amount (₹)", "0.00", false, "decimal-pad")}
+          {text("paid", "Amount paid (₹)", "0.00", false, "decimal-pad")}
+          {select(
+            "paymentStatus",
+            "Payment status",
+            paymentStatuses.map((value) => ({
+              label: value === "Not Paid" ? "Payment due" : value,
+              value,
+            })),
+          )}
+          {dueDateField}
+          {text("vendorName", "Payee or vendor")}
+          {text("notes", "Notes", undefined, true)}
+        </Disclosure>
+      </FormShell>
     </Screen>
   );
 }

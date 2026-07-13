@@ -3,6 +3,7 @@ import { CalendarDays } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 
+import { formatDateOnly, toDateOnly } from "@/lib/dates";
 import { tokens } from "@/theme";
 
 import { AppText } from "./AppText";
@@ -21,16 +22,18 @@ const dateFromValue = (value: string) =>
 
 export function DateField({ error, label, onChange, value }: DateFieldProps) {
   const [open, setOpen] = useState(false);
+  const formattedValue = value ? formatDateOnly(value) : "Select date";
   return (
     <View className="gap-2xs">
       <AppText variant="label">{label}</AppText>
       <Pressable
-        accessibilityLabel={`${label}: ${value || "Select date"}`}
+        accessibilityLabel={`${label}: ${formattedValue}`}
         accessibilityRole="button"
-        className={`min-h-12 flex-row items-center justify-between rounded-control border bg-surfaceRaised px-md ${error ? "border-danger" : "border-border"}`}
+        android_ripple={{ color: tokens.colors.surfaceSubtle }}
+        className={`min-h-12 flex-row items-center justify-between rounded-control border bg-surfaceRaised px-md active:opacity-80 ${error ? "border-danger" : "border-border"}`}
         onPress={() => setOpen(true)}
       >
-        <AppText className={value ? "" : "text-textSecondary"}>{value || "Select date"}</AppText>
+        <AppText className={value ? "" : "text-textSecondary"}>{formattedValue}</AppText>
         <CalendarDays color={tokens.colors.textSecondary} size={tokens.iconSize.md} />
       </Pressable>
       {error ? (
@@ -44,7 +47,7 @@ export function DateField({ error, label, onChange, value }: DateFieldProps) {
           mode="date"
           onChange={(_, selectedDate) => {
             setOpen(false);
-            if (selectedDate) onChange(selectedDate.toISOString().slice(0, 10));
+            if (selectedDate) onChange(toDateOnly(selectedDate));
           }}
           value={dateFromValue(value)}
         />

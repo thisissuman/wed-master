@@ -4,13 +4,21 @@ import { tokens } from "@/theme";
 
 import { AppText } from "./AppText";
 
-type TextFieldProps = TextInputProps & {
+type TextFieldProps = Omit<TextInputProps, "className"> & {
+  className?: string;
   error?: string;
   helperText?: string;
   label: string;
 };
 
-export function TextField({ error, helperText, label, ...props }: TextFieldProps) {
+export function TextField({
+  className = "",
+  error,
+  helperText,
+  label,
+  multiline,
+  ...props
+}: TextFieldProps) {
   const message = error ?? helperText;
 
   return (
@@ -19,10 +27,12 @@ export function TextField({ error, helperText, label, ...props }: TextFieldProps
       <TextInput
         accessibilityLabel={label}
         accessibilityHint={error}
-        className={`min-h-12 rounded-control border bg-surfaceRaised px-md text-body text-textPrimary ${
+        className={`${multiline ? "min-h-28 py-sm" : "min-h-12"} rounded-control border bg-surfaceRaised px-md text-body text-textPrimary ${
           error ? "border-danger" : "border-border"
-        }`}
+        } ${className}`}
+        multiline={multiline}
         placeholderTextColor={tokens.colors.textSecondary}
+        textAlignVertical={multiline ? "top" : "center"}
         {...props}
       />
       {message ? (

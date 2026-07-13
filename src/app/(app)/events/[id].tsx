@@ -1,92 +1,127 @@
-import { Alert, ScrollView, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { AppText, Button, Card, LoadingState, Screen } from "@/components/ui";
-import { useWorkspace, useWorkspaceMutation } from "@/features/workspace";
-import { formatDate, TaskCard } from "@/features/workspace/ui";
+
+import {
+  AppText,
+  Button,
+  Card,
+  ConfirmationDialog,
+  EmptyState,
+  LoadingState,
+  ProgressBar,
+  Screen,
+  SectionHeader,
+} from "@/components/ui";
+import { formatTimeOfDay } from "@/lib/dates";
+import { useWorkspace, useWorkspaceMutation, type Task } from "@/features/workspace";
+import { DetailHeader, formatDate, LocationLine, TaskListItem } from "@/features/workspace/ui";
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const { data } = useWorkspace();
   const mutation = useWorkspaceMutation();
-  if (!data)
+
+  if (!data) {
     return (
       <Screen>
         <LoadingState />
       </Screen>
     );
+  }
+
   const event = data.events.find((item) => item.id === id);
-  if (!event)
+  if (!event) {
     return (
-      <Screen>
+      <Screen className="p-md">
         <AppText>Event not found.</AppText>
       </Screen>
     );
+  }
+
   const tasks = data.tasks.filter((task) => task.eventId === event.id);
-  const remove = () =>
-    Alert.alert("Delete event?", "Related tasks will remain, but become general tasks.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await mutation.mutateAsync((repositories) => repositories.events.deleteEvent(event.id));
-          router.replace("/(app)/(tabs)/plan");
-        },
-      },
-    ]);
+  const completedTasks = tasks.filter((task) => task.status === "Completed").length;
+  const progress = tasks.length ? (completedTasks / tasks.length) * 100 : 0;
+
+  const deleteEvent = async () => {
+    await mutation.mutateAsync((repositories) => repositories.events.deleteEvent(event.id));
+    router.replace("/plan");
+  };
+
+  const toggleTask = (task: Task) => {
+    mutation.mutate((repositories) =>
+      repositories.tasks.updateTask({
+        ...task,
+        status: task.status === "Completed" ? "Not Started" : "Completed",
+      }),
+    );
+  };
+
   return (
     <Screen>
-      <ScrollView contentContainerClassName="gap-lg p-md">
-        <View className="gap-2xs">
-          <AppText variant="title">{event.name}</AppText>
-          <AppText variant="caption">
-            {formatDate(event.date)}
-            {event.time ? ` · ${event.time}` : ""}
-          </AppText>
-          <AppText variant="caption">{event.location ?? "Location to be decided"}</AppText>
+      <ScrollView contentContainerClassName="gap-xl p-md pb-2xl">
+        <DetailHeader eyebrow={formatDate(event.date)} title={event.name} />
+        <View className="gap-xs">
+          {event.time ? <AppText>{formatTimeOfDay(event.time)}</AppText> : null}
+          <LocationLine location={event.location} />
         </View>
-        <Card>
-          <AppText variant="heading">Readiness</AppText>
-          <AppText>
-            {tasks.filter((task) => task.status === "Completed").length} of {tasks.length} related
-            tasks complete
-          </AppText>
+
+        <Card className="gap-sm" variant="subtle">
+          <View className="flex-row items-center justify-between gap-sm">
+            <AppText variant="label">Task progress</AppText>
+            <AppText variant="caption">
+              {completedTasks} of {tasks.length} done
+            </AppText>
+          </View>
+          <ProgressBar accessibilityLabel="Related task progress" value={progress} />
         </Card>
+
         {event.notes ? (
-          <Card>
-            <AppText variant="heading">Notes</AppText>
+          <View className="gap-xs">
+            <SectionHeader title="Notes" />
             <AppText>{event.notes}</AppText>
-          </Card>
+          </View>
         ) : null}
-        <View className="gap-sm">
-          <Button
-            label="Move earlier"
-            onPress={() =>
-              mutation.mutate((repositories) => repositories.events.moveEvent(event.id, "earlier"))
-            }
-            variant="secondary"
-          />
-          <Button
-            label="Move later"
-            onPress={() =>
-              mutation.mutate((repositories) => repositories.events.moveEvent(event.id, "later"))
-            }
-            variant="secondary"
-          />
+
+        <View className="gap-xs">
+          <SectionHeader title="Related tasks" />
+          {tasks.length ? (
+            tasks.map((task) => (
+              <TaskListItem
+                key={task.id}
+                onPress={() => router.push(`/tasks/${task.id}`)}
+                onToggle={() => toggleTask(task)}
+                task={task}
+              />
+            ))
+          ) : (
+            <EmptyState
+              actionLabel="Add task"
+              description="Link a task here when this event needs preparation."
+              onAction={() => router.push("/tasks/new")}
+              title="No related tasks"
+            />
+          )}
+        </View>
+
+        <View className="gap-xs pt-sm">
           <Button
             label="Edit event"
-            onPress={() =>
-              router.push({ pathname: "/events/edit", params: { id: event.id } } as never)
-            }
+            onPress={() => router.push({ pathname: "/events/edit", params: { id: event.id } })}
           />
-          <Button label="Delete event" onPress={remove} variant="destructive" />
-        </View>
-        <View className="gap-sm">
-          <AppText variant="heading">Related tasks</AppText>
-          {tasks.map((task) => (
-            <TaskCard key={task.id} onPress={() => router.push(`/tasks/${task.id}`)} task={task} />
-          ))}
+          <Button label="Delete event" onPress={() => setDeleteOpen(true)} variant="dangerGhost" />
         </View>
       </ScrollView>
+      <ConfirmationDialog
+        confirmLabel="Delete event"
+        description="Related tasks will remain in the plan as general tasks."
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={() => void deleteEvent()}
+        pending={mutation.isPending}
+        title="Delete this event?"
+        visible={deleteOpen}
+      />
     </Screen>
   );
 }

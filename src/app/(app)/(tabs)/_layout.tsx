@@ -12,7 +12,11 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: tokens.colors.brand,
         tabBarInactiveTintColor: tokens.colors.textSecondary,
-        tabBarStyle: { borderTopColor: tokens.colors.border },
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          backgroundColor: tokens.colors.surfaceRaised,
+          borderTopColor: tokens.colors.border,
+        },
       }}
     >
       <Tabs.Screen

@@ -1,31 +1,38 @@
-import { Pressable, type PressableProps } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { ActivityIndicator, Pressable, View, type PressableProps } from "react-native";
 
+import { tokens } from "@/theme";
 import { AppText } from "./AppText";
 
-type ButtonVariant = "destructive" | "ghost" | "primary" | "secondary";
+type ButtonVariant = "dangerGhost" | "destructive" | "ghost" | "primary" | "secondary";
 
 const variantClassNames: Record<ButtonVariant, string> = {
+  dangerGhost: "bg-transparent",
   destructive: "bg-danger",
   ghost: "bg-transparent",
   primary: "bg-brand",
   secondary: "bg-surfaceRaised border border-border",
 };
 
-const labelClassNames: Record<ButtonVariant, string> = {
-  destructive: "text-brandOn",
-  ghost: "text-brand",
-  primary: "text-brandOn",
-  secondary: "text-textPrimary",
+const iconColorByVariant: Record<ButtonVariant, string> = {
+  dangerGhost: tokens.colors.danger,
+  destructive: tokens.colors.brandOn,
+  ghost: tokens.colors.brand,
+  primary: tokens.colors.brandOn,
+  secondary: tokens.colors.textPrimary,
 };
 
 type ButtonProps = Omit<PressableProps, "children"> & {
+  icon?: LucideIcon;
   label: string;
   loading?: boolean;
   variant?: ButtonVariant;
 };
 
 export function Button({
+  className = "",
   disabled = false,
+  icon: Icon,
   label,
   loading = false,
   variant = "primary",
@@ -37,16 +44,22 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ busy: loading, disabled: isDisabled }}
-      android_ripple={{ color: "transparent" }}
+      android_ripple={{ color: tokens.colors.surfaceSubtle }}
       disabled={isDisabled}
-      className={`min-h-12 items-center justify-center rounded-control px-lg ${variantClassNames[variant]} ${
-        isDisabled ? "opacity-50" : ""
-      }`}
+      className={`min-h-12 flex-row items-center justify-center gap-xs rounded-control px-lg ${variantClassNames[variant]} ${
+        isDisabled ? "opacity-50" : "active:opacity-80"
+      } ${className}`}
       {...props}
     >
-      <AppText className={labelClassNames[variant]} variant="label">
-        {loading ? "Loading…" : label}
-      </AppText>
+      {loading ? <ActivityIndicator color={iconColorByVariant[variant]} /> : null}
+      {Icon && !loading ? (
+        <Icon color={iconColorByVariant[variant]} size={tokens.iconSize.sm} />
+      ) : null}
+      <View>
+        <AppText style={{ color: iconColorByVariant[variant] }} variant="label">
+          {loading ? "Loading…" : label}
+        </AppText>
+      </View>
     </Pressable>
   );
 }

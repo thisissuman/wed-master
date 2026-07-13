@@ -17,6 +17,9 @@
 - Feature `index.ts` files expose the supported public API. Do not import another feature's internal files.
 - `src/theme/tokens.json` is the value source for both TypeScript and NativeWind. Do not add a second token map in a component or configuration file.
 - NativeWind class strings belong in primitives and feature components; extract a variant map before a class string becomes hard to read or is repeated.
+- Prefer summary surfaces and divider-based rows over feature-specific card variants. A `Card` is not a press target; use `ListRow` or a focused feature row for navigation.
+- A screen owns one clear primary action. Put advanced filtering in `FilterSheet`, optional form fields in `Disclosure`, and destructive work behind `ConfirmationDialog`.
+- Keep tab routes thin. Domain presentation such as event timelines, task completion rows, expense rows, financial summaries, and the quick-add sheet belongs in `src/features/workspace`.
 
 ## Error handling and logging
 
@@ -47,8 +50,10 @@ Use `npm run format` only for deliberate formatting changes. Do not run dependen
 
 # First local product slice
 
-Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, and the native Android date picker. Budget-category management remains deferred beyond this first vertical slice.
+Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-safe scrolling, progressive optional fields, and the native Android date picker. Budget-category management remains deferred beyond this first vertical slice.
 
-The Plan tab supports filters for task status, priority, related event, and overdue state. The Budget tab supports category and payment-status filters. Event detail includes simple persisted earlier/later ordering controls; gesture reordering remains deferred until a real need is validated.
+The Plan tab uses one Events/Tasks segmented control. Task filters for status, priority, event, and overdue state are contained in one sheet with a one-tap reset. The Budget tab uses the same pattern for category and payment status. Event ordering remains persisted in the repository for compatibility, but the earlier/later controls are intentionally not exposed in the simplified product UI.
+
+Home has one Add action that opens a task/expense/event chooser; it must remain the only primary quick action on that screen. The Budget tab shows active categories rather than an empty list of every available category. Detail routes use visible back actions and confirmation dialogs for deletion.
 
 Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.

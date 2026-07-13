@@ -1,61 +1,69 @@
 # UI system
 
-Wed Master should feel like a premium consumer product: calm like Reminders, structured like Linear, flexible like Notion, and clear like Material Design 3—without copying any product's visual identity or becoming a card-heavy CRUD UI.
+Wed Master is a warm, premium planning tool for Indian families. The interface should feel calm and practical: it prioritises the next decision over decoration, explains money in plain language, and leaves family customs fully editable.
 
 ## Single source of truth
 
-`src/theme/tokens.json` is the single value source. TypeScript imports it through `src/theme/index.ts`, while `tailwind.config.js` consumes the same file for NativeWind v4. Screens and feature components use semantic component variants; they never introduce raw colours, spacing values, radius values, shadows, or motion durations.
+`src/theme/tokens.json` is the value source. TypeScript imports it through `src/theme/index.ts`, while `tailwind.config.js` consumes the same file for NativeWind v4. Screens and feature components use semantic roles and reusable primitives; they do not introduce raw colours, spacing values, radii, shadows, or motion durations.
 
-## Token foundation
+## Colour direction
 
-### Colour roles
+The light theme uses a warm ivory background, raised off-white surfaces, a deep plum brand colour, and restrained state colours. Brand is reserved for primary actions, active navigation, selected controls, and key progress. Surfaces are not routinely tinted or elevated.
 
-| Role            | Light starting value | Meaning                  |
-| --------------- | -------------------- | ------------------------ |
-| `surface`       | `#FFFBFF`            | app background           |
-| `surfaceRaised` | `#FFFFFF`            | cards, sheets, dialogs   |
-| `textPrimary`   | `#1D1B20`            | main content             |
-| `textSecondary` | `#625B61`            | supporting content       |
-| `border`        | `#E9E0E6`            | quiet separation         |
-| `brand`         | `#7A3854`            | primary action and focus |
-| `success`       | `#167A3F`            | completed/safe state     |
-| `warning`       | `#A95B00`            | attention-needed state   |
-| `danger`        | `#B3261E`            | destructive state        |
-| `info`          | `#315DA8`            | neutral information      |
+| Role            | Value     | Use                                            |
+| --------------- | --------- | ---------------------------------------------- |
+| `surface`       | `#F8F4EF` | warm app background                            |
+| `surfaceRaised` | `#FFFEFC` | forms, summaries, sheets, dialogs              |
+| `surfaceSubtle` | `#F2EBE5` | selected/quiet supporting areas                |
+| `textPrimary`   | `#2B2526` | headings and body copy                         |
+| `textSecondary` | `#6E6564` | metadata and support copy                      |
+| `border`        | `#E7DDD7` | quiet division                                 |
+| `brand`         | `#5A233E` | primary action and active state                |
+| `accent`        | `#A76576` | sparing supporting accent only                 |
+| `success`       | `#237449` | completed and paid states                      |
+| `warning`       | `#A45E12` | payment due / attention state                  |
+| `danger`        | `#B23B34` | overdue, over-budget, destructive confirmation |
 
-Create a matching dark token set before enabling dark-mode selection. Do not use opacity as the only way to create a semantic state.
+Do not add gradients, glassmorphism, saturated pink decoration, or coloured category systems. Status labels must still be readable without their colour.
 
-### Layout and typography
+## Hierarchy and layout
 
-- Spacing scale: `4, 8, 12, 16, 20, 24, 32, 40`.
-- Radius scale: `8, 12, 16, 24`; controls use 12, cards/sheets use 16.
-- Use system typography first; define display, title, body, label, and caption roles. Add a custom font only after verifying multilingual coverage and performance.
-- Prefer tonal surfaces and subtle borders. Elevation is reserved for floating actions, sheets, and dialogs.
-- Interactive elements have a 48dp minimum target.
+- Typography roles are display, title, heading, body, label, and caption. Do not turn every label into a heading.
+- A screen begins with one title and then places summaries before details.
+- The spacing scale is `4, 8, 12, 16, 20, 24, 32, 40`; controls use a 48dp minimum target.
+- Cards are reserved for a financial summary, a compact context group, empty/error states, sheets, and dialogs. They are not the default wrapper for every row.
+- Events, tasks, categories, and expenses use divider-based rows. Rows reveal only the information needed to decide whether to open them.
 
-### Motion
+## Screen rules
 
-- 120ms feedback, 180ms standard transitions, 240ms sheets/dialogs.
-- Animate feedback, order, and state changes. Do not animate decoration merely to make a screen feel busy.
-- Respect reduced-motion preferences and never delay interaction behind an animation.
+- **Home:** wedding context, up to three priority actions, one budget snapshot, and one bottom Add action. The Add sheet offers task, expense, and event creation.
+- **Plan:** a compact Events/Tasks segmented switch controls one content view at a time. Event rows are chronological; task rows include a completion control. Filters are in one sheet and only active filters appear in the main view.
+- **Budget:** one compact financial overview precedes active category summaries and expense rows. Vendor and note content stays in expense detail.
+- **More:** remains quiet until a real preference or workspace-management need exists; do not fill it with speculative modules.
+- **Detail screens:** show a visible back action, key facts first, secondary notes only when present, one primary action, and a visually secondary destructive action protected by a confirmation dialog.
 
-## Component variants and states
+## Component contracts
 
-Build primitives before feature screens: `Screen`, `Text`, `Button`, `IconButton`, `Card`, `TextField`, `SelectField`, `StatusBadge`, `ListRow`, `Dialog`, `Snackbar`, `LoadingState`, `EmptyState`, and `ErrorState`.
+- `Screen` owns safe-area background and outer screen bounds.
+- `SectionHeader` gives a section one readable title and, when necessary, one quiet action.
+- `Button` supports primary, secondary, ghost, destructive-confirmation, and quiet-danger variants. Pending actions are disabled.
+- `Card` has raised and subtle variants; it is not interactive.
+- `ListRow` is the default compact, accessible press target for list content.
+- `StatusBadge` is short textual state feedback with neutral, success, warning, danger, or brand tone.
+- `ProgressBar` communicates progress with an accessible numeric value.
+- `FilterSheet` is the single filter entry pattern and always exposes a one-tap clear action.
+- The Plan Events/Tasks segmented switch is the only in-screen mode control and uses the same semantic selected state as other controls.
+- `Disclosure` hides optional form fields until requested.
+- `ConfirmationDialog` protects destructive actions and keeps the destructive confirmation distinct from the page action.
 
-The current scaffold implements `Screen`, `AppText`, `Button`, `IconButton`, `Card`, `TextField`, `StatusBadge`, `ListRow`, `LoadingState`, `EmptyState`, and `ErrorState`. `SelectField`, `Dialog`, and `Snackbar` remain intentionally deferred until a real interaction requires their contract.
+## Forms
 
-- Buttons have primary, secondary, destructive, and ghost variants; pending state prevents duplicate submit.
-- Inputs always include a visible label, helper/error text, a suitable keyboard mode, and accessible error semantics.
-- Cards group information; they are not default page decoration.
-- Skeletons preserve layout while data is expected shortly. Use loading state when the shape is unknown or the delay is meaningful.
-- Empty states explain the absence and offer one clear action.
-- Error states name the failure safely and provide retry when recovery is possible.
-- Snackbars acknowledge completed actions or non-blocking recovery; critical failures remain visible in the content area.
+Forms lead with the smallest required set of fields. Optional context belongs in an `Add details` disclosure and does not visually compete with essentials. The reusable form shell provides keyboard-safe scrolling, a reachable save action, disabled pending state, and a clear Cancel action. Use date-only pickers and reader-friendly formatted date values; never expose paise implementation details in UI copy.
 
-## Accessibility and icon rules
+## Accessibility and interaction
 
-- Icon-only controls require an accessible label.
-- Use Lucide icons consistently; icons reinforce labels and never carry critical meaning alone.
-- Support large text, screen readers, keyboard-safe forms, 360dp Android width, and non-colour-only status signals.
-- Images that communicate meaning include an accessibility label; decorative images are hidden from assistive technology.
+- Every non-text control has an accessible label; completion controls expose checked state.
+- Support 360dp Android width and larger system text without clipped titles or horizontal scrolling.
+- Use labels plus shape/text for status, not colour alone.
+- Pressed feedback is subtle and immediate. Use motion only for sheets, dialogs, and meaningful state feedback.
+- Android back closes sheets/modals first, then returns through the stack. Forms should remain scrollable above the keyboard.

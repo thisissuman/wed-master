@@ -34,6 +34,14 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 **Consequence:** Android development requires a local SDK/emulator and Java runtime. Sentry is installed but remains unconfigured until a private-alpha project/DSN exists.
 
+## 2026-07-13: Restrained planning UI system
+
+**Decision:** Use a warm ivory, deep-plum semantic visual system with summary-first screens, divider-based planning rows, progressive form details, and a single primary action per screen.
+
+**Why:** The first local slice proved the data model but presented too many equal cards, actions, fields, and filters. A disciplined hierarchy makes wedding planning faster to scan without turning the app into an accounting dashboard or decorative invitation.
+
+**Consequence:** New features must reuse the shared UI primitives, keep filters out of the default view, and justify a card or new accent colour. Event ordering remains stored but is not a primary interaction until a validated need for reordering returns.
+
 ## Template
 
 ```md

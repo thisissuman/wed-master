@@ -1,7 +1,8 @@
+import { todayDateOnly } from "@/lib/dates";
+
 import type { Expense, Task, WorkspaceSnapshot } from "./types";
 
-export const isOverdue = (date?: string, today = new Date().toISOString().slice(0, 10)) =>
-  Boolean(date && date < today);
+export const isOverdue = (date?: string, today = todayDateOnly()) => Boolean(date && date < today);
 export const activeTasks = (tasks: Task[]) => tasks.filter((task) => task.status !== "Cancelled");
 export const completedTaskCount = (tasks: Task[]) =>
   tasks.filter((task) => task.status === "Completed").length;

@@ -1,11 +1,14 @@
-import { ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AppText, Button, DateField, Screen, TextField } from "@/components/ui";
+
+import { DateField, Disclosure, Screen, TextField } from "@/components/ui";
+
 import { eventFormSchema, type EventFormValues } from "./forms";
 import { useWorkspaceMutation } from "./provider";
 import type { WeddingEvent } from "./types";
+import { FormShell } from "./ui";
+
 export function EventForm({ event }: { event?: WeddingEvent }) {
   const mutation = useWorkspaceMutation();
   const {
@@ -24,6 +27,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
         }
       : { name: "", date: "", time: "", location: "", notes: "" },
   });
+
   const save = handleSubmit(async (values) => {
     await mutation.mutateAsync((repositories) =>
       event
@@ -45,6 +49,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
     );
     router.back();
   });
+
   const field = (
     name: keyof EventFormValues,
     label: string,
@@ -67,6 +72,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
       )}
     />
   );
+
   const dateField = (
     <Controller
       control={control}
@@ -81,26 +87,31 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
       )}
     />
   );
+
+  const detailsAlreadyAdded = Boolean(event?.time || event?.location || event?.notes);
+
   return (
     <Screen>
-      <ScrollView contentContainerClassName="gap-lg p-md" keyboardShouldPersistTaps="handled">
-        <View className="gap-2xs">
-          <AppText variant="title">{event ? "Edit event" : "Add event"}</AppText>
-          <AppText variant="caption">All ceremonies remain fully customisable.</AppText>
-        </View>
+      <FormShell
+        description="Ceremonies and gatherings stay fully custom to your family."
+        isSubmitting={isSubmitting || mutation.isPending}
+        onCancel={() => router.back()}
+        onSubmit={save}
+        submitLabel={event ? "Save changes" : "Create event"}
+        title={event ? "Edit event" : "Add event"}
+      >
         {field("name", "Event name", "e.g. Haldi")}
         {dateField}
-        {field("time", "Time", "HH:MM")}
-        {field("location", "Location")}
-        {field("notes", "Notes", undefined, true)}
-        <Button
-          disabled={isSubmitting || mutation.isPending}
-          label={event ? "Save changes" : "Create event"}
-          loading={isSubmitting || mutation.isPending}
-          onPress={save}
-        />
-        <Button label="Cancel" onPress={() => router.back()} variant="ghost" />
-      </ScrollView>
+        <Disclosure
+          description="Add a time, location, or note when you have it."
+          initiallyExpanded={detailsAlreadyAdded}
+          title="Add details"
+        >
+          {field("time", "Start time", "e.g. 18:30")}
+          {field("location", "Location")}
+          {field("notes", "Notes", undefined, true)}
+        </Disclosure>
+      </FormShell>
     </Screen>
   );
 }

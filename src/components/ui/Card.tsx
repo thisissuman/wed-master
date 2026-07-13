@@ -1,14 +1,18 @@
 import { type PropsWithChildren } from "react";
 import { View, type ViewProps } from "react-native";
 
-type CardProps = PropsWithChildren<ViewProps & { className?: string }>;
+type CardProps = PropsWithChildren<
+  ViewProps & { className?: string; variant?: "default" | "subtle" }
+>;
 
-export function Card({ children, className = "", ...props }: CardProps) {
+const variantClassNames = {
+  default: "border border-border bg-surfaceRaised",
+  subtle: "bg-surfaceSubtle",
+} as const;
+
+export function Card({ children, className = "", variant = "default", ...props }: CardProps) {
   return (
-    <View
-      className={`rounded-card border border-border bg-surfaceRaised p-lg shadow-card ${className}`}
-      {...props}
-    >
+    <View className={`rounded-card p-lg ${variantClassNames[variant]} ${className}`} {...props}>
       {children}
     </View>
   );

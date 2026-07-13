@@ -1,5 +1,5 @@
 import { Modal, Pressable, ScrollView, View } from "react-native";
-import { ChevronDown, X } from "lucide-react-native";
+import { Check, ChevronDown, X } from "lucide-react-native";
 import { useState } from "react";
 
 import { tokens } from "@/theme";
@@ -22,7 +22,8 @@ export function SelectField({ error, label, onChange, options, value }: SelectFi
       <Pressable
         accessibilityLabel={`${label}: ${selected?.label ?? "Select"}`}
         accessibilityRole="button"
-        className={`min-h-12 flex-row items-center justify-between rounded-control border bg-surfaceRaised px-md ${error ? "border-danger" : "border-border"}`}
+        android_ripple={{ color: tokens.colors.surfaceSubtle }}
+        className={`min-h-12 flex-row items-center justify-between rounded-control border bg-surfaceRaised px-md active:opacity-80 ${error ? "border-danger" : "border-border"}`}
         onPress={() => setOpen(true)}
       >
         <AppText>{selected?.label ?? "Select"}</AppText>
@@ -35,7 +36,7 @@ export function SelectField({ error, label, onChange, options, value }: SelectFi
       ) : null}
       <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
         <View className="flex-1 justify-end bg-black/30">
-          <View className="max-h-[70%] rounded-t-sheet bg-surface p-lg">
+          <View className="max-h-[70%] rounded-t-sheet bg-surfaceRaised p-lg shadow-sheet">
             <View className="mb-md flex-row items-center justify-between">
               <AppText variant="heading">{label}</AppText>
               <Pressable
@@ -50,8 +51,11 @@ export function SelectField({ error, label, onChange, options, value }: SelectFi
               {options.map((option) => (
                 <Pressable
                   key={option.value}
+                  accessibilityLabel={option.label}
                   accessibilityRole="button"
-                  className="min-h-12 justify-center border-b border-border"
+                  accessibilityState={{ selected: option.value === value }}
+                  android_ripple={{ color: tokens.colors.surfaceSubtle }}
+                  className="min-h-12 flex-row items-center justify-between border-b border-border active:bg-surfaceSubtle"
                   onPress={() => {
                     onChange(option.value);
                     setOpen(false);
@@ -60,6 +64,9 @@ export function SelectField({ error, label, onChange, options, value }: SelectFi
                   <AppText className={option.value === value ? "text-brand" : ""}>
                     {option.label}
                   </AppText>
+                  {option.value === value ? (
+                    <Check color={tokens.colors.brand} size={tokens.iconSize.md} />
+                  ) : null}
                 </Pressable>
               ))}
             </ScrollView>
