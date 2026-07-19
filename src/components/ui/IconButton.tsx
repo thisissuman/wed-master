@@ -1,25 +1,27 @@
 import type { LucideIcon } from "lucide-react-native";
-import { Pressable, type PressableProps } from "react-native";
+import type { PressableProps, StyleProp, ViewStyle } from "react-native";
 
 import { tokens } from "@/theme";
+import { MotionPressable } from "./MotionPressable";
 
-type IconButtonProps = Omit<PressableProps, "children"> & {
+type IconButtonProps = Omit<PressableProps, "children" | "style"> & {
   accessibilityLabel: string;
   icon: LucideIcon;
   size?: keyof typeof tokens.iconSize;
-  variant?: "brand" | "default" | "subtle";
+  style?: StyleProp<ViewStyle>;
+  variant?: "default" | "primary" | "subtle";
 };
 
 const backgroundClassByVariant = {
-  brand: "bg-brand",
   default: "bg-transparent",
-  subtle: "bg-surfaceSubtle",
+  primary: "bg-primary",
+  subtle: "bg-surfaceMuted",
 } as const;
 
 const iconColorByVariant = {
-  brand: tokens.colors.brandOn,
   default: tokens.colors.textPrimary,
-  subtle: tokens.colors.brand,
+  primary: tokens.colors.onPrimary,
+  subtle: tokens.colors.primary,
 } as const;
 
 export function IconButton({
@@ -31,14 +33,15 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.surfaceSubtle }}
+      android_ripple={{ color: tokens.colors.surfaceMuted }}
       className={`min-h-12 min-w-12 items-center justify-center rounded-control active:opacity-80 ${backgroundClassByVariant[variant]} ${className}`}
+      pressedScale={0.94}
       {...props}
     >
       <Icon color={iconColorByVariant[variant]} size={tokens.iconSize[size]} />
-    </Pressable>
+    </MotionPressable>
   );
 }

@@ -9,10 +9,10 @@ export function ErrorState({ message, onRetry, title = "Something went wrong" }:
   return (
     <View
       accessibilityRole="alert"
-      className="items-start gap-sm rounded-card border border-danger bg-surfaceRaised p-lg"
+      className="items-start gap-sm rounded-card border border-danger bg-elevatedSurface p-lg"
     >
       <AppText variant="heading">{title}</AppText>
-      <AppText className="text-textSecondary">{message}</AppText>
+      <AppText tone="muted">{message}</AppText>
       {onRetry ? <Button label="Try again" onPress={onRetry} variant="secondary" /> : null}
     </View>
   );

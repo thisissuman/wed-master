@@ -3,6 +3,12 @@ export function isDateOnly(value: string): boolean {
 }
 
 const dateFromDateOnly = (value: string) => new Date(`${value}T12:00:00`);
+const MILLISECONDS_PER_DAY = 86_400_000;
+
+const utcTimeFromDateOnly = (value: string) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
+};
 
 export function toDateOnly(date: Date): string {
   const year = date.getFullYear();
@@ -13,6 +19,16 @@ export function toDateOnly(date: Date): string {
 
 export function todayDateOnly(date = new Date()): string {
   return toDateOnly(date);
+}
+
+export function daysUntilDateOnly(target: string, today = todayDateOnly()): number {
+  if (!isDateOnly(target) || !isDateOnly(today)) {
+    throw new Error("Date-only values must use YYYY-MM-DD.");
+  }
+
+  return Math.round(
+    (utcTimeFromDateOnly(target) - utcTimeFromDateOnly(today)) / MILLISECONDS_PER_DAY,
+  );
 }
 
 export function formatDateOnly(value: string, options?: Intl.DateTimeFormatOptions): string {

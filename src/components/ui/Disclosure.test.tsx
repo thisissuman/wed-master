@@ -13,10 +13,10 @@ describe("Disclosure", () => {
 
     expect(screen.queryByText("Optional field")).toBeNull();
 
-    fireEvent.press(screen.getByRole("button", { name: "Add details" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Add details" }));
     expect(await screen.findByText("Optional field")).toBeTruthy();
 
-    fireEvent.press(screen.getByRole("button", { name: "Add details" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Add details" }));
     await waitFor(() => expect(screen.queryByText("Optional field")).toBeNull());
   });
 });

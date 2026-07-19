@@ -1,0 +1,327 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Mangalya - More</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=EB+Garamond:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "tertiary": "#440f00",
+                  "primary-fixed-dim": "#accec0",
+                  "on-primary-fixed": "#002118",
+                  "inverse-on-surface": "#f1f1ef",
+                  "surface-bright": "#f9f9f7",
+                  "on-tertiary": "#ffffff",
+                  "on-primary": "#ffffff",
+                  "tertiary-fixed": "#ffdbd0",
+                  "background": "#f9f9f7",
+                  "tertiary-container": "#681d01",
+                  "secondary-container": "#fed488",
+                  "primary-fixed": "#c7eadc",
+                  "on-secondary-fixed-variant": "#5d4201",
+                  "surface": "#f9f9f7",
+                  "tertiary-fixed-dim": "#ffb59d",
+                  "surface-dim": "#dadad8",
+                  "on-secondary": "#ffffff",
+                  "inverse-primary": "#accec0",
+                  "error": "#ba1a1a",
+                  "on-primary-fixed-variant": "#2e4d42",
+                  "surface-container-high": "#e8e8e6",
+                  "secondary-fixed": "#ffdea5",
+                  "on-error": "#ffffff",
+                  "surface-container-low": "#f4f4f1",
+                  "outline": "#727975",
+                  "surface-container-lowest": "#ffffff",
+                  "on-error-container": "#93000a",
+                  "on-tertiary-fixed-variant": "#7d2c0e",
+                  "surface-tint": "#456559",
+                  "surface-container-highest": "#e2e3e0",
+                  "on-surface": "#1a1c1b",
+                  "on-surface-variant": "#414845",
+                  "outline-variant": "#c1c8c4",
+                  "on-secondary-fixed": "#261900",
+                  "secondary": "#775a19",
+                  "primary": "#06271e",
+                  "on-background": "#1a1c1b",
+                  "primary-container": "#1e3d33",
+                  "surface-container": "#eeeeec",
+                  "on-tertiary-container": "#ef825d",
+                  "secondary-fixed-dim": "#e9c176",
+                  "on-secondary-container": "#785a1a",
+                  "surface-variant": "#e2e3e0",
+                  "on-tertiary-fixed": "#390c00",
+                  "error-container": "#ffdad6",
+                  "on-primary-container": "#86a89b",
+                  "inverse-surface": "#2f3130"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "xxl": "32px",
+                  "container_padding": "20px",
+                  "xl": "24px",
+                  "lg": "20px",
+                  "sm": "8px",
+                  "xs": "4px",
+                  "unit": "4px",
+                  "gutter": "16px",
+                  "md": "16px"
+          },
+          "fontFamily": {
+                  "headline-lg": [
+                          "EB Garamond"
+                  ],
+                  "title-lg": [
+                          "Manrope"
+                  ],
+                  "body-md": [
+                          "Manrope"
+                  ],
+                  "label-lg": [
+                          "Manrope"
+                  ],
+                  "display-lg": [
+                          "EB Garamond"
+                  ],
+                  "body-lg": [
+                          "Manrope"
+                  ],
+                  "label-md": [
+                          "Manrope"
+                  ],
+                  "headline-md": [
+                          "EB Garamond"
+                  ]
+          },
+          "fontSize": {
+                  "headline-lg": [
+                          "28px",
+                          {
+                                  "lineHeight": "36px",
+                                  "fontWeight": "500"
+                          }
+                  ],
+                  "title-lg": [
+                          "18px",
+                          {
+                                  "lineHeight": "24px",
+                                  "fontWeight": "600"
+                          }
+                  ],
+                  "body-md": [
+                          "14px",
+                          {
+                                  "lineHeight": "20px",
+                                  "fontWeight": "400"
+                          }
+                  ],
+                  "label-lg": [
+                          "12px",
+                          {
+                                  "lineHeight": "16px",
+                                  "letterSpacing": "0.05em",
+                                  "fontWeight": "600"
+                          }
+                  ],
+                  "display-lg": [
+                          "32px",
+                          {
+                                  "lineHeight": "40px",
+                                  "letterSpacing": "-0.02em",
+                                  "fontWeight": "600"
+                          }
+                  ],
+                  "body-lg": [
+                          "16px",
+                          {
+                                  "lineHeight": "24px",
+                                  "fontWeight": "400"
+                          }
+                  ],
+                  "label-md": [
+                          "11px",
+                          {
+                                  "lineHeight": "14px",
+                                  "fontWeight": "500"
+                          }
+                  ],
+                  "headline-md": [
+                          "24px",
+                          {
+                                  "lineHeight": "32px",
+                                  "fontWeight": "500"
+                          }
+                  ]
+          }
+  },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen pb-24 relative overflow-x-hidden">
+<!-- Background Decoration -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-[url('placeholder')] bg-no-repeat bg-right-top bg-contain opacity-40 pointer-events-none" data-alt="Subtle, elegant gold and ivory botanical line art illustration of traditional Indian wedding flowers and vines, delicate strokes, low contrast, positioned in the top right corner against an ivory background." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuALFKDM33gk9gLQIDR5QgxBa3nWrHfjkoUbEzp-R1lI9C6_YpOAD_JHD1jxXQ2JPjdel4H7L2dFgNEi8GzFRisR8eUvfxVbBm3emSclYc8DkPO2JXvdBUNOSq-SOIGpnP_7--IFvgvC4rjcxlun6Xgbti12MgvnVGEk57aikWOhsItb3dea6rfLDB-og6oDDY30keisN4QvG1mgwPLGylAqps55AWMlaPC7zsiqBcVC87slmV4fLHaa8zMAvtvvgROPGW2ebz2Ovhda')"></div>
+<div class="absolute bottom-16 left-0 w-48 h-48 bg-[url('placeholder')] bg-no-repeat bg-left-bottom bg-contain opacity-40 pointer-events-none" data-alt="Subtle, elegant gold and ivory botanical line art illustration of traditional Indian wedding flowers and vines, delicate strokes, low contrast, positioned in the bottom left corner against an ivory background." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuALFKDM33gk9gLQIDR5QgxBa3nWrHfjkoUbEzp-R1lI9C6_YpOAD_JHD1jxXQ2JPjdel4H7L2dFgNEi8GzFRisR8eUvfxVbBm3emSclYc8DkPO2JXvdBUNOSq-SOIGpnP_7--IFvgvC4rjcxlun6Xgbti12MgvnVGEk57aikWOhsItb3dea6rfLDB-og6oDDY30keisN4QvG1mgwPLGylAqps55AWMlaPC7zsiqBcVC87slmV4fLHaa8zMAvtvvgROPGW2ebz2Ovhda'); transform: rotate(180deg);"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface shadow-sm border-b border-outline-variant/30 flex justify-between items-center px-container_padding py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border border-secondary-fixed-dim flex items-center justify-center text-secondary font-headline-md text-headline-md">
+        M
+      </div>
+<div>
+<h1 class="font-headline-md text-headline-md font-medium text-primary leading-tight">Mangalya</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Your Wedding, Beautifully Organized</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2.5 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-lg text-title-lg">
+        SS
+      </div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-24 px-container_padding max-w-2xl mx-auto relative z-10">
+<!-- Page Header -->
+<div class="mb-xl">
+<h2 class="font-display-lg text-display-lg text-primary mb-1">More</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Helpful tools and extra features</p>
+</div>
+<!-- Featured Shortcuts -->
+<div class="flex gap-md mb-xl">
+<!-- Planning Card -->
+<button class="flex-1 flex items-center justify-between bg-surface-container-low rounded-[20px] p-3 border border-[#E5D1B0]/50 shadow-[0px_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">event_note</span>
+</div>
+<span class="font-title-lg text-[15px] text-on-surface">Planning</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
+</button>
+<!-- Support Card -->
+<button class="flex-1 flex items-center justify-between bg-surface-container-low rounded-[20px] p-3 border border-[#E5D1B0]/50 shadow-[0px_2px_8px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="support_agent">headset_mic</span>
+</div>
+<span class="font-title-lg text-[15px] text-on-surface">Support</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
+</button>
+</div>
+<!-- Feature Grid -->
+<div class="grid grid-cols-2 gap-md mb-xl">
+<!-- Settings -->
+<button class="bg-surface-container-lowest rounded-[20px] p-md border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] text-left relative active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined absolute top-4 right-4 text-on-surface-variant text-[20px]">chevron_right</span>
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-1">Settings</h3>
+<p class="font-body-md text-[13px] leading-[18px] text-on-surface-variant">Manage your preferences and app settings</p>
+</button>
+<!-- Guests -->
+<button class="bg-surface-container-lowest rounded-[20px] p-md border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] text-left relative active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined absolute top-4 right-4 text-on-surface-variant text-[20px]">chevron_right</span>
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+</div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-1">Guests</h3>
+<p class="font-body-md text-[13px] leading-[18px] text-on-surface-variant">View, manage and organize your guest list</p>
+</button>
+<!-- Received Gifts -->
+<button class="bg-surface-container-lowest rounded-[20px] p-md border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] text-left relative active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined absolute top-4 right-4 text-on-surface-variant text-[20px]">chevron_right</span>
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined" data-icon="featured_seasonal_and_gifts">card_giftcard</span>
+</div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-1">Received Gifts</h3>
+<p class="font-body-md text-[13px] leading-[18px] text-on-surface-variant">Track and manage the gifts you receive</p>
+</button>
+<!-- Backup & Export -->
+<button class="bg-surface-container-lowest rounded-[20px] p-md border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] text-left relative active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined absolute top-4 right-4 text-on-surface-variant text-[20px]">chevron_right</span>
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-1">Backup &amp; Export</h3>
+<p class="font-body-md text-[13px] leading-[18px] text-on-surface-variant">Backup your data and export important details</p>
+</button>
+<!-- Emergency Contacts -->
+<button class="bg-surface-container-lowest rounded-[20px] p-md border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] text-left relative active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined absolute top-4 right-4 text-on-surface-variant text-[20px]">chevron_right</span>
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-1">Emergency Contacts</h3>
+<p class="font-body-md text-[13px] leading-[18px] text-on-surface-variant">Add and manage important contact details</p>
+</button>
+<!-- About the App -->
+<button class="bg-surface-container-lowest rounded-[20px] p-md border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] text-left relative active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined absolute top-4 right-4 text-on-surface-variant text-[20px]">chevron_right</span>
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined" data-icon="info">info</span>
+</div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-1">About the App</h3>
+<p class="font-body-md text-[13px] leading-[18px] text-on-surface-variant">Learn more about Mangalya and our mission</p>
+</button>
+</div>
+<!-- Feedback Card -->
+<button class="w-full bg-surface-container-lowest rounded-[20px] p-4 border border-[#E5D1B0]/40 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] flex items-center justify-between text-left active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-[14px] bg-primary-fixed/30 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined" data-icon="chat">chat_bubble_outline</span>
+</div>
+<div>
+<h3 class="font-title-lg text-[16px] text-on-surface mb-0.5">Feedback</h3>
+<p class="font-body-md text-[13px] text-on-surface-variant">Share your thoughts and help us improve</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
+</button>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center bg-surface shadow-[0px_-4px_20px_rgba(0,0,0,0.04)] z-50 h-[72px] pb-safe border-t border-outline-variant/20">
+<button class="flex flex-col items-center justify-center w-16 h-full text-on-surface-variant pt-[2px] transition-all duration-200 hover:bg-surface-container-low">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="home">home</span>
+<span class="font-label-md text-[11px]">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-on-surface-variant pt-[2px] transition-all duration-200 hover:bg-surface-container-low">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-[11px]">Plan</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-on-surface-variant pt-[2px] transition-all duration-200 hover:bg-surface-container-low">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="payments">payments</span>
+<span class="font-label-md text-[11px]">Money</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-tertiary border-t-2 border-tertiary pt-[0px] bg-surface-container-lowest transition-all duration-200">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="widgets" data-weight="fill" style="font-variation-settings: 'FILL' 1;">widgets</span>
+<span class="font-label-md text-[11px] font-semibold">More</span>
+</button>
+</nav>
+<style>
+    /* Support for iPhone safe area padding at the bottom */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
+</body></html>

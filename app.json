@@ -13,7 +13,7 @@
     "android": {
       "package": "com.suman.wedmaster",
       "adaptiveIcon": {
-        "backgroundColor": "#5A233E",
+        "backgroundColor": "#FBF7F4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -29,16 +29,29 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#5A233E",
+          "backgroundColor": "#FBF7F4",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
       ],
       "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": false,
+          "microphonePermission": false,
+          "photosPermission": "Allow Mangalya to choose a wedding cover photo."
+        }
+      ],
       "expo-secure-store",
       "@sentry/react-native",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-font"
     ],
+    "androidNavigationBar": {
+      "backgroundColor": "#FBF7F4",
+      "barStyle": "dark-content"
+    },
     "experiments": {
       "typedRoutes": true
     }

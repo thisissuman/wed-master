@@ -1,4 +1,5 @@
 import { Modal, View } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 
 import { AppText } from "./AppText";
 import { Button } from "./Button";
@@ -24,16 +25,22 @@ export function ConfirmationDialog({
   title,
   visible,
 }: ConfirmationDialogProps) {
+  const reduceMotion = useReducedMotion();
   return (
-    <Modal animationType="fade" onRequestClose={onCancel} transparent visible={visible}>
-      <View className="flex-1 items-center justify-center bg-black/30 p-md">
+    <Modal
+      animationType={reduceMotion ? "none" : "fade"}
+      onRequestClose={onCancel}
+      transparent
+      visible={visible}
+    >
+      <View className="flex-1 items-center justify-center bg-overlay p-md">
         <View
           accessibilityRole="alert"
-          className="w-full gap-lg rounded-sheet bg-surfaceRaised p-xl shadow-sheet"
+          className="w-full gap-lg rounded-sheet bg-elevatedSurface p-xl shadow-elevated"
         >
           <View className="gap-xs">
             <AppText variant="heading">{title}</AppText>
-            <AppText className="text-textSecondary">{description}</AppText>
+            <AppText tone="muted">{description}</AppText>
           </View>
           <View className="flex-row gap-sm">
             <Button className="flex-1" label={cancelLabel} onPress={onCancel} variant="secondary" />

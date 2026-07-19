@@ -2,22 +2,22 @@ import { View } from "react-native";
 
 import { AppText } from "./AppText";
 
-export type StatusBadgeTone = "brand" | "danger" | "neutral" | "success" | "warning";
+export type StatusBadgeTone = "danger" | "neutral" | "primary" | "success" | "warning";
 
 const toneClassNames: Record<StatusBadgeTone, string> = {
-  brand: "bg-brandSoft",
   danger: "bg-dangerSoft",
-  neutral: "bg-surfaceSubtle",
+  neutral: "bg-surfaceMuted",
+  primary: "bg-primarySoft",
   success: "bg-successSoft",
   warning: "bg-warningSoft",
 };
 
-const textClassNames: Record<StatusBadgeTone, string> = {
-  brand: "text-brand",
-  danger: "text-danger",
-  neutral: "text-textSecondary",
-  success: "text-success",
-  warning: "text-warning",
+const textTones: Record<StatusBadgeTone, "danger" | "muted" | "primary" | "success" | "warning"> = {
+  danger: "danger",
+  neutral: "muted",
+  primary: "primary",
+  success: "success",
+  warning: "warning",
 };
 
 type StatusBadgeProps = { label: string; tone: StatusBadgeTone };
@@ -28,7 +28,7 @@ export function StatusBadge({ label, tone }: StatusBadgeProps) {
       accessibilityLabel={label}
       className={`self-start rounded-control px-sm py-2xs ${toneClassNames[tone]}`}
     >
-      <AppText className={textClassNames[tone]} variant="caption">
+      <AppText tone={textTones[tone]} variant="caption">
         {label}
       </AppText>
     </View>

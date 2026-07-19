@@ -13,11 +13,11 @@ export function PlaceholderScreen({ children, description, title }: PlaceholderS
       <ScrollView contentContainerClassName="gap-xl p-md">
         <View className="gap-xs">
           <AppText variant="title">{title}</AppText>
-          <AppText className="text-textSecondary">{description}</AppText>
+          <AppText tone="muted">{description}</AppText>
         </View>
         <Card>
           <AppText variant="heading">Foundation placeholder</AppText>
-          <AppText className="mt-xs text-textSecondary">
+          <AppText className="mt-xs" tone="muted">
             This destination is ready for its first complete vertical slice.
           </AppText>
         </Card>

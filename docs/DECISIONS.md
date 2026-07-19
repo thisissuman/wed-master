@@ -42,6 +42,38 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 **Consequence:** New features must reuse the shared UI primitives, keep filters out of the default view, and justify a card or new accent colour. Event ordering remains stored but is not a primary interaction until a validated need for reordering returns.
 
+## 2026-07-15: Mangalya local workspace v2 and data-only backups
+
+**Decision:** Evolve the local snapshot to version 2 with migrated people, gifts, contacts, attachments, backup history, and settings fields. Structured backups include records but exclude attachment file bytes.
+
+**Why:** The remaining Stitch-derived flows need real persistence and safe local export without pretending that a JSON file contains receipts or task documents.
+
+**Consequence:** The v1 key remains untouched during migration; imports validate v1/v2 and confirm full replacement. Attachment files are device-local. Reset Demo Data clears them, while full Delete Local Data remains deferred until onboarding can create a valid replacement workspace.
+
+## 2026-07-15: Botanical Mangalya visual direction
+
+**Decision:** The botanical-green, antique-gold, terracotta, EB Garamond, and Manrope system in `docs/UI_SYSTEM.md` supersedes the earlier deep-plum colour direction while retaining its restrained hierarchy principles.
+
+**Why:** The approved Home redesign is now the product's visual anchor for every workspace screen.
+
+**Consequence:** New screens reuse semantic Mangalya tokens and the real navigation shell instead of copying screen-specific Stitch styling or generated bottom bars.
+
+## 2026-07-17: Fixed deep-plum workspace direction
+
+**Decision:** The fixed deep-plum semantic token system and rebuilt Home experience supersede the 2026-07-15 botanical-light direction. Home is the first complete vertical slice; Plan, Money, and More retain their body information architecture while adopting the same chrome, type, contrast, and component contracts.
+
+**Why:** The written Mangalya Home brief is the authoritative product direction. A single dark system avoids maintaining an unvalidated theme toggle while establishing accessible, reusable contracts for progress, task completion, budget health, and local cover media.
+
+**Consequence:** New workspace UI uses `canvas`, semantic surfaces, rose primary, forest secondary, champagne accent, Manrope functional type, and serif only for wordmark/hero roles. `MangalyaHeader` is wordmark-only; the tab bar remains in layout. Cover photos stay device-local and are excluded from structured backups. Blur, chart libraries, looping decoration, and a second theme remain out of scope.
+
+## 2026-07-18: Fixed lavender-and-ivory workspace direction
+
+**Decision:** The light lavender-and-ivory semantic token system and `Final_Home.png`-anchored Home composition supersede the 2026-07-17 deep-plum direction. The app remains a single fixed theme rather than adding a theme toggle.
+
+**Why:** The approved reference establishes a lighter, calmer visual hierarchy while retaining real planning data, Android-first accessibility, and the existing feature architecture.
+
+**Consequence:** Shared chrome, surfaces, text, controls, forms, and statuses use the light semantic tokens. Home shows an open photo/countdown summary, two Focus today tasks, a compact three-metric budget, and four direct creation actions. Live countdown text, progress, and interaction remain code-native; optimized decorative raster assets may supply the static countdown halo and faded Home backdrop without adding runtime image generation or blur dependencies.
+
 ## Template
 
 ```md

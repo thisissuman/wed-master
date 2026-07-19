@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -8,10 +9,16 @@ import { expenseFormSchema, fromPaise, toPaise, type ExpenseFormValues } from ".
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 import { paymentStatuses, type Expense } from "./types";
 import { FormShell } from "./ui";
+import { AttachmentField } from "./files/AttachmentField";
+import { pickWorkspaceAttachment, removeWorkspaceAttachment } from "./files/workspace-files";
+import { toUserMessage } from "@/lib/errors";
 
 export function ExpenseForm({ expense }: { expense?: Expense }) {
   const { data } = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const [receipt, setReceipt] = useState(expense?.receipt);
+  const [attachmentError, setAttachmentError] = useState<string>();
+  const [pickingAttachment, setPickingAttachment] = useState(false);
   const {
     control,
     handleSubmit,
@@ -26,6 +33,8 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
           actual: fromPaise(expense.actualPaise),
           paid: fromPaise(expense.paidPaise),
           paymentStatus: expense.paymentStatus,
+          date: expense.date ?? expense.dueDate ?? "",
+          eventId: expense.eventId ?? "",
           vendorName: expense.vendorName ?? "",
           dueDate: expense.dueDate ?? "",
           notes: expense.notes ?? "",
@@ -37,6 +46,8 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
           actual: "0.00",
           paid: "0.00",
           paymentStatus: "Not Paid",
+          date: "",
+          eventId: "",
           vendorName: "",
           dueDate: "",
           notes: "",
@@ -51,15 +62,21 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
       actualPaise: toPaise(values.actual),
       paidPaise: toPaise(values.paid),
       paymentStatus: values.paymentStatus,
+      date: values.date as Expense["date"],
+      eventId: values.eventId || undefined,
       vendorName: values.vendorName || undefined,
       dueDate: (values.dueDate || undefined) as Expense["dueDate"],
       notes: values.notes || undefined,
+      receipt,
     };
     await mutation.mutateAsync((repositories) =>
       expense
         ? repositories.expenses.updateExpense({ ...expense, ...valuesForStore })
         : repositories.expenses.createExpense(valuesForStore),
     );
+    if (expense?.receipt && expense.receipt.id !== receipt?.id) {
+      removeWorkspaceAttachment(expense.receipt);
+    }
     router.back();
   });
 
@@ -89,7 +106,7 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
   );
 
   const select = (
-    name: "categoryId" | "paymentStatus",
+    name: "categoryId" | "paymentStatus" | "eventId",
     label: string,
     options: { label: string; value: string }[],
   ) => (
@@ -123,14 +140,47 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
     />
   );
 
+  const transactionDateField = (
+    <Controller
+      control={control}
+      name="date"
+      render={({ field }) => (
+        <DateField
+          error={errors.date?.message}
+          label="Expense date"
+          onChange={field.onChange}
+          value={field.value}
+        />
+      )}
+    />
+  );
+
+  const pickReceipt = async () => {
+    setPickingAttachment(true);
+    setAttachmentError(undefined);
+    try {
+      const picked = await pickWorkspaceAttachment();
+      if (picked) {
+        if (receipt && receipt.id !== expense?.receipt?.id) removeWorkspaceAttachment(receipt);
+        setReceipt(picked);
+      }
+    } catch (error) {
+      setAttachmentError(toUserMessage(error));
+    } finally {
+      setPickingAttachment(false);
+    }
+  };
+
   const detailsAlreadyAdded = expense
     ? Boolean(
         expense.estimatedPaise ||
-          expense.paidPaise ||
-          expense.paymentStatus !== "Not Paid" ||
-          expense.vendorName ||
-          expense.dueDate ||
-          expense.notes,
+        expense.paidPaise ||
+        expense.paymentStatus !== "Not Paid" ||
+        expense.vendorName ||
+        expense.eventId ||
+        expense.receipt ||
+        expense.dueDate ||
+        expense.notes,
       )
     : false;
 
@@ -142,6 +192,7 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
         onCancel={() => router.back()}
         onSubmit={save}
         submitLabel={expense ? "Save changes" : "Create expense"}
+        submissionError={mutation.error ? toUserMessage(mutation.error) : undefined}
         title={expense ? "Edit expense" : "Add expense"}
       >
         {text("title", "What is this for?", "e.g. Venue advance")}
@@ -154,6 +205,7 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
           })),
         )}
         {text("actual", "Amount spent (₹)", "0.00", false, "decimal-pad")}
+        {transactionDateField}
         <Disclosure
           description="Add planned, paid, due-date, payee, or note details."
           initiallyExpanded={detailsAlreadyAdded}
@@ -170,8 +222,24 @@ export function ExpenseForm({ expense }: { expense?: Expense }) {
             })),
           )}
           {dueDateField}
+          {select("eventId", "Linked event", [
+            { label: "No linked event", value: "" },
+            ...(data?.events ?? []).map((event) => ({ label: event.name, value: event.id })),
+          ])}
           {text("vendorName", "Payee or vendor")}
           {text("notes", "Notes", undefined, true)}
+          <AttachmentField
+            attachment={receipt}
+            error={attachmentError}
+            label="Receipt or bill"
+            loading={pickingAttachment}
+            onPick={() => void pickReceipt()}
+            onRemove={() => {
+              if (receipt && receipt.id !== expense?.receipt?.id)
+                removeWorkspaceAttachment(receipt);
+              setReceipt(undefined);
+            }}
+          />
         </Disclosure>
       </FormShell>
     </Screen>

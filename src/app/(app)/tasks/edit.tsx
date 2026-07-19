@@ -1,7 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { AppText, LoadingState, Screen } from "@/components/ui";
-import { TaskForm } from "@/features/workspace/TaskForm";
-import { useWorkspace } from "@/features/workspace";
+import { TaskForm, useWorkspace } from "@/features/workspace";
 export default function EditTaskRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useWorkspace();

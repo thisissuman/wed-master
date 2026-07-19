@@ -12,7 +12,7 @@ describe("FilterSheet", () => {
       </FilterSheet>,
     );
 
-    fireEvent.press(screen.getByRole("button", { name: "Clear filters" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Clear filters" }));
 
     expect(onClear).toHaveBeenCalledTimes(1);
   });

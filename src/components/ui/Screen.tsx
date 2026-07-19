@@ -6,7 +6,7 @@ type ScreenProps = PropsWithChildren<SafeAreaViewProps & { className?: string }>
 export function Screen({ children, className = "", ...props }: ScreenProps) {
   return (
     <SafeAreaView
-      className={`flex-1 bg-surface ${className}`}
+      className={`flex-1 bg-canvas ${className}`}
       edges={["top", "left", "right"]}
       {...props}
     >

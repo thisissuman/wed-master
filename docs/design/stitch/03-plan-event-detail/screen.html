@@ -1,0 +1,355 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Event Detail - Mehendi Ceremony</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e3d33',
+            'primary-light': '#2c5246',
+            secondary: '#c85a3c',
+            tertiary: '#d4af37',
+            surface: '#f9f9f7',
+            'surface-container': '#f0f0ea',
+            'on-surface': '#1a1c18',
+            'on-surface-variant': '#43483e',
+            outline: '#74796d',
+          },
+          fontFamily: {
+            serif: ['"EB Garamond"', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          borderRadius: {
+            'xl': '16px',
+            '2xl': '24px',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-styles">
+    body {
+      background-color: #f9f9f7;
+      color: #1a1c18;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, .font-serif {
+      font-family: '"EB Garamond"', serif;
+    }
+
+    .event-card {
+      background: linear-gradient(135deg, #1e3d33 0%, #152b24 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .event-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 50%;
+      background-image: url('https://lh3.googleusercontent.com/aida/AP1WRLvHYEMcxltiNPwmuJAGrPrNsh6Of779Er_k_DBlQrOWsMWCWQyeif8rMlqA5ognVsLdBaYSgIJu73gtOBODBSlfGMwZhdz79Me0CwjkQ0gqX4KpTj-eQE0DiSz7LD8FT-SFlwc5tECySJCUYQk94id-lm45bePxfaJ4JqQhZFBIKrw2FHCHsklGeKyX98xcZxRnLtQ-aqKQQhNVDcUvTs1aWAz8LQtC0x9n1YZhsLAD4Ds0gu0ePEa6-6w');
+      background-size: cover;
+      background-position: right center;
+      background-repeat: no-repeat;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .progress-bar-bg { background-color: rgba(255, 255, 255, 0.2); }
+    .progress-bar-fill { background-color: #d4af37; }
+
+    .status-badge-completed { background-color: #e6f4ea; color: #1e8e3e; }
+    .status-badge-progress { background-color: #fef7e0; color: #b06000; }
+    .status-badge-pending { background-color: #fce8e6; color: #c5221f; }
+
+    .budget-bar-budgeted { background-color: #1e3d33; }
+    .budget-bar-paid { background-color: #5c7c6e; }
+    .budget-bar-outstanding { background-color: #c85a3c; }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="pb-24">
+<!-- BEGIN: Header -->
+<header class="sticky top-0 z-10 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-surface-container">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-surface-container text-primary">
+<i class="fa-solid fa-arrow-left"></i>
+</button>
+<div>
+<h1 class="text-2xl font-serif font-semibold text-primary leading-tight">Mehendi Ceremony</h1>
+<p class="text-sm text-on-surface-variant font-serif">Suman &amp; Sumita</p>
+</div>
+</div>
+<button class="text-secondary font-medium text-sm flex items-center gap-1">
+<i class="fa-solid fa-pen text-xs"></i> Edit
+    </button>
+</header>
+<!-- END: Header -->
+<!-- BEGIN: Main Content -->
+<main class="px-4 py-4 space-y-6">
+<!-- BEGIN: Event Summary Card -->
+<section class="bg-[#f0f4f2] rounded-2xl p-5 text-on-surface shadow-md border border-primary/10">
+<div class="relative z-10 space-y-4 w-full">
+<div class="flex items-start gap-3">
+<i class="fa-regular fa-calendar mt-1 text-primary"></i>
+<div>
+<p class="text-sm font-semibold text-primary">18 Oct 2026, Sunday</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<i class="fa-regular fa-clock mt-1 text-primary"></i>
+<div>
+<p class="text-sm font-semibold text-primary">4:00 PM – 8:00 PM</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<i class="fa-solid fa-location-dot mt-1 text-primary"></i>
+<div>
+<p class="text-sm font-semibold text-primary">Rambagh Palace</p>
+<p class="text-xs text-on-surface-variant">Berhampur, Odisha</p>
+</div>
+</div>
+</div>
+<div class="relative z-10 mt-6 border-t border-primary/10 pt-4">
+<div class="flex justify-between text-xs font-medium mb-2">
+<span class="text-on-surface-variant uppercase tracking-wider">Event Progress</span>
+<span class="text-primary font-bold">5/7 Tasks</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-3 flex-1 rounded-full bg-white border border-primary/10 overflow-hidden p-[2px]">
+<div class="h-full rounded-full bg-gradient-to-r from-primary to-[#d4af37]" style="width: 71%;"></div>
+</div>
+<div class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">71%</div>
+</div>
+</div>
+</section>
+<!-- END: Event Summary Card -->
+<!-- BEGIN: Related Tasks -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-xl font-serif text-primary font-medium">Related Tasks</h2>
+<a class="text-sm text-secondary" href="#">View all</a>
+</div>
+<div class="space-y-3">
+<!-- Task 1 -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-surface-container shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+<i class="fa-solid fa-fan"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Decor &amp; Floral Setup</p>
+<p class="text-xs text-on-surface-variant">Mandap, flowers &amp; mehendi corner</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full text-[10px] font-medium status-badge-completed">Completed</span>
+<i class="fa-regular fa-circle-check text-primary"></i>
+</div>
+</div>
+<!-- Task 2 -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-surface-container shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+<i class="fa-solid fa-hands"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Mehendi Artist</p>
+<p class="text-xs text-on-surface-variant">2 Artists • 4:00 PM</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full text-[10px] font-medium status-badge-progress">In Progress</span>
+<i class="fa-solid fa-chevron-right text-outline text-xs"></i>
+</div>
+</div>
+<!-- Task 3 -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-surface-container shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+<i class="fa-solid fa-gift"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Return Gifts</p>
+<p class="text-xs text-on-surface-variant">150 boxes • The Bombay Store</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full text-[10px] font-medium status-badge-pending">Pending</span>
+<i class="fa-solid fa-chevron-right text-outline text-xs"></i>
+</div>
+</div>
+<!-- Task 4 -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-surface-container shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+<i class="fa-solid fa-chair"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Seating Arrangement</p>
+<p class="text-xs text-on-surface-variant">150 Guests • Chair &amp; Sofa Setup</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full text-[10px] font-medium status-badge-pending">Pending</span>
+<i class="fa-solid fa-chevron-right text-outline text-xs"></i>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Related Tasks -->
+<!-- BEGIN: Event Notes -->
+<section>
+<div class="flex items-center gap-2 mb-3">
+<i class="fa-regular fa-clipboard text-primary"></i>
+<h2 class="text-xl font-serif text-primary font-medium">Event Notes</h2>
+</div>
+<div class="bg-white p-4 rounded-xl border border-surface-container shadow-sm flex items-start justify-between">
+<p class="text-sm text-on-surface-variant leading-relaxed">
+          Bridal mehendi at 4:00 PM. Green &amp; gold theme.<br>
+          Provide welcome drinks &amp; light snacks.
+        </p>
+<i class="fa-solid fa-chevron-right text-outline mt-1 text-sm"></i>
+</div>
+</section>
+<!-- END: Event Notes -->
+<!-- BEGIN: Required Items Summary -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-xl font-serif text-primary font-medium">Required Items Summary</h2>
+<a class="text-sm text-secondary" href="#">View all</a>
+</div>
+<div class="bg-white rounded-xl border border-surface-container p-4 shadow-sm flex justify-between">
+<div class="text-center flex-1 flex flex-col items-center border-r border-surface-container last:border-0">
+<i class="fa-solid fa-tree text-primary mb-1 text-lg"></i>
+<p class="text-sm font-semibold">12/16</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Decor Items</p>
+</div>
+<div class="text-center flex-1 flex flex-col items-center border-r border-surface-container last:border-0">
+<i class="fa-solid fa-hands text-primary mb-1 text-lg"></i>
+<p class="text-sm font-semibold">5/6</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Mehendi Items</p>
+</div>
+<div class="text-center flex-1 flex flex-col items-center border-r border-surface-container last:border-0">
+<i class="fa-solid fa-gift text-primary mb-1 text-lg"></i>
+<p class="text-sm font-semibold">8/10</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Return Gifts</p>
+</div>
+<div class="text-center flex-1 flex flex-col items-center border-r border-surface-container last:border-0">
+<i class="fa-solid fa-pen-ruler text-primary mb-1 text-lg"></i>
+<p class="text-sm font-semibold">6/8</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wide">Other Items</p>
+</div>
+</div>
+</section>
+<!-- END: Required Items Summary -->
+<!-- BEGIN: Linked Vendors -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-xl font-serif text-primary font-medium">Linked Vendors</h2>
+<a class="text-sm text-secondary" href="#">View all</a>
+</div>
+<div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+<!-- Vendor 1 -->
+<div class="flex-shrink-0 w-64 bg-white border border-surface-container rounded-xl p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-[#c2a476] flex flex-col items-center justify-center text-white text-[8px] font-serif leading-none text-center">
+<span class="">Blossom</span><span class="">Decor</span>
+</div>
+<div>
+<p class="text-sm font-medium">Blossom Decor</p>
+<p class="text-xs text-on-surface-variant mb-1">Decorator</p>
+<p class="text-[10px] text-on-surface-variant flex items-center gap-1"><i class="fa-solid fa-phone"></i> 98765 43210</p>
+</div>
+</div>
+<i class="fa-solid fa-chevron-right text-outline text-xs"></i>
+</div>
+<!-- Vendor 2 -->
+<div class="flex-shrink-0 w-64 bg-white border border-surface-container rounded-xl p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex flex-col items-center justify-center text-white text-[8px] font-serif leading-none text-center">
+<span class="">Henna</span><span class="">Artistry</span>
+</div>
+<div>
+<p class="text-sm font-medium">Henna Artistry</p>
+<p class="text-xs text-on-surface-variant mb-1">Mehendi Artist</p>
+<p class="text-[10px] text-on-surface-variant flex items-center gap-1"><i class="fa-solid fa-phone"></i> 91234 56789</p>
+</div>
+</div>
+<i class="fa-solid fa-chevron-right text-outline text-xs"></i>
+</div>
+</div>
+</section>
+<!-- END: Linked Vendors -->
+<!-- BEGIN: Linked Expenses -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-xl font-serif text-primary font-medium">Linked Expenses</h2>
+<a class="text-sm text-secondary" href="#">View all</a>
+</div>
+<div class="bg-white rounded-xl border border-surface-container p-4 shadow-sm">
+<div class="grid grid-cols-4 gap-2 mb-4">
+<div>
+<p class="text-xs text-on-surface-variant mb-1">Budgeted</p>
+<p class="text-sm font-semibold">₹2,80,000</p>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant mb-1">Spent</p>
+<p class="text-sm font-semibold">₹1,85,450</p>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant mb-1">Paid</p>
+<p class="text-sm font-semibold">₹1,45,600</p>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant mb-1">Outstanding</p>
+<p class="text-sm font-semibold">₹39,850</p>
+</div>
+</div>
+<div class="h-2 w-full rounded-full flex overflow-hidden mb-3">
+<div class="budget-bar-paid h-full" style="width: 52%;"></div>
+<div class="bg-[#d4af37] h-full" style="width: 14%;"></div> <!-- Unpaid spent portion -->
+<div class="budget-bar-outstanding h-full" style="width: 34%;"></div> <!-- Remaining budget/outstanding roughly mapped -->
+</div>
+<p class="text-xs text-center text-on-surface-variant">66% of event budget has been spent</p>
+</div>
+</section>
+<!-- END: Linked Expenses -->
+</main>
+<!-- END: Main Content -->
+<!-- BEGIN: Bottom Navigation -->
+<nav class="fixed bottom-0 w-full bg-white border-t border-surface-container flex justify-around items-center py-2 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+<a class="flex flex-col items-center p-2 text-secondary" href="#">
+<i class="fa-solid fa-house mb-1 text-lg"></i>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center p-2 text-primary" href="#">
+<i class="fa-regular fa-calendar-check mb-1 text-lg"></i>
+<span class="text-[10px] font-medium">Plan</span>
+</a>
+<a class="flex flex-col items-center p-2 text-outline" href="#">
+<i class="fa-solid fa-indian-rupee-sign mb-1 text-lg"></i>
+<span class="text-[10px] font-medium">Money</span>
+</a>
+<a class="flex flex-col items-center p-2 text-outline" href="#">
+<i class="fa-solid fa-border-all mb-1 text-lg"></i>
+<span class="text-[10px] font-medium">More</span>
+</a>
+</nav>
+<!-- END: Bottom Navigation -->
+
+
+</body></html>

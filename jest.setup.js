@@ -4,18 +4,14 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 
 jest.mock("lucide-react-native", () => {
   const mockIcon = () => null;
-
-  return {
-    CalendarPlus: mockIcon,
-    CalendarDays: mockIcon,
-    Check: mockIcon,
-    CheckCircle2: mockIcon,
-    CheckSquare2: mockIcon,
-    ChevronDown: mockIcon,
-    Circle: mockIcon,
-    ReceiptIndianRupee: mockIcon,
-    Plus: mockIcon,
-    SlidersHorizontal: mockIcon,
-    X: mockIcon,
-  };
+  return new Proxy(
+    { __esModule: true },
+    {
+      get: (target, property) => target[property] ?? mockIcon,
+    },
+  );
 });
+
+jest.mock("@shopify/flash-list", () => ({
+  FlashList: require("react-native").FlatList,
+}));

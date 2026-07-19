@@ -1,8 +1,16 @@
 import type { LucideIcon } from "lucide-react-native";
-import { ActivityIndicator, Pressable, View, type PressableProps } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  ActivityIndicator,
+  View,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 import { tokens } from "@/theme";
 import { AppText } from "./AppText";
+import { MotionPressable } from "./MotionPressable";
 
 type ButtonVariant = "dangerGhost" | "destructive" | "ghost" | "primary" | "secondary";
 
@@ -10,24 +18,30 @@ const variantClassNames: Record<ButtonVariant, string> = {
   dangerGhost: "bg-transparent",
   destructive: "bg-danger",
   ghost: "bg-transparent",
-  primary: "bg-brand",
-  secondary: "bg-surfaceRaised border border-border",
+  primary: "border border-translucentBorder bg-primary shadow-elevated",
+  secondary: "border border-borderStrong bg-elevatedSurface",
 };
 
 const iconColorByVariant: Record<ButtonVariant, string> = {
   dangerGhost: tokens.colors.danger,
-  destructive: tokens.colors.brandOn,
-  ghost: tokens.colors.brand,
-  primary: tokens.colors.brandOn,
+  destructive: tokens.colors.onPrimary,
+  ghost: tokens.colors.primary,
+  primary: tokens.colors.onPrimary,
   secondary: tokens.colors.textPrimary,
 };
 
-type ButtonProps = Omit<PressableProps, "children"> & {
+type ButtonProps = Omit<PressableProps, "children" | "style"> & {
   icon?: LucideIcon;
   label: string;
   loading?: boolean;
+  style?: StyleProp<ViewStyle>;
   variant?: ButtonVariant;
 };
+
+const primaryActionGradient = [
+  tokens.gradients.primaryAction[0],
+  tokens.gradients.primaryAction[1],
+] as const;
 
 export function Button({
   className = "",
@@ -40,26 +54,42 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ busy: loading, disabled: isDisabled }}
-      android_ripple={{ color: tokens.colors.surfaceSubtle }}
-      disabled={isDisabled}
-      className={`min-h-12 flex-row items-center justify-center gap-xs rounded-control px-lg ${variantClassNames[variant]} ${
-        isDisabled ? "opacity-50" : "active:opacity-80"
-      } ${className}`}
-      {...props}
-    >
+  const content = (
+    <View className="min-h-12 flex-row items-center justify-center gap-xs px-lg">
       {loading ? <ActivityIndicator color={iconColorByVariant[variant]} /> : null}
       {Icon && !loading ? (
         <Icon color={iconColorByVariant[variant]} size={tokens.iconSize.sm} />
       ) : null}
-      <View>
-        <AppText style={{ color: iconColorByVariant[variant] }} variant="label">
-          {loading ? "Loading…" : label}
-        </AppText>
-      </View>
-    </Pressable>
+      <AppText style={{ color: iconColorByVariant[variant] }} variant="label">
+        {loading ? "Loading…" : label}
+      </AppText>
+    </View>
+  );
+
+  return (
+    <MotionPressable
+      accessibilityRole="button"
+      accessibilityState={{ busy: loading, disabled: isDisabled }}
+      android_ripple={{ color: tokens.colors.surfaceMuted }}
+      disabled={isDisabled}
+      className={`min-h-12 overflow-hidden rounded-control ${variantClassNames[variant]} ${
+        isDisabled ? "opacity-50" : "active:opacity-80"
+      } ${className}`}
+      pressedScale={variant === "primary" ? 0.975 : 0.985}
+      {...props}
+    >
+      {variant === "primary" ? (
+        <LinearGradient
+          colors={primaryActionGradient}
+          end={{ x: 1, y: 1 }}
+          start={{ x: 0, y: 0 }}
+          style={{ alignSelf: "stretch" }}
+        >
+          {content}
+        </LinearGradient>
+      ) : (
+        content
+      )}
+    </MotionPressable>
   );
 }

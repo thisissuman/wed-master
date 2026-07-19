@@ -11,8 +11,8 @@ export function LoadingState({ label = "Loading" }: { label?: string }) {
       accessibilityRole="progressbar"
       className="items-center gap-sm py-2xl"
     >
-      <ActivityIndicator color={tokens.colors.brand} />
-      <AppText className="text-textSecondary">{label}</AppText>
+      <ActivityIndicator color={tokens.colors.primary} />
+      <AppText tone="muted">{label}</AppText>
     </View>
   );
 }

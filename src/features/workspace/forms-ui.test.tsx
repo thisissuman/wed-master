@@ -35,22 +35,24 @@ describe("workspace forms", () => {
 
     expect(screen.queryByText("Planned amount (₹)")).toBeNull();
 
-    fireEvent.press(screen.getByRole("button", { name: "Add payment and planning details" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Add payment and planning details" }));
 
     await waitFor(() => {
       expect(screen.getByText("Planned amount (₹)")).toBeTruthy();
     });
   });
 
-  it("keeps new task details collapsed until requested", async () => {
+  it("shows core task planning fields and keeps secondary details collapsed", async () => {
     const screen = await render(<TaskForm />);
 
-    expect(screen.queryByText("Related event")).toBeNull();
+    expect(screen.getByText("Linked event")).toBeTruthy();
+    expect(screen.getByText("Assigned to")).toBeTruthy();
+    expect(screen.queryByText("Status")).toBeNull();
 
-    fireEvent.press(screen.getByRole("button", { name: "Add details" }));
+    await fireEvent.press(screen.getByRole("button", { name: "More task details" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Related event")).toBeTruthy();
+      expect(screen.getByText("Status")).toBeTruthy();
     });
   });
 });

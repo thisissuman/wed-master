@@ -1,7 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { AppText, LoadingState, Screen } from "@/components/ui";
-import { EventForm } from "@/features/workspace/EventForm";
-import { useWorkspace } from "@/features/workspace";
+import { EventForm, useWorkspace } from "@/features/workspace";
 export default function EditEventRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useWorkspace();

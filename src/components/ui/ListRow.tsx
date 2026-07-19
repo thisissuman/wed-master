@@ -46,8 +46,8 @@ export function ListRow({
     <Pressable
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.surfaceSubtle }}
-      className="rounded-control active:bg-surfaceSubtle"
+      android_ripple={{ color: tokens.colors.surfaceMuted }}
+      className="rounded-control active:bg-surfaceMuted"
       onPress={onPress}
     >
       {content}

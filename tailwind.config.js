@@ -9,6 +9,7 @@ module.exports = {
       borderRadius: tokens.radius,
       boxShadow: tokens.elevation,
       colors: tokens.colors,
+      fontFamily: tokens.fontFamily,
       fontSize: tokens.typography,
       spacing: tokens.spacing,
       transitionDuration: tokens.motion,

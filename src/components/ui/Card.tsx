@@ -6,8 +6,8 @@ type CardProps = PropsWithChildren<
 >;
 
 const variantClassNames = {
-  default: "border border-border bg-surfaceRaised",
-  subtle: "bg-surfaceSubtle",
+  default: "border border-borderSubtle bg-elevatedSurface",
+  subtle: "bg-surfaceMuted",
 } as const;
 
 export function Card({ children, className = "", variant = "default", ...props }: CardProps) {

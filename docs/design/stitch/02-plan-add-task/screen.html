@@ -1,0 +1,339 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Mangalya - Add Task</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e2e3e0",
+                        "surface": "#f9f9f7",
+                        "on-tertiary-fixed-variant": "#7d2c0e",
+                        "on-secondary-container": "#785a1a",
+                        "secondary-fixed": "#ffdea5",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#002118",
+                        "surface-container": "#eeeeec",
+                        "error": "#ba1a1a",
+                        "secondary": "#775a19",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#accec0",
+                        "surface-variant": "#e2e3e0",
+                        "surface-bright": "#f9f9f7",
+                        "outline-variant": "#c1c8c4",
+                        "background": "#f9f9f7",
+                        "surface-container-high": "#e8e8e6",
+                        "on-primary-container": "#86a89b",
+                        "primary": "#06271e",
+                        "on-surface": "#1a1c1b",
+                        "outline": "#727975",
+                        "tertiary": "#440f00",
+                        "surface-tint": "#456559",
+                        "tertiary-fixed-dim": "#ffb59d",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#c7eadc",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#accec0",
+                        "tertiary-container": "#681d01",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dadad8",
+                        "secondary-fixed-dim": "#e9c176",
+                        "primary-container": "#1e3d33",
+                        "on-background": "#1a1c1b",
+                        "secondary-container": "#fed488",
+                        "inverse-surface": "#2f3130",
+                        "on-secondary-fixed-variant": "#5d4201",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#ef825d",
+                        "surface-container-low": "#f4f4f1",
+                        "inverse-on-surface": "#f1f1ef",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdbd0",
+                        "on-secondary-fixed": "#261900",
+                        "on-primary-fixed-variant": "#2e4d42",
+                        "on-tertiary-fixed": "#390c00",
+                        "on-surface-variant": "#414845"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "container_padding": "20px",
+                        "xl": "24px",
+                        "xxl": "32px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "lg": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["EB Garamond"],
+                        "display-lg": ["EB Garamond"],
+                        "body-lg": ["Manrope"],
+                        "title-lg": ["Manrope"],
+                        "label-md": ["Manrope"],
+                        "label-lg": ["Manrope"],
+                        "headline-lg": ["EB Garamond"],
+                        "body-md": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-md": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "label-lg": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f4f4f1; /* surface-container-low */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-right: 16px;
+        }
+        .form-input-container {
+            flex-grow: 1;
+        }
+        .form-input {
+            width: 100%;
+            background-color: transparent;
+            border: 1px solid #e2e3e0; /* surface-variant */
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            color: #1a1c1b;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #06271e; /* primary */
+        }
+        .form-label {
+            display: block;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1a1c1b;
+            margin-bottom: 8px;
+        }
+        .required-asterisk {
+            color: #ba1a1a;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col pb-24 font-body-md">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-50 bg-surface flex items-center justify-between px-container_padding h-16 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full border border-secondary-fixed-dim flex items-center justify-center">
+<span class="font-display-lg text-secondary text-lg leading-none">M</span>
+</div>
+<h1 class="font-headline-md text-headline-md text-primary">Mangalya</h1>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-150 relative">
+<span class="material-symbols-outlined text-primary">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-tertiary-container rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-title-lg text-sm">
+                SS
+            </div>
+</div>
+</header>
+<main class="flex-grow px-container_padding pt-6 pb-8">
+<!-- Header Section -->
+<div class="mb-8">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-2">Add Task</h2>
+<p class="font-body-md text-on-surface-variant flex items-center gap-2 flex-wrap">
+                Suman &amp; Sumita <span class="text-xs text-outline">•</span> Berhampur, Odisha <span class="text-xs text-outline">•</span> Odia Hindu Wedding
+            </p>
+</div>
+<!-- Main Form Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-variant p-4 mb-6 space-y-6">
+<!-- Task Title -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">edit_square</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Task title <span class="required-asterisk">*</span></label>
+<input class="form-input bg-surface-container-low" placeholder="e.g., Book decorator, Confirm venue" type="text" value="Confirm wedding pandit">
+<p class="text-xs text-on-surface-variant mt-2 ml-1">e.g., Book decorator, Confirm venue</p>
+</div>
+</div>
+<!-- Linked Event -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">event_available</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Linked event <span class="required-asterisk">*</span></label>
+<div class="relative">
+<select class="form-input bg-surface-container-low appearance-none cursor-pointer">
+<option>Mehendi Ceremony</option>
+<option>Sangeet</option>
+<option>Haldi</option>
+<option>Wedding</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-2 ml-1 flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 14px;">calendar_today</span>
+                        18 Oct 2026, 4:00 PM • Berhampur, Odisha
+                    </p>
+</div>
+</div>
+<!-- Due Date -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">calendar_clock</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Due date <span class="required-asterisk">*</span></label>
+<div class="relative">
+<input class="form-input bg-surface-container-low cursor-pointer" readonly="" type="text" value="25 Jun 2026">
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">calendar_today</span>
+</div>
+</div>
+</div>
+<!-- Priority -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">flag</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Priority <span class="required-asterisk">*</span></label>
+<div class="relative">
+<select class="form-input bg-surface-container-low appearance-none cursor-pointer text-tertiary-container font-medium">
+<option>High</option>
+<option>Medium</option>
+<option>Low</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Status -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">format_list_bulleted</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Status <span class="required-asterisk">*</span></label>
+<div class="relative">
+<select class="form-input bg-surface-container-low appearance-none cursor-pointer">
+<option>To Do</option>
+<option>In Progress</option>
+<option>Done</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Optional Section -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-variant mb-8 overflow-hidden">
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-low text-left">
+<span class="font-body-md font-medium text-on-surface">More details <span class="text-on-surface-variant font-normal">(Optional)</span></span>
+<span class="material-symbols-outlined text-on-surface-variant">expand_less</span>
+</button>
+<div class="p-4 space-y-6">
+<!-- Responsible Person -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Responsible person</label>
+<div class="relative">
+<select class="form-input bg-surface-container-low appearance-none cursor-pointer">
+<option>Anuradha Sahu (Mausi)</option>
+<option>Suman</option>
+<option>Sumita</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Description -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">description</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Description</label>
+<textarea class="form-input bg-surface-container-low resize-none h-24" placeholder="Enter description">Confirm availability of the pandit and finalize muhurta, rituals, and dakshina.</textarea>
+</div>
+</div>
+<!-- Notes -->
+<div class="flex items-start">
+<div class="icon-container mt-1">
+<span class="material-symbols-outlined text-on-surface-variant">sticky_note_2</span>
+</div>
+<div class="form-input-container">
+<label class="form-label">Notes</label>
+<textarea class="form-input bg-surface-container-low resize-none h-16" placeholder="Add any additional notes..."></textarea>
+</div>
+</div>
+</div>
+</div>
+<!-- Save Button -->
+<button class="w-full bg-tertiary-container hover:bg-tertiary text-on-tertiary font-title-lg text-lg py-4 rounded-lg shadow-md transition-colors active:scale-[0.98] duration-150">
+            Save task
+        </button>
+</main>
+<!-- BottomNavBar (Suppressed intentionally as this is a focused task/transactional screen, but included per prompt requirement if strictly needed, overriding logic based on explicit prompt instruction for 'Navigation: Standard bottom navigation bar') -->
+<nav class="fixed bottom-0 w-full h-[64px] z-50 bg-surface-container-lowest border-t border-outline-variant shadow-lg flex justify-around items-center px-4 md:hidden">
+<a class="flex flex-col items-center text-on-surface-variant pt-1 hover:text-primary transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-lg text-label-lg">Home</span>
+</a>
+<a class="flex flex-col items-center text-tertiary border-t-2 border-tertiary pt-1 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="font-label-lg text-label-lg">Plan</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant pt-1 hover:text-primary transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mb-1">payments</span>
+<span class="font-label-lg text-label-lg">Money</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant pt-1 hover:text-primary transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mb-1">menu</span>
+<span class="font-label-lg text-label-lg">More</span>
+</a>
+</nav>
+</body></html>

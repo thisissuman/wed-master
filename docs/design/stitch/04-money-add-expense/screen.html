@@ -1,0 +1,460 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Add Expense - Mangalya</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed-variant": "#5d4201",
+                      "tertiary-container": "#681d01",
+                      "background": "#f9f9f7",
+                      "on-primary-fixed": "#002118",
+                      "on-background": "#1a1c1b",
+                      "primary-container": "#1e3d33",
+                      "on-surface-variant": "#414845",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#ffb59d",
+                      "on-tertiary-container": "#ef825d",
+                      "surface-container-highest": "#e2e3e0",
+                      "on-primary-container": "#86a89b",
+                      "on-secondary-fixed": "#261900",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed-variant": "#2e4d42",
+                      "error": "#ba1a1a",
+                      "primary": "#06271e",
+                      "surface": "#f9f9f7",
+                      "secondary": "#775a19",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#2f3130",
+                      "on-secondary-container": "#785a1a",
+                      "on-primary": "#ffffff",
+                      "outline-variant": "#c1c8c4",
+                      "outline": "#727975",
+                      "surface-container": "#eeeeec",
+                      "primary-fixed": "#c7eadc",
+                      "secondary-fixed": "#ffdea5",
+                      "primary-fixed-dim": "#accec0",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-high": "#e8e8e6",
+                      "surface-dim": "#dadad8",
+                      "surface-container-low": "#f4f4f1",
+                      "on-tertiary-fixed-variant": "#7d2c0e",
+                      "surface-tint": "#456559",
+                      "secondary-container": "#fed488",
+                      "tertiary-fixed": "#ffdbd0",
+                      "tertiary": "#440f00",
+                      "surface-bright": "#f9f9f7",
+                      "surface-variant": "#e2e3e0",
+                      "on-tertiary-fixed": "#390c00",
+                      "on-surface": "#1a1c1b",
+                      "inverse-on-surface": "#f1f1ef",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#accec0",
+                      "secondary-fixed-dim": "#e9c176"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "sm": "8px",
+                      "container_padding": "20px",
+                      "unit": "4px",
+                      "xl": "24px",
+                      "md": "16px",
+                      "xxl": "32px",
+                      "lg": "20px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "title-lg": [
+                              "Manrope"
+                      ],
+                      "label-lg": [
+                              "Manrope"
+                      ],
+                      "body-lg": [
+                              "Manrope"
+                      ],
+                      "label-md": [
+                              "Manrope"
+                      ],
+                      "body-md": [
+                              "Manrope"
+                      ],
+                      "headline-md": [
+                              "EB Garamond"
+                      ],
+                      "headline-lg": [
+                              "EB Garamond"
+                      ],
+                      "display-lg": [
+                              "EB Garamond"
+                      ]
+              },
+              "fontSize": {
+                      "title-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Custom styles for inputs to match the design */
+        input[type="text"], input[type="number"], select, textarea {
+            background-color: transparent;
+            border: 1px solid rgba(114, 121, 117, 0.2); /* outline/20 */
+            border-radius: 0.5rem; /* lg */
+            padding-left: 2.5rem; /* Space for icon */
+            height: 48px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 14px;
+            color: #1a1c1b;
+            transition: border-color 0.2s;
+        }
+
+        textarea {
+            padding-top: 12px;
+            min-height: 80px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #785a1a; /* on-secondary-container */
+            box-shadow: 0 0 0 1px #785a1a;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23727975%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+        }
+
+        .input-icon-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #727975; /* outline */
+            pointer-events: none;
+            font-size: 20px;
+        }
+
+        .textarea-icon {
+            top: 14px;
+            transform: none;
+        }
+
+        /* Specific override for Amount input to have rupee symbol */
+        .amount-input {
+            padding-left: 2rem;
+        }
+        .rupee-symbol {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #727975;
+            pointer-events: none;
+            font-family: 'Manrope', sans-serif;
+            font-size: 16px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pb-[80px]">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-background flex items-center justify-between px-container_padding h-16 z-40">
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-10 h-10 rounded-full border border-outline-variant/30">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<!-- Simplified Brand Logo for Context -->
+<div class="w-8 h-8 rounded-full border border-secondary flex items-center justify-center">
+<span class="font-headline-md text-secondary">M</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary">Mangalya</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant relative hover:opacity-80 transition-opacity active:scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-on-tertiary-container rounded-full border-2 border-background"></span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary text-label-md flex items-center justify-center font-bold">
+                SS
+            </div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-container_padding pt-4 pb-24 max-w-md mx-auto w-full">
+<!-- Header Section -->
+<div class="mb-6">
+<h1 class="font-headline-lg text-display-lg text-primary mb-1">Add Expense</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Track every expense seamlessly</p>
+</div>
+<form action="#" class="flex flex-col gap-4" method="POST">
+<!-- Essential Details Card -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
+<h2 class="font-title-lg text-title-lg text-on-secondary-container mb-4">Essential details</h2>
+<div class="flex flex-col gap-4">
+<!-- Title -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Title <span class="text-error">*</span></label>
+<div class="input-icon-wrapper">
+<input class="w-full bg-surface-container-low" placeholder="e.g., Catering advance" required="" type="text">
+<span class="material-symbols-outlined input-icon">receipt_long</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Amount -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Amount <span class="text-error">*</span></label>
+<div class="input-icon-wrapper">
+<input class="w-full bg-surface-container-low amount-input" placeholder="0.00" required="" type="number">
+<span class="rupee-symbol">₹</span>
+</div>
+</div>
+<!-- Category -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Category <span class="text-error">*</span></label>
+<div class="input-icon-wrapper">
+<select class="w-full bg-surface-container-low pl-[40px]" required="">
+<option disabled="" selected="" value="">Select category</option>
+<option value="catering">Catering</option>
+<option value="venue">Venue</option>
+<option value="attire">Attire</option>
+</select>
+<span class="material-symbols-outlined input-icon">sell</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Payment Status -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Payment status <span class="text-error">*</span></label>
+<div class="input-icon-wrapper">
+<select class="w-full bg-surface-container-low pl-[40px]" required="">
+<option disabled="" selected="" value="">Select status</option>
+<option value="paid">Paid</option>
+<option value="pending">Pending</option>
+<option value="advance">Advance</option>
+</select>
+<span class="material-symbols-outlined input-icon">credit_card</span>
+</div>
+</div>
+<!-- Date -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Date <span class="text-error">*</span></label>
+<div class="input-icon-wrapper">
+<input class="w-full bg-surface-container-low" onblur="(this.type='text')" onfocus="(this.type='date')" placeholder="Select date" required="" type="text">
+<span class="material-symbols-outlined input-icon">calendar_month</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- More Details Card -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
+<h2 class="font-title-lg text-title-lg text-on-secondary-container mb-4">More details <span class="text-on-surface-variant font-normal text-sm">(Optional)</span></h2>
+<div class="flex flex-col gap-4">
+<!-- Linked Event -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Linked event</label>
+<div class="input-icon-wrapper">
+<select class="w-full bg-surface-container-low pl-[40px]">
+<option disabled="" selected="" value="">Select event</option>
+<option value="mehendi">Mehendi Ceremony</option>
+<option value="sangeet">Sangeet</option>
+<option value="wedding">Wedding</option>
+</select>
+<span class="material-symbols-outlined input-icon">event</span>
+</div>
+</div>
+<!-- Vendor -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Vendor</label>
+<div class="input-icon-wrapper">
+<select class="w-full bg-surface-container-low pl-[40px]">
+<option disabled="" selected="" value="">Select vendor</option>
+<option value="v1">Rambagh Palace</option>
+<option value="v2">Camera Crew</option>
+</select>
+<span class="material-symbols-outlined input-icon">person</span>
+</div>
+</div>
+<!-- Paid Amount -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Paid amount</label>
+<div class="input-icon-wrapper">
+<input class="w-full bg-surface-container-low amount-input" placeholder="0.00" type="number">
+<span class="rupee-symbol">₹</span>
+</div>
+</div>
+<!-- Notes -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Notes</label>
+<div class="input-icon-wrapper">
+<textarea class="w-full bg-surface-container-low" placeholder="Add a note (optional)"></textarea>
+<span class="material-symbols-outlined input-icon textarea-icon">edit</span>
+</div>
+</div>
+<!-- Attachment -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Attachment</label>
+<div class="border-2 border-dashed border-outline-variant/50 rounded-lg bg-surface-container-low p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-outline mb-2">upload</span>
+<span class="font-body-md text-body-md text-on-surface mb-1">Upload receipt or bill</span>
+<span class="font-label-md text-label-md text-on-surface-variant">JPG, PNG or PDF (Max 5MB)</span>
+<input accept=".jpg,.jpeg,.png,.pdf" class="hidden" type="file">
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Action Button (Fixed position above nav if needed, but flowing with content is safer for scrolling) -->
+<div class="mt-4">
+<button class="w-full bg-primary-container text-on-primary py-4 rounded-xl font-body-lg text-body-lg flex items-center justify-center hover:opacity-90 active:scale-[0.98] transition-all" type="submit">
+                    Save expense
+                </button>
+</div>
+</form>
+</main>
+<!-- BottomNavBar -->
+<!-- Suppressed based on semantic mapping rules (Add Expense is a transactional flow with a back button, implying a temporary departure from the main flow).
+         However, the prompt explicitly states: "Navigation: Standard BottomNavBar with 'Money' active."
+         Conflict Resolution: JSON/Prompt overrules general rules if explicitly requested in the prompt. -->
+<nav class="fixed bottom-0 w-full z-50 h-16 bg-surface-container-lowest border-t border-outline-variant/30 flex justify-around items-center px-4 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-1 hover:bg-surface-container-low transition-colors active:scale-90 duration-200 flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1">home_mini</span>
+<span class="font-label-lg text-label-lg">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-1 hover:bg-surface-container-low transition-colors active:scale-90 duration-200 flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1">event_note</span>
+<span class="font-label-lg text-label-lg">Plan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-tertiary-container border-t-2 border-on-tertiary-container pt-1 hover:bg-surface-container-low transition-colors active:scale-90 duration-200 flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-label-lg text-label-lg">Money</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant pt-1 hover:bg-surface-container-low transition-colors active:scale-90 duration-200 flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1">more_horiz</span>
+<span class="font-label-lg text-label-lg">More</span>
+</a>
+</nav>
+<!-- Script to handle file upload visual feedback (basic) -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadArea = document.querySelector('.border-dashed');
+            const fileInput = uploadArea.querySelector('input[type="file"]');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('bg-surface-container');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('bg-surface-container');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('bg-surface-container');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateUploadText(e.dataTransfer.files[0].name);
+                }
+            });
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    updateUploadText(fileInput.files[0].name);
+                }
+            });
+
+            function updateUploadText(filename) {
+                const textSpan = uploadArea.querySelector('.font-body-md');
+                textSpan.textContent = filename;
+                textSpan.classList.add('text-secondary');
+            }
+        });
+    </script>
+</body></html>

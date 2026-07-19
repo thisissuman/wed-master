@@ -1,1 +1,1 @@
-export { formatInr } from "./format";
+export { formatInr, formatInrCompact } from "./format";

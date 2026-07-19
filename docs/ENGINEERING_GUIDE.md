@@ -52,8 +52,8 @@ Use `npm run format` only for deliberate formatting changes. Do not run dependen
 
 Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-safe scrolling, progressive optional fields, and the native Android date picker. Budget-category management remains deferred beyond this first vertical slice.
 
-The Plan tab uses one Events/Tasks segmented control. Task filters for status, priority, event, and overdue state are contained in one sheet with a one-tap reset. The Budget tab uses the same pattern for category and payment status. Event ordering remains persisted in the repository for compatibility, but the earlier/later controls are intentionally not exposed in the simplified product UI.
+The Plan tab uses one Events/Tasks segmented control. Task filters for status, priority, event, and overdue state are contained in one sheet with a one-tap reset. The Budget tab uses the same pattern for category and payment status. Event ordering remains persisted in the repository for compatibility, but the earlier/later controls are intentionally not exposed in the simplified product UI. Form routes use the shared `FormShell` and field primitives; option lists use the shared bounded inline selector rather than feature-specific dropdown modals.
 
-Home has one Add action that opens a task/expense/event chooser; it must remain the only primary quick action on that screen. The Budget tab shows active categories rather than an empty list of every available category. Detail routes use visible back actions and confirmation dialogs for deletion.
+Home exposes four compact direct actions for task, expense, event, and household/guest creation; it does not mount a separate floating Add chooser. The Budget tab shows active categories rather than an empty list of every available category. Detail routes use visible back actions and confirmation dialogs for deletion.
 
 Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.

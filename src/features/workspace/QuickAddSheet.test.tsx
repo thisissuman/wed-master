@@ -17,7 +17,7 @@ describe("QuickAddSheet", () => {
       />,
     );
 
-    fireEvent.press(screen.getByRole("button", { name: "Add Expense" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Add Expense" }));
 
     expect(onAddExpense).toHaveBeenCalledTimes(1);
     expect(onAddTask).not.toHaveBeenCalled();

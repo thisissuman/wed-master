@@ -1,0 +1,220 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Task Detail - Heritage Wedding Planner</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#f9f9f7',
+            'surface-container-low': '#f4f4f1',
+            primary: '#1e3d33',
+            'on-primary': '#ffffff',
+            secondary: '#737775',
+            error: '#ba1a1a',
+            'error-container': '#ffdad6',
+            'on-error-container': '#410002',
+            tertiary: '#4b6358',
+            'tertiary-container': '#cde8db',
+            'on-tertiary-container': '#072017',
+            outline: '#747975',
+            'outline-variant': '#c4c8c4',
+          },
+          fontFamily: {
+            serif: ['EB Garamond', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          borderRadius: {
+            'xl': '0.75rem',
+            '2xl': '1rem',
+            '3xl': '1.5rem',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-utilities">
+    body {
+      background-color: theme('colors.surface');
+      color: theme('colors.primary');
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Hide scrollbar for clean mobile look */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden max-w-md mx-auto relative bg-surface border-x border-outline-variant shadow-lg">
+<!-- BEGIN: Header Section -->
+<header class="flex items-center justify-between px-4 py-3 bg-surface z-10 sticky top-0" data-purpose="app-header">
+<button aria-label="Go back" class="p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
+<svg class="text-primary" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<div class="flex-1 ml-2">
+<h1 class="text-2xl font-serif font-medium text-primary leading-tight">Task Detail</h1>
+<p class="text-sm font-sans text-secondary">Suman &amp; Sumita</p>
+</div>
+<div class="flex items-center gap-3">
+<button aria-label="Notifications" class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors">
+<svg class="text-primary" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-sans font-medium text-sm">
+        SS
+      </div>
+</div>
+</header>
+<!-- END: Header Section -->
+<!-- BEGIN: Main Content Area -->
+<main class="flex-1 overflow-y-auto px-4 pt-2 pb-32" data-purpose="task-details">
+<!-- Task Overview Card -->
+<section class="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-surface-container-low" data-purpose="task-overview">
+<div class="flex gap-4 mb-4">
+<div class="w-14 h-14 rounded-full bg-[#f2efe9] flex items-center justify-center flex-shrink-0">
+<svg class="text-primary" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M2 20h20"></path><path d="M5 20V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12"></path><path d="M9 14v2"></path><path d="M15 14v2"></path><path d="M12 4v2"></path><path d="M12 2v2"></path><path d="M8 2h8"></path></svg>
+</div>
+<div>
+<h2 class="text-2xl font-serif font-medium text-primary mb-2 leading-tight">Confirm wedding venue</h2>
+<div class="flex gap-2 font-sans text-xs font-medium">
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+              High Priority
+            </span>
+<span class="px-2.5 py-1 rounded-full bg-[#f6eddd] text-[#8c6b32]">
+              Pending
+            </span>
+</div>
+</div>
+</div>
+<p class="text-sm font-sans text-secondary leading-relaxed pl-[72px]">
+        Finalize and confirm the wedding venue for the Mehendi and main ceremony.
+      </p>
+</section>
+<!-- Task Metadata List -->
+<section class="bg-white rounded-3xl mb-4 shadow-sm border border-surface-container-low overflow-hidden" data-purpose="task-metadata">
+<!-- Linked Event -->
+<div class="p-4 border-b border-surface-container-low flex items-start gap-4">
+<svg class="text-secondary mt-0.5" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+<div class="flex-1">
+<div class="text-xs font-sans text-secondary mb-1">Linked Event</div>
+<div class="flex justify-between items-center">
+<div class="text-sm font-sans font-medium text-primary">Mehendi Ceremony</div>
+<div class="flex items-center gap-1.5 text-xs font-sans text-secondary">
+<svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+              18 Oct 2026, 4:00 PM
+            </div>
+</div>
+</div>
+</div>
+<!-- Due Date -->
+<div class="p-4 border-b border-surface-container-low flex items-start gap-4">
+<svg class="text-secondary mt-0.5" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+<div class="flex-1 flex justify-between items-center">
+<div>
+<div class="text-xs font-sans text-secondary mb-1">Due Date</div>
+<div class="text-sm font-sans font-medium text-primary">10 Aug 2026 (Sun)</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container text-xs font-medium font-sans">
+            In 18 Days
+          </span>
+</div>
+</div>
+<!-- Responsible -->
+<div class="p-4 border-b border-surface-container-low flex items-center gap-4">
+<svg class="text-secondary" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+<div class="flex-1">
+<div class="text-xs font-sans text-secondary mb-1">Responsible</div>
+<div class="text-sm font-sans font-medium text-primary">Suvash Patnaik</div>
+</div>
+<button aria-label="Call responsible person" class="p-2 rounded-full border border-outline-variant hover:bg-surface-container-low transition-colors">
+<svg class="text-primary" fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+</button>
+</div>
+<!-- Category -->
+<div class="p-4 flex items-start gap-4">
+<svg class="text-secondary mt-0.5" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg>
+<div>
+<div class="text-xs font-sans text-secondary mb-1">Category</div>
+<div class="text-sm font-sans font-medium text-primary">Venue &amp; Logistics</div>
+</div>
+</div>
+</section>
+<!-- Notes Section -->
+<section class="bg-white rounded-3xl mb-4 p-5 shadow-sm border border-surface-container-low" data-purpose="task-notes">
+<div class="flex items-center gap-2 mb-3">
+<svg class="text-primary" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>
+<h3 class="text-lg font-serif font-medium text-primary">Notes</h3>
+</div>
+<p class="text-sm font-sans text-secondary leading-relaxed mb-4">
+        Visited Rambagh Palace, Berhampur. Great ambience and capacity. Need to confirm availability, finalize menu package, and payment terms.
+      </p>
+<div class="flex gap-3 overflow-x-auto pb-2 snap-x">
+<img alt="Venue view 1" class="w-24 h-16 object-cover rounded-xl snap-start flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjhmTb5kaRGy2SvO-7kBKqgYpq9-MhEKQZx2tT9x_WbTcjX9STTq3YJvJ7DAVcm3n3qkHgE0pXSnaVNUJvhSnxBf2owpbFkT2ZrwbG-XzApYaJAK5rWD--xOjFsCy2bumyLtVib8rW5JVgH0IWVcJlQUhtSU7o_pTkvB_a3RmWYxX4OnxQgTs4ZT47K57nHgLk139i4jDWRSFuuOnsJqb1loIsmC8r-vy7EWlXbiulsp4lxV4KI185b1STxWzBBTgfNnKU2iGy_W8F">
+<img alt="Venue view 2" class="w-24 h-16 object-cover rounded-xl snap-start flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcMk8V8MEEt-juwEQfr9w1hd7p3JXPUgu0ZfSvDN-2O-Z6542SlUk3ZmFI9Q3tyzFdNl7Cc9SvFZiYOdN_DAswwvc2LUh_j-i3jMqdMSbwVkoz23wtJK3byEpebYqOBSL2mE5nFGDMvMYKIwuYIJT7KFEgRoYf5VyWwb-fBqYHj3_hkA7knU8G4fNBtBjYsyc9i3e7-fmh9lMh5ORVH-PvApfdgQyLSYuppzAziWh_Va7dEUqcmlmbZYQ7ihB6E-Ays9JLGotxdvJM">
+<img alt="Venue view 3" class="w-24 h-16 object-cover rounded-xl snap-start flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBImbo5VeYSCtpUbBunnANtQwcm_LNZVL4S-kFXS366vSgIfjiBmB2WzxCpzYSROAcAT-KhTl26ZiJEaYltuAr2T6z3V-lv8sDZpFeChZKD-5pFo7K8cAX1N4G5t_hxPiqBDB3SE_x_kQwOTCxlgBIsF-r-NXSfbaYUK_NvThjhsf7835rOZykHW7Ve3u03Kzheb9Al43oufHiwWi5R8gy2ImsQ-aG8HwvODtbomVtezXfGEVBPk1DpQ3vR2Wd6kmm9GaTY9xvmn-pq">
+</div>
+</section>
+<!-- Checklist Section -->
+<section class="bg-white rounded-3xl p-5 shadow-sm border border-surface-container-low" data-purpose="task-checklist">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<svg class="text-primary" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+<h3 class="text-lg font-serif font-medium text-primary">Checklist</h3>
+</div>
+<span class="text-xs font-sans text-secondary">2 of 4 completed</span>
+</div>
+<div class="w-full bg-[#e3cdab] rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full w-1/2"></div>
+</div>
+</section>
+</main>
+<!-- END: Main Content Area -->
+<!-- BEGIN: Bottom Action Area -->
+<div class="fixed bottom-[72px] left-0 right-0 max-w-md mx-auto bg-surface/95 backdrop-blur-sm px-4 py-3 border-t border-surface-container-low z-20 flex flex-col gap-3" data-purpose="bottom-actions">
+<div class="flex gap-3">
+<button class="flex-1 bg-primary text-white py-3 rounded-2xl font-serif font-medium text-lg flex items-center justify-center gap-2 shadow-sm">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+        Mark as Complete
+      </button>
+<button class="w-[35%] bg-white text-primary border border-primary py-3 rounded-2xl font-serif font-medium text-lg flex items-center justify-center gap-2 shadow-sm">
+<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        Edit
+      </button>
+</div>
+<button class="w-full bg-white text-primary border border-outline-variant py-3 rounded-2xl font-serif font-medium text-lg flex items-center justify-center gap-2 shadow-sm relative">
+      More Actions
+      <svg class="absolute right-4" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+</button>
+</div>
+<!-- END: Bottom Action Area -->
+<!-- BEGIN: Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-surface-container-low pb-safe flex justify-around items-center h-[72px] px-2 z-30" data-purpose="bottom-nav">
+<a class="flex flex-col items-center justify-center w-16 h-full text-[#c74528]" href="#">
+<svg class="mb-1" fill="currentColor" height="24" stroke="none" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2"></polyline></svg>
+<span class="text-xs font-sans font-medium">Home</span>
+<div class="absolute bottom-0 w-8 h-1 bg-[#c74528] rounded-t-full"></div>
+</a>
+<a class="flex flex-col items-center justify-center w-16 h-full text-secondary hover:text-primary transition-colors" href="#">
+<svg class="mb-1" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="m9 15 2 2 4-4"></path></svg>
+<span class="text-xs font-sans">Plan</span>
+</a>
+<a class="flex flex-col items-center justify-center w-16 h-full text-secondary hover:text-primary transition-colors" href="#">
+<svg class="mb-1" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>
+<span class="text-xs font-sans">Money</span>
+</a>
+<a class="flex flex-col items-center justify-center w-16 h-full text-secondary hover:text-primary transition-colors" href="#">
+<svg class="mb-1" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><rect height="7" rx="1" width="7" x="3" y="3"></rect><rect height="7" rx="1" width="7" x="14" y="3"></rect><rect height="7" rx="1" width="7" x="14" y="14"></rect><rect height="7" rx="1" width="7" x="3" y="14"></rect></svg>
+<span class="text-xs font-sans">More</span>
+</a>
+</nav>
+<!-- END: Bottom Navigation -->
+</body></html>

@@ -1,4 +1,5 @@
-import { EventForm } from "@/features/workspace/EventForm";
+import { EventForm } from "@/features/workspace";
+
 export default function NewEventRoute() {
   return <EventForm />;
 }

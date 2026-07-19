@@ -14,7 +14,7 @@ describe("EmptyState", () => {
       />,
     );
 
-    fireEvent.press(screen.getByRole("button", { name: "Add task" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Add task" }));
 
     expect(onAction).toHaveBeenCalledTimes(1);
   });
