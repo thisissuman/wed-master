@@ -1,31 +1,24 @@
 # Git workflow
 
-Keep Git simple and keep `main` releasable.
+Use npm everywhere. Keep `main` releasable and history understandable.
 
-## Branches
+## Branches and commits
 
-- Use `main` for completed, tested work.
-- Use a short branch only when a change spans multiple sittings: `feat/task-planning`, `fix/budget-total`.
-- Delete the branch after merge. Avoid long-lived feature branches.
-
-## Commits
-
-Use small, imperative commits:
-
-```text
-feat: add wedding setup
-fix: prevent duplicate expense submit
-docs: clarify UI state rules
-```
+- Use short-lived branches for work spanning more than one focused session: `feat/task-planning`, `fix/budget-total`, `docs/repository-foundation`.
+- Use imperative Conventional Commit-style messages: `feat: add wedding setup`, `fix: prevent duplicate expense submit`, `docs: clarify package boundaries`.
+- Rebase or merge deliberately; avoid force-pushing shared branches.
 
 ## Pull requests
 
-PRs are optional for solo work. Use one for a larger change or when requesting an independent Codex review. Include: purpose, user-visible result, test evidence, screenshots for UI changes, and deferred follow-ups.
+PRs are optional for solo work but recommended for structural changes. Include purpose, user-visible result, screenshots for UI, verification evidence, data/privacy impact, and intentionally deferred follow-ups.
 
-## Versions
+## Versioning and releases
 
-Use pre-release tags while testing: `v0.1.0-alpha.1`, then `v0.1.0-beta.1`. Keep Android version-code increments separate from the user-visible semantic version.
+Use semantic pre-release tags: `v0.1.0-alpha.1`, `v0.1.0-beta.1`, then `v1.0.0`. Android version-code increments are independent from user-visible semantic versions.
 
-## Automation
+## CI progression
 
-Add CI only after lint, typecheck, and tests exist. First automation should run those checks on pull requests. Add preview builds and E2E workflows after the app has stable smoke tests.
+1. On pull requests: `npm run lint`, `npm run typecheck`, `npm test`.
+2. On main: Android preview/development build.
+3. After stable flows: Maestro smoke tests.
+4. Before store release: signed build, release checklist, and manual device verification.

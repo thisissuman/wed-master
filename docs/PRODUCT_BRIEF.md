@@ -1,46 +1,63 @@
-# Wed Master product brief
+# Product brief
 
-## Problem
+## Vision
 
-Indian weddings are multi-event, multi-household projects. Generic checklists and Western templates do not fit varied rituals, shared responsibilities, or complex spending. Spreadsheets are flexible but hard to use and coordinate from a phone.
+Mangalya becomes the trusted operating system for Indian weddings: a private workspace for planning, money, people, and documents. Over time it can add carefully authorized collaboration, web/admin operations, marketplace capabilities, analytics, invitations, and AI assistance without diluting the planning core.
 
-## Product promise
+## Users and jobs
 
-Give a family one calm, trustworthy place to organise events, tasks, and spending—without forcing them into a fixed cultural template.
+| User                     | Primary job                                          | Current pain                                                           |
+| ------------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| Couple or family planner | know the next important action and spending position | plans are split across chats, calls, notes, and spreadsheets           |
+| Family collaborator      | own and complete assigned work                       | responsibilities are vague and updates are hard to find                |
+| Wedding planner          | coordinate several workspaces                        | status and client communication are fragmented                         |
+| Vendor / admin           | serve a limited future role                          | requires trust, verification, and permissions beyond the planning core |
 
-## Primary user and job
+Indian weddings are multi-event and multi-household. The product must accommodate variation rather than encode one definition of a wedding.
 
-**Primary user:** a couple or family planner organising an Indian wedding.
+## Product roadmap
 
-**Job:** “Help me understand the next important action and our spending position, while letting my family customise the plan to fit us.”
+### Current private local beta
 
-## Alpha scope
+1. Fresh installations create a real local wedding workspace; production never silently seeds a demo wedding.
+2. Essentials-only local setup with required couple names and wedding date, optional INR budget and cropped wedding photo, plus an opt-in editable starter-event chooser.
+3. Tasks with event, due date, priority, and status.
+4. Fast actual-expense capture, a wedding budget target, a date-based spending trend, ranked category insights, recent costs, and optional receipts.
+5. Searchable guest households with household-level RSVP, invitation, stay and transport data; lightweight received-gift tracking; emergency contacts; structured backup/restore; expenses CSV export; and recovery.
 
-Build three complete vertical slices, in order:
+The immediate milestone is Android local-beta hardening: current native builds, reliable first-run activation, privacy-accurate backup behavior, responsive phone/tablet layouts, performance evidence, and physical-device accessibility. Shared workspaces begin only after this gate passes.
 
-1. **Wedding setup:** sign in, create one wedding, add and reorder editable events.
-2. **Task planning:** create tasks, assign an event, set a due date and status, and see upcoming work.
-3. **Budget tracking:** create categories, record estimated and actual INR amounts, and see a simple total.
+### V1: make the workspace shared and operational (after local-beta hardening)
 
-The dashboard may show only information already supported by those slices. It must not become a separate feature.
+- Invitations and roles: owner, editor, viewer
+- Vendors, payment schedules, attachments, receipts, and reminders
+- Guest households, RSVP, rooms, transport, and activity history
 
-## Later, after the core is used
+### V2: deepen the Indian-wedding advantage
 
-- Family invitations and roles
-- Vendors and payment schedules
-- Guest households, RSVP, rooms, and transport
-- Documents, receipts, jewellery, shopping, gifts, packing, and reminders
-- Spreadsheet import, regional template library, multiple languages, and AI assistance
-- Vendor discovery, payments, marketplace features, and public sharing
+- Sourced, editable ceremony templates
+- Jewellery, shopping, gifts, documents, packing, and spreadsheet import/export
+- Multi-language UI, richer reporting, and web companion
+
+### V3: platform expansion
+
+- Admin dashboard, planner multi-workspace tooling, verified vendors, vendor portal, quote comparison, and marketplace foundations
+
+### Future
+
+- AI suggestions, receipt extraction, risk summaries, digital invitations, budget intelligence, and payment products
+
+Features belong later when they depend on usage data, operational trust, or regulated workflows. Marketplace, payment, and AI features must not delay a reliable planning experience.
 
 ## Product principles
 
-- **Editable defaults:** label cultural content as suggested; users can add, rename, reorder, or remove it.
-- **Financial clarity:** show the meaning of every amount. Never silently recalculate or overwrite an entered value.
-- **Progress over clutter:** show next actions before detailed management screens.
-- **Privacy by default:** share wedding data only through explicit roles.
-- **Online-first honesty:** show loading, failure, and retry states. Do not promise offline editing before it exists.
+- **Editable defaults:** all cultural content is suggested, editable, reorderable, and removable.
+- **Financial clarity:** spending means recorded actual cost. Historical planning/payment metadata remains intact for compatibility but is never silently reinterpreted as spending.
+- **Calm prioritisation:** Home shows useful next actions, not a dashboard of vanity metrics.
+- **Household-aware planning:** people, accommodation, transport, and invitations eventually support household decisions.
+- **Privacy by default:** roles are explicit; data is never public by accident.
+- **Honest resilience:** Mangalya does not upload the current workspace; show loading, errors, recovery, and retry without implying cloud backup, guaranteed single-device residency, or multi-device sync.
 
 ## First success signal
 
-A new user can create their wedding, add an event and task, and record a first expense in one short session without needing a spreadsheet.
+A new user enters the couple names and wedding date, optionally adds a budget and photo, then can add an event, task, expense, or guest without deciphering an oversized empty dashboard.

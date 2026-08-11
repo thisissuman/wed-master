@@ -1,0 +1,18 @@
+appId: com.suman.mangalya.development
+---
+- runFlow:
+    file: subflows/open-development-app.yaml
+- runFlow:
+    file: subflows/create-workspace.yaml
+- tapOn: "Add expense"
+- tapOn: "Expense title"
+- inputText: "Wedding shoes"
+- hideKeyboard
+- tapOn: "Select category, required"
+- tapOn: "Shopping"
+- tapOn: "Amount"
+- inputText: "4500"
+- hideKeyboard
+- tapOn: "Add expense"
+- assertVisible: "Expense added"
+- assertVisible: "Wedding shoes"

@@ -1,36 +1,61 @@
 # Engineering guide
 
-## Code structure
+## File and naming conventions
 
-- Routes coordinate navigation and screen composition; they do not contain business logic.
-- A feature owns its screens, components, hooks, queries, schemas, and domain helpers until another feature genuinely needs them.
-- Put visual primitives in `src/components/ui`. Keep them presentational and typed.
-- Put cross-cutting integrations in `src/lib`, such as the Supabase client and INR/date formatters.
+- Route files follow Expo Router requirements and may default-export a screen.
+- All other components use named exports and `PascalCase.tsx` files.
+- Hooks use `useX.ts`; schemas use `schema.ts`; feature queries/mutations live in `api/`; feature types live in `types.ts`.
+- Use `camelCase` for functions/variables, `PascalCase` for types/components, and `UPPER_SNAKE_CASE` only for genuine immutable constants.
+- Prefer path aliases after scaffolding; do not use deep relative imports across feature boundaries.
 
-## Component guidelines
+## Component and hook conventions
 
-- Prefer a small component with a clear responsibility over a configurable mega-component.
-- Extract a component when it has a distinct responsibility, meaningful reuse, or makes the parent easier to read—not merely because JSX has several lines.
-- Prefer composition and named props over boolean-prop combinations.
-- Keep domain calculations outside render functions and test them directly.
-- Comments should explain a non-obvious constraint or decision, never restate code.
+- A screen composes sections; a section arranges a coherent area; a feature component owns domain presentation; a UI primitive owns visual/accessibility behavior.
+- Extract code for a distinct responsibility, meaningful reuse, or readability—not simply to reduce file length.
+- Prefer composition and explicit variant props over inheritance or boolean-prop matrices.
+- Hooks orchestrate state and side effects. Pure calculations live in domain utilities and are unit tested.
+- Feature `index.ts` files expose the supported public API. Do not import another feature's internal files.
+- `src/theme/tokens.json` is the value source for both TypeScript and NativeWind. Do not add a second token map in a component or configuration file.
+- NativeWind class strings belong in primitives and feature components; extract a variant map before a class string becomes hard to read or is repeated.
+- Prefer summary surfaces and divider-based rows over feature-specific card variants. A `Card` is not a press target; use `ListRow` or a focused feature row for navigation.
+- A screen owns one clear primary action. Put advanced filtering in `FilterSheet`, optional form fields in `Disclosure`, and destructive work behind `ConfirmationDialog`.
+- Empty lists use the shared compact `EmptyState` row. Make that row actionable only when no footer or FAB already creates the record; otherwise keep it neutral. Filtered-empty states reset filters or search instead of duplicating creation.
+- Use `src/lib/responsive.ts` for shared 600dp expanded-width, 1.3 large-text, and compact control-stacking decisions. Tablet layouts restructure navigation and content instead of stretching phone UI.
+- Keep tab routes thin. Domain presentation such as event timelines, task completion rows, expense rows, financial summaries, and direct creation actions belongs in `src/features/workspace`.
 
-## TypeScript rules
+## Error handling and logging
 
-- Keep `strict` enabled. Do not use `any` or broad type assertions to silence errors.
-- Validate untrusted form and network input at the boundary.
-- Use discriminated unions for finite UI states when they clarify behavior.
-- Represent money and date-only values deliberately; do not hide conversions in components.
+- Validate untrusted input at form and network boundaries.
+- Normalize provider/database errors into safe, actionable user messages.
+- Never silently swallow an error. Provide retry or clear next action when possible.
+- Do not log names, phone numbers, financial data, documents, file paths, tokens, or secrets. Keep Sentry disabled without a DSN and preserve the event scrubber when changing observability.
+
+## Documentation standards
+
+- Update product docs for user-facing scope changes.
+- Update architecture docs for boundary, dependency, data, or platform decisions.
+- Update UI docs for new primitive contracts or token changes.
+- Add a short decision only when reversal would be expensive or confusing.
 
 ## Definition of Done
 
-A feature is done when its requested behavior works, type errors are resolved, risky logic has focused tests, relevant loading/empty/error states exist, accessibility basics are present, and the affected documentation is accurate. Run only the checks that exist and are relevant; record what could not be verified.
+A feature is complete when requested behavior, type safety, mobile interaction, focused tests, relevant loading/empty/error/permission states, accessibility basics, and documentation impact have all been reviewed. Verification must state what ran and what did not.
 
-## Feature development guide
+## Quality commands
 
-1. State the user outcome and acceptance criteria.
-2. Inspect the closest existing feature and relevant docs.
-3. Make a small plan only when the work has multiple moving parts.
-4. Implement the vertical slice, keeping data and UI changes together.
-5. Self-review and test the behavior.
-6. Refactor only duplication or complexity introduced by the slice.
+- `npm run lint`
+- `npm run typecheck`
+- `npm test -- --runInBand`
+- `npm run format:check`
+
+Use `npm run format` only for deliberate formatting changes. Do not run dependency upgrades or automated audit fixes as a substitute for reviewing compatibility.
+
+# First local product slice
+
+Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-safe scrolling, progressive optional fields, and the native Android date picker. Expense creation alone uses a transparent route-backed overlay; expense editing remains a full modal. Budget-category management remains deferred beyond this first vertical slice.
+
+The Plan tab uses one Tasks/Events segmented control. It changes a local `activeView` immediately; route parameters initialize deep links and respond to genuine external changes but are not written by taps. A shallow task summary and one active-count filter control replace the former metrics card and visible presets. Task filters for status, priority, event, due-this-week, and overdue state remain contained in one compact sheet with a one-tap reset. Event ordering remains persisted in the repository for compatibility, but earlier/later controls are intentionally not exposed. Form routes use `FormShell` and shared fields except for the purpose-built quick-expense overlay. Expense creation persists title, category, actual paise, local date, optional existing event relationship, and `createdAt` before optional date/note/attachment editing in the same overlay. The category picker is intentionally local UI: Other is first, while Task and Event reveal existing records and reuse the selected record name; no category-management dependency is introduced.
+
+Home exposes four compact direct actions plus a dedicated expense FAB. The `/budget` Money tab stays focused on the virtualized newest-created expense list. The drill-down `/budget/overview` route is the only budget-target editor and combines a shallow financial summary, highest-first category bars, pure date-range aggregations, and a responsive accessible custom SVG trend without adding a chart dependency. Home, More, and a separate Settings row open the overview route. More resets its nested stack to `index` whenever the tab loses focus. Guests retains name search and underlying household data while exposing one compact summary and one persistent creation FAB. Gifts currently surfaces and creates Received records only; legacy kinds stay readable in storage. Backup UI exposes structured export/import and expenses CSV only. Settings otherwise exposes one Wedding details editor and a separate Data & Privacy section. First-run setup writes the existing wedding contract with required names/date, optional paise budget/photo, and neutral compatibility defaults; it does not change the snapshot version. Detail routes use visible fallback-aware back actions and confirmation dialogs for deletion. Shared task rows clamp titles to two lines and stack status metadata at large text instead of nesting a horizontal scroller inside a vertical list.
+
+Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.
