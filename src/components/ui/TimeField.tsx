@@ -102,9 +102,9 @@ export function TimeField({
         <DateTimePicker
           display="default"
           mode="time"
-          onChange={(_, selectedTime) => {
+          onDismiss={() => setOpen(false)}
+          onValueChange={(_, selectedTime) => {
             setOpen(false);
-            if (!selectedTime) return;
             const hours = String(selectedTime.getHours()).padStart(2, "0");
             const minutes = String(selectedTime.getMinutes()).padStart(2, "0");
             onChange(`${hours}:${minutes}`);

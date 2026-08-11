@@ -1,7 +1,11 @@
 import { createContext, type PropsWithChildren, useContext, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createLocalRepositories } from "./local-repositories";
+import {
+  createLocalRepositories,
+  WorkspaceCorruptionError,
+  WorkspaceEmptyError,
+} from "./local-repositories";
 import type { Repositories, WorkspaceSnapshot } from "./types";
 
 const RepositoryContext = createContext<Repositories | null>(null);
@@ -19,7 +23,13 @@ export function useRepositories() {
 }
 export function useWorkspace() {
   const repositories = useRepositories();
-  return useQuery({ queryKey: workspaceKey, queryFn: repositories.snapshot });
+  return useQuery({
+    queryKey: workspaceKey,
+    queryFn: repositories.snapshot,
+    retry: (failureCount, error) =>
+      !(error instanceof WorkspaceEmptyError || error instanceof WorkspaceCorruptionError) &&
+      failureCount < 2,
+  });
 }
 export function useWorkspaceMutation() {
   const repositories = useRepositories();
@@ -28,5 +38,32 @@ export function useWorkspaceMutation() {
     mutationFn: async (operation: (repositories: Repositories) => Promise<WorkspaceSnapshot>) =>
       operation(repositories),
     onSuccess: (snapshot) => client.setQueryData(workspaceKey, snapshot),
+  });
+}
+
+export function useCreateExpenseMutation() {
+  const repositories = useRepositories();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: repositories.expenses.createExpense,
+    onSuccess: ({ snapshot }) => client.setQueryData(workspaceKey, snapshot),
+  });
+}
+
+export function useCreateWorkspaceMutation() {
+  const repositories = useRepositories();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: repositories.workspace.createSnapshot,
+    onSuccess: (snapshot) => client.setQueryData(workspaceKey, snapshot),
+  });
+}
+
+export function useDeleteWorkspaceMutation() {
+  const repositories = useRepositories();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: repositories.workspace.deleteLocalData,
+    onSuccess: () => client.removeQueries({ queryKey: workspaceKey }),
   });
 }

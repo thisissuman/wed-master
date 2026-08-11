@@ -1,14 +1,21 @@
 import { View } from "react-native";
+import type { Href } from "expo-router";
 
 import { MangalyaHeader } from "@/components/brand";
 
 import { DetailHeader } from "../ui";
 
-export function MoreScreenHeader({ title, weddingName }: { title: string; weddingName: string }) {
+export function MoreScreenHeader({
+  fallback = "/more",
+  title,
+}: {
+  fallback?: Href;
+  title: string;
+}) {
   return (
     <View className="gap-lg">
       <MangalyaHeader />
-      <DetailHeader eyebrow={weddingName} title={title} />
+      <DetailHeader fallback={fallback} title={title} />
     </View>
   );
 }

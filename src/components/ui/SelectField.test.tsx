@@ -24,4 +24,24 @@ describe("SelectField", () => {
 
     expect(onChange).toHaveBeenCalledWith("High");
   });
+
+  it("removes duplicate option headings in compact filter mode", async () => {
+    const screen = await render(
+      <SelectField
+        compact
+        label="Status"
+        onChange={jest.fn()}
+        options={[
+          { label: "All statuses", value: "All" },
+          { label: "Completed", value: "Completed" },
+        ]}
+        value="All"
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Status: All statuses" }));
+
+    expect(screen.queryByText("Choose one option")).toBeNull();
+    expect(screen.getByRole("radio", { name: "Completed" }).props.className).toContain("min-h-12");
+  });
 });

@@ -14,6 +14,7 @@ import {
   Screen,
 } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
+import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { tokens } from "@/theme";
 
 import { useWorkspace, useWorkspaceMutation } from "../provider";
@@ -51,7 +52,7 @@ function ContactCard({
           accessibilityRole="button"
           className="min-h-12 min-w-12 items-center justify-center"
           onPress={() =>
-            router.push({
+            router.navigate({
               pathname: "/more/emergency-contacts/edit",
               params: { id: contact.id },
             })
@@ -62,6 +63,7 @@ function ContactCard({
         <Pressable
           accessibilityLabel={`Delete ${contact.name}`}
           accessibilityRole="button"
+          accessibilityState={{ disabled }}
           className="min-h-12 min-w-12 items-center justify-center"
           disabled={disabled}
           onPress={onDelete}
@@ -96,6 +98,7 @@ function ContactCard({
 export function EmergencyContactsDashboard() {
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
   const [deleteContact, setDeleteContact] = useState<EmergencyContact>();
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError)
@@ -115,9 +118,8 @@ export function EmergencyContactsDashboard() {
     );
   }
   const header = (
-    <View className="gap-xs pb-lg">
-      <MoreScreenHeader title="Emergency contacts" weddingName={workspace.data.wedding.name} />
-      <AppText tone="muted">Important numbers at your fingertips</AppText>
+    <View className="pb-md">
+      <MoreScreenHeader title="Emergency contacts" />
     </View>
   );
   return (
@@ -131,7 +133,7 @@ export function EmergencyContactsDashboard() {
           <EmptyState
             actionLabel="Add contact"
             description="Add a family coordinator, venue, doctor, driver, or other useful number."
-            onAction={() => router.push("/more/emergency-contacts/new")}
+            onAction={() => router.navigate("/more/emergency-contacts/new")}
             title="No emergency contacts"
           />
         }
@@ -145,24 +147,40 @@ export function EmergencyContactsDashboard() {
         )}
         showsVerticalScrollIndicator={false}
       />
-      <View className="absolute bottom-md right-md">
-        <Button
-          icon={Plus}
-          label="Add contact"
-          onPress={() => router.push("/more/emergency-contacts/new")}
-          variant="primary"
-        />
-      </View>
+      {workspace.data.emergencyContacts.length ? (
+        <View className="absolute bottom-md right-md">
+          <Button
+            icon={Plus}
+            label="Add contact"
+            onPress={() => router.navigate("/more/emergency-contacts/new")}
+            variant="primary"
+          />
+        </View>
+      ) : null}
       <ConfirmationDialog
         confirmLabel="Delete contact"
         description={`${deleteContact?.name ?? "This contact"} will be removed from this device.`}
         onCancel={() => setDeleteContact(undefined)}
         onConfirm={() => {
-          if (deleteContact)
+          if (deleteContact) {
+            const deleted = deleteContact;
             mutation.mutate(
-              (repositories) => repositories.emergencyContacts.deleteContact(deleteContact.id),
-              { onSuccess: () => setDeleteContact(undefined) },
+              (repositories) => repositories.emergencyContacts.deleteContact(deleted.id),
+              {
+                onSuccess: () => {
+                  setDeleteContact(undefined);
+                  showFeedback({
+                    actionLabel: "Undo",
+                    message: "Contact deleted",
+                    onAction: () =>
+                      mutation.mutateAsync((repositories) =>
+                        repositories.emergencyContacts.restoreContact(deleted),
+                      ),
+                  });
+                },
+              },
             );
+          }
         }}
         pending={mutation.isPending}
         title="Delete this contact?"

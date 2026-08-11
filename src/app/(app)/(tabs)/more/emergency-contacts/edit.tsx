@@ -1,23 +1,29 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { AppText, LoadingState, Screen } from "@/components/ui";
 import { ContactForm, useWorkspace } from "@/features/workspace";
+import {
+  RouteLoadError,
+  RouteLoading,
+  RouteNotFound,
+} from "@/features/workspace/routes/RouteStates";
 
 export default function EditContactRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useWorkspace();
-  if (!data)
+  const workspace = useWorkspace();
+  if (workspace.isError)
     return (
-      <Screen>
-        <LoadingState />
-      </Screen>
+      <RouteLoadError
+        error={workspace.error}
+        fallback="/more/emergency-contacts"
+        onRetry={() => void workspace.refetch()}
+        title="We could not open this contact"
+      />
     );
-  const contact = data.emergencyContacts.find((item) => item.id === id);
+  if (!workspace.data) return <RouteLoading label="Opening contact" />;
+  const contact = workspace.data.emergencyContacts.find((item) => item.id === id);
   return contact ? (
     <ContactForm contact={contact} />
   ) : (
-    <Screen className="p-md">
-      <AppText>Contact not found.</AppText>
-    </Screen>
+    <RouteNotFound entity="Contact" fallback="/more/emergency-contacts" />
   );
 }

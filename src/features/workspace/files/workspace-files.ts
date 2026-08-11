@@ -6,6 +6,7 @@ import * as Sharing from "expo-sharing";
 import {
   expensesCsv,
   guestsCsv,
+  maximumBackupBytes,
   parseDataBackup,
   serializeDataBackup,
   tasksCsv,
@@ -56,7 +57,8 @@ async function pickCoverPhoto(
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    allowsEditing: false,
+    allowsEditing: true,
+    aspect: [16, 9],
     mediaTypes: ["images"],
     quality: 0.82,
     selectionLimit: 1,
@@ -187,7 +189,29 @@ export function clearWorkspaceAttachments() {
 export function clearWorkspaceLocalFiles() {
   const attachmentsCleared = clearWorkspaceAttachments();
   const coversCleared = clearWeddingCoverPhotos();
-  return attachmentsCleared && coversCleared;
+  const exportsCleared = clearWorkspaceExports();
+  return attachmentsCleared && coversCleared && exportsCleared;
+}
+
+export function clearWorkspaceExports() {
+  try {
+    const directory = exportsDirectory();
+    if (directory.exists) directory.delete();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function removeWorkspaceExport(uri?: string) {
+  if (!uri) return false;
+  try {
+    const file = new File(uri);
+    if (file.exists) file.delete();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function writeExportFile(fileName: string, content: string): File {
@@ -218,6 +242,11 @@ export function createWorkspaceBackupFile(snapshot: WorkspaceSnapshot): BackupHi
   };
 }
 
+export function createWorkspaceRecoveryFile(rawText: string): string {
+  const fileName = `mangalya-recovery-copy-${exportStamp()}.json`;
+  return writeExportFile(fileName, rawText).uri;
+}
+
 export async function pickWorkspaceBackup(): Promise<WorkspaceSnapshot | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: "application/json",
@@ -226,6 +255,9 @@ export async function pickWorkspaceBackup(): Promise<WorkspaceSnapshot | null> {
   if (result.canceled) return null;
   const asset = result.assets[0];
   if (!asset) return null;
+  if ((asset.size ?? 0) > maximumBackupBytes) {
+    throw new Error("Mangalya backups must be 5 MB or smaller.");
+  }
   const text = await new File(asset.uri).text();
   return parseDataBackup(text);
 }

@@ -23,6 +23,16 @@ export type Wedding = {
 
 export const eventColorKeys = ["botanical", "gold", "terracotta", "sage"] as const;
 export type EventColorKey = (typeof eventColorKeys)[number];
+export const starterEventKeys = [
+  "engagement",
+  "mehendi",
+  "haldi",
+  "sangeet",
+  "wedding",
+  "reception",
+  "gruhapravesh",
+] as const;
+export type StarterEventKey = (typeof starterEventKeys)[number];
 export const eventIconKeys = [
   "calendar",
   "rings",
@@ -46,6 +56,7 @@ export type WeddingEvent = {
   id: string;
   name: string;
   date: ISODate;
+  starterEventKey?: StarterEventKey;
   coverPhotoUri?: string;
   time?: string;
   endTime?: string;
@@ -83,7 +94,24 @@ export type Task = {
   attachments: AttachmentRef[];
 };
 
-export type BudgetCategory = { id: string; name: string; sortOrder: number };
+export const budgetCategoryIconKeys = [
+  "event",
+  "task",
+  "shopping",
+  "commute",
+  "gift",
+  "advance",
+  "other",
+] as const;
+export type BudgetCategoryIconKey = (typeof budgetCategoryIconKeys)[number];
+
+export type BudgetCategory = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  iconKey: BudgetCategoryIconKey;
+  archived: boolean;
+};
 export const paymentStatuses = ["Not Paid", "Partially Paid", "Paid"] as const;
 export type PaymentStatus = (typeof paymentStatuses)[number];
 
@@ -91,16 +119,18 @@ export type Expense = {
   id: string;
   title: string;
   categoryId: string;
-  estimatedPaise?: number;
+  createdAt: string;
   actualPaise: number;
-  paidPaise: number;
-  paymentStatus: PaymentStatus;
   date?: ISODate;
+  notes?: string;
+  receipt?: AttachmentRef;
+  /** Legacy payment-planning metadata retained for backup compatibility only. */
+  estimatedPaise?: number;
+  paidPaise?: number;
+  paymentStatus?: PaymentStatus;
   eventId?: string;
   vendorName?: string;
   dueDate?: ISODate;
-  notes?: string;
-  receipt?: AttachmentRef;
 };
 
 export const householdSides = ["partnerOne", "partnerTwo", "both", "other"] as const;
@@ -124,6 +154,7 @@ export type Household = {
   side: HouseholdSide;
   /** Optional only for backward compatibility with workspace v2 records. New forms always persist it. */
   guestCount?: number;
+  rsvpStatus: RsvpStatus;
   invitationStatus: InvitationStatus;
   accommodationStatus: ServiceStatus;
   transportStatus: ServiceStatus;
@@ -138,16 +169,17 @@ export type GiftProgressStatus = (typeof giftProgressStatuses)[number];
 
 export type GiftRecord = {
   id: string;
-  kind: GiftKind;
+  /** Legacy classification retained for restored records. New gifts are received gifts. */
+  kind?: GiftKind;
   personName: string;
   relationship?: string;
-  itemName: string;
+  itemName?: string;
   valuePaise?: number;
   valueIsEstimated?: boolean;
   date?: ISODate;
-  thankedStatus: GiftProgressStatus;
+  thankedStatus?: GiftProgressStatus;
   thankedDate?: ISODate;
-  returnGiftStatus: GiftProgressStatus;
+  returnGiftStatus?: GiftProgressStatus;
   returnGiftDate?: ISODate;
   notes?: string;
 };
@@ -169,6 +201,12 @@ export type BackupHistoryEntry = {
   uri: string;
 };
 
+export type LegacyBudgetCategory = Pick<BudgetCategory, "id" | "name" | "sortOrder">;
+export type WorkspaceExpenseV2 = Omit<Expense, "createdAt" | "paidPaise" | "paymentStatus"> & {
+  paidPaise: number;
+  paymentStatus: PaymentStatus;
+};
+
 export type WorkspaceSnapshotV1 = {
   version: 1;
   wedding: Omit<Wedding, "budgetTargetPaise" | "coverPhotoUri" | "guestEstimate">;
@@ -177,21 +215,55 @@ export type WorkspaceSnapshotV1 = {
     "coverPhotoUri" | "endTime" | "colorToken" | "iconKey" | "requiredItems"
   >[];
   tasks: Omit<Task, "description" | "category" | "checklist" | "attachments">[];
-  categories: BudgetCategory[];
-  expenses: Omit<Expense, "date" | "eventId" | "receipt">[];
+  categories: LegacyBudgetCategory[];
+  expenses: Omit<WorkspaceExpenseV2, "date" | "eventId" | "receipt">[];
 };
 
-export type WorkspaceSnapshot = {
+export type WorkspaceSnapshotV2 = {
   version: 2;
   wedding: Wedding;
   events: WeddingEvent[];
   tasks: Task[];
-  categories: BudgetCategory[];
-  expenses: Expense[];
-  households: Household[];
-  gifts: GiftRecord[];
+  categories: LegacyBudgetCategory[];
+  expenses: WorkspaceExpenseV2[];
+  households: Omit<Household, "rsvpStatus">[];
+  gifts: (GiftRecord & {
+    kind: GiftKind;
+    itemName: string;
+    thankedStatus: GiftProgressStatus;
+    returnGiftStatus: GiftProgressStatus;
+  })[];
   emergencyContacts: EmergencyContact[];
   backupHistory: BackupHistoryEntry[];
+};
+
+export type WorkspaceSnapshotV3 = Omit<
+  WorkspaceSnapshotV2,
+  "categories" | "expenses" | "version"
+> & {
+  version: 3;
+  categories: BudgetCategory[];
+  expenses: Expense[];
+};
+
+export type WorkspaceSnapshot = Omit<
+  WorkspaceSnapshotV3,
+  "events" | "gifts" | "households" | "version"
+> & {
+  version: 4;
+  events: WeddingEvent[];
+  households: Household[];
+  gifts: GiftRecord[];
+};
+
+export type CreateExpenseInput = Pick<
+  Expense,
+  "actualPaise" | "categoryId" | "date" | "eventId" | "notes" | "receipt" | "title"
+>;
+
+export type CreateExpenseResult = {
+  expense: Expense;
+  snapshot: WorkspaceSnapshot;
 };
 
 export type WeddingRepository = {
@@ -216,6 +288,7 @@ export type TaskRepository = {
   ): Promise<WorkspaceSnapshot>;
   updateTask(task: Task): Promise<WorkspaceSnapshot>;
   deleteTask(id: string): Promise<WorkspaceSnapshot>;
+  restoreTask(task: Task): Promise<WorkspaceSnapshot>;
 };
 export type BudgetRepository = {
   listCategories(): Promise<BudgetCategory[]>;
@@ -225,27 +298,31 @@ export type BudgetRepository = {
 };
 export type ExpenseRepository = {
   listExpenses(): Promise<Expense[]>;
-  createExpense(expense: Omit<Expense, "id">): Promise<WorkspaceSnapshot>;
+  createExpense(expense: CreateExpenseInput): Promise<CreateExpenseResult>;
   updateExpense(expense: Expense): Promise<WorkspaceSnapshot>;
   deleteExpense(id: string): Promise<WorkspaceSnapshot>;
+  restoreExpense(expense: Expense): Promise<WorkspaceSnapshot>;
 };
 export type HouseholdRepository = {
   listHouseholds(): Promise<Household[]>;
   createHousehold(household: Omit<Household, "id">): Promise<WorkspaceSnapshot>;
   updateHousehold(household: Household): Promise<WorkspaceSnapshot>;
   deleteHousehold(id: string): Promise<WorkspaceSnapshot>;
+  restoreHousehold(household: Household): Promise<WorkspaceSnapshot>;
 };
 export type GiftRepository = {
   listGifts(): Promise<GiftRecord[]>;
   createGift(gift: Omit<GiftRecord, "id">): Promise<WorkspaceSnapshot>;
   updateGift(gift: GiftRecord): Promise<WorkspaceSnapshot>;
   deleteGift(id: string): Promise<WorkspaceSnapshot>;
+  restoreGift(gift: GiftRecord): Promise<WorkspaceSnapshot>;
 };
 export type EmergencyContactRepository = {
   listContacts(): Promise<EmergencyContact[]>;
   createContact(contact: Omit<EmergencyContact, "id">): Promise<WorkspaceSnapshot>;
   updateContact(contact: EmergencyContact): Promise<WorkspaceSnapshot>;
   deleteContact(id: string): Promise<WorkspaceSnapshot>;
+  restoreContact(contact: EmergencyContact): Promise<WorkspaceSnapshot>;
 };
 export type BackupRepository = {
   addHistory(entry: BackupHistoryEntry): Promise<WorkspaceSnapshot>;
@@ -254,6 +331,9 @@ export type BackupRepository = {
 export type WorkspaceRepository = {
   replaceSnapshot(snapshot: WorkspaceSnapshot): Promise<WorkspaceSnapshot>;
   resetDemo(): Promise<WorkspaceSnapshot>;
+  createSnapshot(snapshot: WorkspaceSnapshot): Promise<WorkspaceSnapshot>;
+  deleteLocalData(): Promise<void>;
+  getRecoveryText(): Promise<string | null>;
 };
 
 export type Repositories = {

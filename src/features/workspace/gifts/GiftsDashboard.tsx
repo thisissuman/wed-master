@@ -1,8 +1,8 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { CheckCircle2, Gift, IndianRupee, Plus, Users } from "lucide-react-native";
+import { ArrowDownUp, Gift, IndianRupee, Plus, Users } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, useWindowDimensions, View } from "react-native";
 
 import {
   AppText,
@@ -10,112 +10,118 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  FilterSheet,
+  IconButton,
   LoadingState,
   Screen,
   SegmentedControl,
-  SelectField,
-  StatusBadge,
 } from "@/components/ui";
-import { formatShortDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
-import { formatInr } from "@/lib/money";
+import { formatInr, formatInrCompact } from "@/lib/money";
+import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 
 import { useWorkspace } from "../provider";
-import type { GiftKind, GiftRecord } from "../types";
+import type { GiftRecord } from "../types";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
 
-function Metric({ icon: Icon, label, value }: { icon: typeof Gift; label: string; value: string }) {
+type GiftSort = "name" | "recent" | "value";
+
+function Metric({
+  accessibilityValue,
+  divider,
+  icon: Icon,
+  label,
+  stacked,
+  value,
+}: {
+  accessibilityValue: string;
+  divider: boolean;
+  icon: typeof Gift;
+  label: string;
+  stacked: boolean;
+  value: string;
+}) {
   return (
-    <View className="w-1/2 items-center gap-2xs py-xs">
-      <View className="rounded-full bg-primarySoft p-sm">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.md} />
+    <View
+      accessible
+      accessibilityLabel={`${label}: ${accessibilityValue}`}
+      className={`min-w-0 ${
+        stacked
+          ? `min-h-12 flex-row items-center justify-between gap-sm py-xs ${
+              divider ? "border-b border-borderSubtle" : ""
+            }`
+          : `flex-1 items-center gap-2xs px-xs ${divider ? "border-r border-borderSubtle" : ""}`
+      }`}
+    >
+      <View className="flex-row items-center gap-2xs">
+        <Icon color={tokens.colors.primary} size={tokens.iconSize.sm} />
+        <AppText tone="muted" variant="caption">
+          {label}
+        </AppText>
       </View>
-      <AppText tone="primary" variant="heading">
+      <AppText
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        numberOfLines={1}
+        style={{ fontVariant: ["tabular-nums"] }}
+        tone="primary"
+        variant="heading"
+      >
         {value}
-      </AppText>
-      <AppText tone="muted" variant="caption">
-        {label}
       </AppText>
     </View>
   );
 }
 
 function GiftCard({ gift }: { gift: GiftRecord }) {
-  const initials = gift.personName
-    .split(/\s+|&/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
   return (
     <Pressable
       accessibilityLabel={`Edit gift from ${gift.personName}`}
       accessibilityRole="button"
-      className="min-h-28 gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-card"
-      onPress={() => router.push({ pathname: "/more/gifts/edit", params: { id: gift.id } })}
+      className="min-h-20 flex-row items-center gap-sm rounded-card bg-accentSoft p-md"
+      onPress={() => router.navigate({ pathname: "/more/gifts/edit", params: { id: gift.id } })}
     >
-      <View className="flex-row items-start gap-sm">
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary">
-          <AppText tone="onPrimary" variant="label">
-            {initials}
+      <View className="h-12 w-12 items-center justify-center rounded-control bg-elevatedSurface">
+        <Gift color={tokens.colors.accent} size={tokens.iconSize.md} />
+      </View>
+      <View className="min-w-0 flex-1 gap-2xs">
+        <AppText numberOfLines={2} variant="heading">
+          {gift.personName}
+        </AppText>
+        {gift.itemName || gift.relationship ? (
+          <AppText numberOfLines={2} tone="muted" variant="caption">
+            {[gift.itemName, gift.relationship].filter(Boolean).join(" · ")}
           </AppText>
-        </View>
-        <View className="min-w-0 flex-1 gap-2xs">
-          <AppText numberOfLines={2} variant="heading">
-            {gift.personName}
-          </AppText>
-          {gift.relationship ? (
-            <AppText tone="muted" variant="caption">
-              {gift.relationship}
-            </AppText>
-          ) : null}
-          <View className="flex-row flex-wrap items-center gap-xs">
-            <Gift color={tokens.colors.primary} size={tokens.iconSize.sm} />
-            <AppText>{gift.itemName}</AppText>
-            {gift.valuePaise !== undefined ? (
-              <AppText variant="label">
-                {formatInr(gift.valuePaise)}
-                {gift.valueIsEstimated ? " (Est.)" : ""}
-              </AppText>
-            ) : null}
-          </View>
-        </View>
-        {gift.date ? (
+        ) : (
           <AppText tone="muted" variant="caption">
-            {formatShortDateOnly(gift.date)}
+            Received gift
           </AppText>
-        ) : null}
+        )}
       </View>
-      <View className="flex-row flex-wrap gap-xs pl-14">
-        <StatusBadge
-          label={`Thanked: ${gift.thankedStatus}`}
-          tone={gift.thankedStatus === "Done" ? "success" : "warning"}
-        />
-        <StatusBadge
-          label={`Return: ${gift.returnGiftStatus}`}
-          tone={gift.returnGiftStatus === "Done" ? "success" : "warning"}
-        />
-      </View>
+      <AppText className="shrink-0 text-right" tone="primary" variant="heading">
+        {gift.valuePaise !== undefined ? formatInr(gift.valuePaise) : "—"}
+      </AppText>
     </Pressable>
   );
 }
 
 export function GiftsDashboard() {
   const workspace = useWorkspace();
-  const [kind, setKind] = useState<GiftKind>("Received");
-  const [sort, setSort] = useState("recent");
+  const { fontScale } = useWindowDimensions();
+  const [sort, setSort] = useState<GiftSort>("recent");
+  const [sortOpen, setSortOpen] = useState(false);
   const gifts = useMemo(() => {
-    const filtered = (workspace.data?.gifts ?? []).filter((gift) => gift.kind === kind);
+    const filtered = (workspace.data?.gifts ?? []).filter(
+      (gift) => (gift.kind ?? "Received") === "Received",
+    );
+    if (sort === "recent") return [...filtered].reverse();
     return [...filtered].sort((a, b) =>
       sort === "value"
         ? (b.valuePaise ?? 0) - (a.valuePaise ?? 0)
-        : sort === "name"
-          ? a.personName.localeCompare(b.personName)
-          : (b.date ?? "").localeCompare(a.date ?? ""),
+        : a.personName.localeCompare(b.personName),
     );
-  }, [kind, sort, workspace.data]);
+  }, [sort, workspace.data]);
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError)
       return (
@@ -134,38 +140,44 @@ export function GiftsDashboard() {
     );
   }
   const totalValue = gifts.reduce((sum, gift) => sum + (gift.valuePaise ?? 0), 0);
-  const thanked = gifts.filter((gift) => gift.thankedStatus === "Done").length;
-  const returned = gifts.filter((gift) => gift.returnGiftStatus === "Done").length;
+  const stackedSummary = isLargeText(fontScale);
+  const sortLabel = sort === "value" ? "Highest value" : sort === "name" ? "Name" : "Most recent";
   const header = (
-    <View className="gap-xl pb-lg">
-      <MoreScreenHeader title="Gifts" weddingName={workspace.data.wedding.name} />
-      <AppText tone="muted">Track gifts, values, thank-yous, and return gifts.</AppText>
-      <SegmentedControl
-        accessibilityLabel="Gift type"
-        onChange={(value) => setKind(value as GiftKind)}
-        options={[
-          { label: "Given", value: "Given" },
-          { label: "Received", value: "Received" },
-          { label: "Return gifts", value: "Return Gift" },
-        ]}
-        value={kind}
-      />
-      <Card className="flex-row flex-wrap">
-        <Metric icon={Users} label="Total" value={String(gifts.length)} />
-        <Metric icon={IndianRupee} label="Value" value={formatInr(totalValue)} />
-        <Metric icon={CheckCircle2} label="Thanked" value={String(thanked)} />
-        <Metric icon={Gift} label="Returned" value={String(returned)} />
+    <View className="gap-lg pb-md">
+      <MoreScreenHeader title="Received gifts" />
+      <Card
+        className="p-sm"
+        style={{ flexDirection: stackedSummary ? "column" : "row" }}
+        testID="received-gift-summary"
+      >
+        <Metric
+          accessibilityValue={String(gifts.length)}
+          divider
+          icon={Users}
+          label="Total"
+          stacked={stackedSummary}
+          value={String(gifts.length)}
+        />
+        <Metric
+          accessibilityValue={formatInr(totalValue)}
+          divider={false}
+          icon={IndianRupee}
+          label="Value"
+          stacked={stackedSummary}
+          value={formatInrCompact(totalValue)}
+        />
       </Card>
-      <SelectField
-        label="Sort"
-        onChange={setSort}
-        options={[
-          { label: "Most recent", value: "recent" },
-          { label: "Highest value", value: "value" },
-          { label: "Name", value: "name" },
-        ]}
-        value={sort}
-      />
+      <View className="flex-row items-center justify-between gap-sm">
+        <AppText tone="muted" variant="caption">
+          {gifts.length} {gifts.length === 1 ? "gift" : "gifts"}
+        </AppText>
+        <IconButton
+          accessibilityLabel={`Sort gifts, ${sortLabel}`}
+          icon={ArrowDownUp}
+          onPress={() => setSortOpen(true)}
+          variant="subtle"
+        />
+      </View>
     </View>
   );
   return (
@@ -178,8 +190,8 @@ export function GiftsDashboard() {
         ListEmptyComponent={
           <EmptyState
             actionLabel="Add gift"
-            description={`No ${kind.toLowerCase()} gifts have been recorded.`}
-            onAction={() => router.push({ pathname: "/more/gifts/new", params: { kind } })}
+            description="No received gifts have been recorded."
+            onAction={() => router.navigate("/more/gifts/new")}
             title="No gifts yet"
           />
         }
@@ -187,14 +199,36 @@ export function GiftsDashboard() {
         renderItem={({ item }) => <GiftCard gift={item} />}
         showsVerticalScrollIndicator={false}
       />
-      <View className="absolute bottom-md right-md">
-        <Button
-          icon={Plus}
-          label="Add gift"
-          onPress={() => router.push({ pathname: "/more/gifts/new", params: { kind } })}
-          variant="primary"
+      {gifts.length ? (
+        <View className="absolute bottom-md right-md">
+          <Button
+            icon={Plus}
+            label="Add gift"
+            onPress={() => router.navigate("/more/gifts/new")}
+            variant="primary"
+          />
+        </View>
+      ) : null}
+      <FilterSheet
+        clearLabel="Use most recent"
+        closeLabel="Close sort"
+        doneLabel="Done"
+        onClear={() => setSort("recent")}
+        onClose={() => setSortOpen(false)}
+        title="Sort gifts"
+        visible={sortOpen}
+      >
+        <SegmentedControl<GiftSort>
+          accessibilityLabel="Gift sort order"
+          onChange={setSort}
+          options={[
+            { label: "Recent", value: "recent" },
+            { label: "Value", value: "value" },
+            { label: "Name", value: "name" },
+          ]}
+          value={sort}
         />
-      </View>
+      </FilterSheet>
     </Screen>
   );
 }

@@ -3,7 +3,11 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { demoWorkspace } from "../seed";
 import { homeBudgetSummary } from "../selectors";
 import { HomeBudgetOverview } from "./HomeBudgetOverview";
-import { WeddingHero } from "./WeddingHero";
+import { WeddingHero, WeddingNameSparkles } from "./WeddingHero";
+
+jest.mock("expo-router", () => ({
+  useFocusEffect: jest.fn(),
+}));
 
 describe("Home components", () => {
   it("shows real hero data, an accessible countdown, and zero-state planning progress", async () => {
@@ -29,6 +33,11 @@ describe("Home components", () => {
       screen.getByRole("progressbar", { name: "Planning progress" }).props.accessibilityValue,
     ).toEqual({ max: 100, min: 0, now: 0, text: "No planning tasks yet, 0% planned" });
     expect(screen.getByLabelText("150 days until the wedding")).toBeTruthy();
+    const sparkles = screen.getByTestId("wedding-title-sparkles", {
+      includeHiddenElements: true,
+    });
+    expect(sparkles.props.accessibilityElementsHidden).toBe(true);
+    expect(sparkles.props.importantForAccessibility).toBe("no-hide-descendants");
   });
 
   it("uses explicit wedding-day and past-date states", async () => {
@@ -70,6 +79,14 @@ describe("Home components", () => {
     expect(screen.getByRole("button", { name: "Add wedding cover photo" })).toBeTruthy();
   });
 
+  it("removes decorative title sparkles when Reduce Motion is enabled", async () => {
+    const screen = await render(<WeddingNameSparkles reduceMotion />);
+
+    expect(
+      screen.queryByTestId("wedding-title-sparkles", { includeHiddenElements: true }),
+    ).toBeNull();
+  });
+
   it("shows the actual over-budget percentage and warning", async () => {
     const snapshot = structuredClone(demoWorkspace);
     snapshot.wedding.budgetTargetPaise = 100_000;
@@ -78,33 +95,45 @@ describe("Home components", () => {
         id: "expense",
         title: "Venue",
         categoryId: "venue",
+        createdAt: "2026-07-23T10:00:00.000Z",
         actualPaise: 125_000,
         paidPaise: 50_000,
         paymentStatus: "Partially Paid",
       },
     ];
-    const screen = await render(<HomeBudgetOverview summary={homeBudgetSummary(snapshot)} />);
+    const onPress = jest.fn();
+    const screen = await render(
+      <HomeBudgetOverview onPress={onPress} summary={homeBudgetSummary(snapshot)} />,
+    );
 
-    expect(screen.getByText("125%", { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText("Wedding budget")).toBeTruthy();
-    expect(screen.getByText("125% used")).toBeTruthy();
-    expect(screen.getByText(/Over by/)).toBeTruthy();
+    expect(screen.getAllByText(/Over by/).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("progressbar", { name: "Budget progress" }).props.accessibilityValue.text,
-    ).toContain("125%");
-    expect(screen.getByLabelText(/Planned, .*wedding target/)).toBeTruthy();
-    expect(screen.getByText("₹1,000.00")).toBeTruthy();
+      screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLabel,
+    ).toContain("125% of target spent");
+    expect(screen.getByText("Target")).toBeTruthy();
+    expect(screen.getByText("Spent")).toBeTruthy();
+    expect(screen.queryByText("Review the largest spending categories")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLiveRegion,
+    ).toBe("polite");
+    await fireEvent.press(screen.getByRole("button", { name: /Open Budget & expenses/ }));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("uses an em dash and guidance when there is no planned amount", async () => {
+  it("uses an em dash and target guidance when there is no budget target", async () => {
     const snapshot = structuredClone(demoWorkspace);
     delete snapshot.wedding.budgetTargetPaise;
     snapshot.expenses = [];
-    const screen = await render(<HomeBudgetOverview summary={homeBudgetSummary(snapshot)} />);
+    const screen = await render(
+      <HomeBudgetOverview onPress={jest.fn()} summary={homeBudgetSummary(snapshot)} />,
+    );
 
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    expect(screen.getByText("Set your budget target")).toBeTruthy();
+    expect(screen.getByText("Not set")).toBeTruthy();
     expect(
-      screen.getByText("Add a wedding target or expense estimates to calculate budget progress."),
-    ).toBeTruthy();
+      screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLabel,
+    ).toContain("No target set");
   });
 });

@@ -2,14 +2,15 @@ import { type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft, MapPin, Sparkles } from "lucide-react-native";
-import { router } from "expo-router";
+import type { Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
-import { AppText, Button, Card, IconButton, ListRow, StatusBadge } from "@/components/ui";
-import { formatDateOnly, formatShortDateOnly } from "@/lib/dates";
+import { AppText, Button, IconButton, ListRow } from "@/components/ui";
+import { formatDateOnly } from "@/lib/dates";
 import { formatInr } from "@/lib/money";
 import { tokens } from "@/theme";
+import { goBackOr } from "@/lib/navigation";
 
 import type { Expense, WeddingEvent } from "./types";
 
@@ -28,10 +29,22 @@ export function PageHeader({ eyebrow, title }: { eyebrow?: string; title: string
   );
 }
 
-export function DetailHeader({ eyebrow, title }: { eyebrow?: string; title: string }) {
+export function DetailHeader({
+  eyebrow,
+  fallback = "/",
+  title,
+}: {
+  eyebrow?: string;
+  fallback?: Href;
+  title: string;
+}) {
   return (
     <View className="flex-row items-start gap-xs">
-      <IconButton accessibilityLabel="Go back" icon={ChevronLeft} onPress={() => router.back()} />
+      <IconButton
+        accessibilityLabel="Go back"
+        icon={ChevronLeft}
+        onPress={() => goBackOr(fallback)}
+      />
       <View className="flex-1 gap-2xs pt-xs">
         {eyebrow ? <AppText variant="caption">{eyebrow}</AppText> : null}
         <AppText variant="title">{title}</AppText>
@@ -81,14 +94,6 @@ export function EventTimelineRow({
   );
 }
 
-const paymentBadge = (expense: Expense) => {
-  if (expense.paymentStatus === "Paid") return { label: "Paid", tone: "success" as const };
-  if (expense.paymentStatus === "Partially Paid") {
-    return { label: "Part paid", tone: "warning" as const };
-  }
-  return { label: "Payment due", tone: "warning" as const };
-};
-
 export function ExpenseListItem({
   categoryName,
   expense,
@@ -98,99 +103,17 @@ export function ExpenseListItem({
   expense: Expense;
   onPress: () => void;
 }) {
-  const badge = paymentBadge(expense);
-  const dueLabel = expense.dueDate ? `Due ${formatShortDateOnly(expense.dueDate)}` : undefined;
-  const description = [categoryName, dueLabel].filter(Boolean).join(" · ");
-
   return (
     <ListRow
       accessibilityLabel={`Open expense: ${expense.title}`}
-      description={description}
+      description={categoryName}
       onPress={onPress}
       title={expense.title}
       trailing={
-        <View className="items-end gap-2xs">
-          <AppText variant="label">{formatInr(expense.actualPaise)}</AppText>
-          <StatusBadge label={badge.label} tone={badge.tone} />
-        </View>
+        <AppText tone={expense.actualPaise > 0 ? undefined : "warning"} variant="label">
+          {expense.actualPaise > 0 ? formatInr(expense.actualPaise) : "Amount not recorded"}
+        </AppText>
       }
-    />
-  );
-}
-
-export function MoneyLine({
-  label,
-  value,
-  emphasis = false,
-}: {
-  label: string;
-  value: number;
-  emphasis?: boolean;
-}) {
-  return (
-    <View className="flex-row items-center justify-between gap-sm">
-      <AppText tone={emphasis ? "primary" : "muted"} variant="body">
-        {label}
-      </AppText>
-      <AppText variant={emphasis ? "heading" : "body"}>{formatInr(value)}</AppText>
-    </View>
-  );
-}
-
-function SummaryMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <View className="flex-1 gap-2xs">
-      <AppText variant="caption">{label}</AppText>
-      <AppText variant="heading">{formatInr(value)}</AppText>
-    </View>
-  );
-}
-
-export function FinancialSummary({
-  actualPaise,
-  estimatedPaise,
-  outstandingPaise,
-  paidPaise,
-}: {
-  actualPaise: number;
-  estimatedPaise: number;
-  outstandingPaise: number;
-  paidPaise: number;
-}) {
-  return (
-    <Card className="gap-lg">
-      <View className="flex-row gap-lg">
-        <SummaryMetric label="Planned" value={estimatedPaise} />
-        <SummaryMetric label="Spent" value={actualPaise} />
-      </View>
-      <View className="flex-row gap-lg border-t border-borderSubtle pt-lg">
-        <SummaryMetric label="Paid" value={paidPaise} />
-        <SummaryMetric label="Outstanding" value={outstandingPaise} />
-      </View>
-    </Card>
-  );
-}
-
-export function CategorySummaryRow({
-  actualPaise,
-  estimatedPaise,
-  name,
-}: {
-  actualPaise: number;
-  estimatedPaise: number;
-  name: string;
-}) {
-  const overBudget = estimatedPaise > 0 && actualPaise > estimatedPaise;
-  const description =
-    estimatedPaise > 0
-      ? `${formatInr(actualPaise)} spent of ${formatInr(estimatedPaise)} planned`
-      : `${formatInr(actualPaise)} spent`;
-
-  return (
-    <ListRow
-      description={description}
-      title={name}
-      trailing={overBudget ? <StatusBadge label="Over budget" tone="danger" /> : undefined}
     />
   );
 }
@@ -198,6 +121,7 @@ export function CategorySummaryRow({
 type FormShellProps = {
   children: ReactNode;
   description: string;
+  footer?: ReactNode;
   isSubmitting: boolean;
   onCancel: () => void;
   onSubmit: () => void;
@@ -257,6 +181,7 @@ function FormBackdrop() {
 export function FormShell({
   children,
   description,
+  footer,
   isSubmitting,
   onCancel,
   onSubmit,
@@ -307,13 +232,15 @@ export function FormShell({
         edges={["bottom"]}
         className="gap-xs border-t border-translucentBorder bg-translucentSurface px-md pb-xs pt-sm shadow-floating"
       >
-        <Button
-          disabled={isSubmitting}
-          icon={Sparkles}
-          label={submitLabel}
-          loading={isSubmitting}
-          onPress={onSubmit}
-        />
+        {footer ?? (
+          <Button
+            disabled={isSubmitting}
+            icon={Sparkles}
+            label={submitLabel}
+            loading={isSubmitting}
+            onPress={onSubmit}
+          />
+        )}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

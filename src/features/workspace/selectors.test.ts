@@ -1,4 +1,5 @@
 import {
+  categorySpending,
   emptyTaskFilters,
   expenseTotals,
   filterTasks,
@@ -8,7 +9,11 @@ import {
   householdSummary,
   isDateInCurrentWeek,
   isOverdue,
+  selectDailySpending,
+  selectExpenseTitleSuggestions,
   selectHomeNextActions,
+  selectRecentExpenses,
+  selectSpendingTrend,
   taskProgress,
   taskSummary,
   weddingDateEvent,
@@ -69,7 +74,7 @@ describe("workspace selectors", () => {
     ]);
   });
 
-  it("uses the positive wedding target before expense estimates", () => {
+  it("calculates budget only from the wedding target and actual spending", () => {
     const snapshot = structuredClone(demoWorkspace);
     snapshot.wedding.budgetTargetPaise = 100_000;
     snapshot.expenses = [
@@ -77,6 +82,7 @@ describe("workspace selectors", () => {
         id: "expense",
         title: "Venue",
         categoryId: "venue",
+        createdAt: "2026-07-23T10:00:00.000Z",
         estimatedPaise: 200_000,
         actualPaise: 125_000,
         paidPaise: 75_000,
@@ -85,32 +91,213 @@ describe("workspace selectors", () => {
     ];
 
     expect(homeBudgetSummary(snapshot)).toMatchObject({
-      plannedPaise: 100_000,
-      plannedSource: "target",
+      targetPaise: 100_000,
+      spentPaise: 125_000,
+      remainingPaise: -25_000,
       percentage: 125,
       overBudgetPaise: 25_000,
     });
 
     snapshot.wedding.budgetTargetPaise = 0;
     expect(homeBudgetSummary(snapshot)).toMatchObject({
-      plannedPaise: 200_000,
-      plannedSource: "estimates",
-      percentage: 62.5,
+      targetPaise: undefined,
+      spentPaise: 125_000,
+      remainingPaise: undefined,
+      percentage: undefined,
       overBudgetPaise: 0,
     });
   });
 
-  it("leaves budget percentage undefined when no planned amount exists", () => {
+  it("leaves budget percentage undefined when no target exists", () => {
     const snapshot = structuredClone(demoWorkspace);
     delete snapshot.wedding.budgetTargetPaise;
     snapshot.expenses = [];
 
     expect(homeBudgetSummary(snapshot)).toMatchObject({
       overBudgetPaise: 0,
-      plannedPaise: 0,
-      plannedSource: "none",
+      targetPaise: undefined,
+      spentPaise: 0,
+      remainingPaise: undefined,
       percentage: undefined,
     });
+  });
+
+  it("orders recent expenses by creation time", () => {
+    const expenses: Expense[] = [
+      {
+        id: "older",
+        title: "Older",
+        categoryId: "category-core-event",
+        createdAt: "2026-07-20T10:00:00.000Z",
+        actualPaise: 100,
+      },
+      {
+        id: "newer",
+        title: "Newer",
+        categoryId: "category-core-event",
+        createdAt: "2026-07-22T10:00:00.000Z",
+        actualPaise: 200,
+      },
+    ];
+
+    expect(selectRecentExpenses(expenses).map((expense) => expense.id)).toEqual(["newer", "older"]);
+  });
+
+  it("ranks and deduplicates normalized title suggestions", () => {
+    const expenses: Expense[] = [
+      {
+        id: "old-prefix",
+        title: "Venue advance",
+        categoryId: "category-core-event",
+        createdAt: "2026-07-20T10:00:00.000Z",
+        actualPaise: 100,
+      },
+      {
+        id: "contains",
+        title: "Main venue flowers",
+        categoryId: "category-core-shopping",
+        createdAt: "2026-07-23T10:00:00.000Z",
+        actualPaise: 200,
+      },
+      {
+        id: "new-prefix",
+        title: "  VENUE   ADVANCE ",
+        categoryId: "category-core-advance",
+        createdAt: "2026-07-22T10:00:00.000Z",
+        actualPaise: 300,
+      },
+      {
+        id: "prefix-two",
+        title: "Venue transport",
+        categoryId: "category-core-commute",
+        createdAt: "2026-07-21T10:00:00.000Z",
+        actualPaise: 400,
+      },
+    ];
+
+    expect(selectExpenseTitleSuggestions(expenses, "  veNUE ")).toEqual([
+      { categoryId: "category-core-advance", title: "  VENUE   ADVANCE " },
+      { categoryId: "category-core-commute", title: "Venue transport" },
+      { categoryId: "category-core-shopping", title: "Main venue flowers" },
+    ]);
+  });
+
+  it("groups legacy and core category spending by compatible icon", () => {
+    const snapshot = structuredClone(demoWorkspace);
+    snapshot.expenses = [
+      {
+        id: "event",
+        title: "Catering",
+        categoryId: "category-core-event",
+        createdAt: "2026-07-20T10:00:00.000Z",
+        actualPaise: 75_000,
+      },
+      {
+        id: "gift",
+        title: "Return gift",
+        categoryId: "category-core-gift",
+        createdAt: "2026-07-21T10:00:00.000Z",
+        actualPaise: 25_000,
+      },
+    ];
+
+    expect(categorySpending(snapshot)).toEqual([
+      { actualPaise: 75_000, iconKey: "event", percentage: 75 },
+      { actualPaise: 25_000, iconKey: "gift", percentage: 25 },
+    ]);
+  });
+
+  it("ranks category spending by amount", () => {
+    const snapshot = structuredClone(demoWorkspace);
+    snapshot.expenses = [
+      {
+        id: "event",
+        title: "Event",
+        categoryId: "category-core-event",
+        createdAt: "2026-07-20T10:00:00.000Z",
+        actualPaise: 25_000,
+      },
+      {
+        id: "gift",
+        title: "Gift",
+        categoryId: "category-core-gift",
+        createdAt: "2026-07-21T10:00:00.000Z",
+        actualPaise: 75_000,
+      },
+    ];
+
+    expect(categorySpending(snapshot).map((item) => item.iconKey)).toEqual(["gift", "event"]);
+  });
+
+  it("groups spending by expense date and filters recent ranges", () => {
+    const expenses: Expense[] = [
+      {
+        id: "old",
+        title: "Old",
+        categoryId: "category-core-event",
+        createdAt: "2026-05-01T10:00:00.000Z",
+        actualPaise: 10_000,
+        date: "2026-05-01",
+      },
+      {
+        id: "first",
+        title: "First",
+        categoryId: "category-core-event",
+        createdAt: "2026-07-20T10:00:00.000Z",
+        actualPaise: 25_000,
+        date: "2026-07-20",
+      },
+      {
+        id: "second",
+        title: "Second",
+        categoryId: "category-core-gift",
+        createdAt: "2026-07-20T11:00:00.000Z",
+        actualPaise: 75_000,
+        date: "2026-07-20",
+      },
+      {
+        id: "undated",
+        title: "Undated",
+        categoryId: "category-core-other",
+        createdAt: "2026-07-21T10:00:00.000Z",
+        actualPaise: 5_000,
+      },
+      {
+        id: "zero",
+        title: "Zero",
+        categoryId: "category-core-other",
+        createdAt: "2026-07-22T10:00:00.000Z",
+        actualPaise: 0,
+        date: "2026-07-22",
+      },
+    ];
+
+    expect(selectDailySpending(expenses, "30d", "2026-07-23")).toEqual([
+      {
+        actualPaise: 100_000,
+        endDate: "2026-07-20",
+        expenseCount: 2,
+        startDate: "2026-07-20",
+      },
+    ]);
+    expect(selectDailySpending(expenses, "all", "2026-07-23")).toHaveLength(2);
+  });
+
+  it("condenses long spending timelines without losing totals", () => {
+    const expenses: Expense[] = Array.from({ length: 12 }, (_, index) => ({
+      id: `expense-${index}`,
+      title: `Expense ${index}`,
+      categoryId: "category-core-event",
+      createdAt: `2026-07-${String(index + 1).padStart(2, "0")}T10:00:00.000Z`,
+      actualPaise: 10_000,
+      date: `2026-07-${String(index + 1).padStart(2, "0")}` as Expense["date"],
+    }));
+    const points = selectSpendingTrend(expenses, "all", "2026-07-23", 5);
+
+    expect(points.length).toBeLessThanOrEqual(5);
+    expect(points.reduce((sum, point) => sum + point.actualPaise, 0)).toBe(120_000);
+    expect(points[0]?.startDate).toBe("2026-07-01");
+    expect(points.at(-1)?.endDate).toBe("2026-07-12");
   });
 
   it("computes household metrics and combines side, RSVP, and search filters", () => {
@@ -120,6 +307,7 @@ describe("workspace selectors", () => {
         name: "Patnaik Family",
         guestCount: 5,
         side: "partnerOne" as const,
+        rsvpStatus: "Confirmed" as const,
         invitationStatus: "Delivered" as const,
         accommodationStatus: "Booked" as const,
         transportStatus: "Needed" as const,
@@ -133,6 +321,7 @@ describe("workspace selectors", () => {
         name: "Friends",
         guestCount: 3,
         side: "both" as const,
+        rsvpStatus: "Pending" as const,
         invitationStatus: "Not Sent" as const,
         accommodationStatus: "Not Needed" as const,
         transportStatus: "Booked" as const,
@@ -143,13 +332,13 @@ describe("workspace selectors", () => {
     expect(householdSummary(households)).toEqual({
       households: 2,
       invited: 5,
-      confirmed: 2,
+      confirmed: 5,
       stayBooked: 5,
       transportBooked: 3,
     });
     expect(
       filterHouseholds(households, {
-        query: "asha",
+        query: "patnaik",
         side: "partnerOne",
         status: "Confirmed",
       }).map((household) => household.id),
@@ -177,7 +366,7 @@ describe("workspace selectors", () => {
           returnGiftStatus: "Done",
         },
       ]),
-    ).toEqual({ total: 2, totalValuePaise: 10_000, thanked: 1, returned: 1 });
+    ).toEqual({ total: 2, totalValuePaise: 10_000 });
   });
 
   it("uses paise exactly for paid and outstanding totals", () => {
@@ -186,6 +375,7 @@ describe("workspace selectors", () => {
         id: "1",
         title: "Venue",
         categoryId: "venue",
+        createdAt: "2026-07-23T10:00:00.000Z",
         estimatedPaise: 10_000_001,
         actualPaise: 10_000_001,
         paidPaise: 3_333_334,

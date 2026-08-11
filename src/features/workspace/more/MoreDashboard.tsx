@@ -1,23 +1,21 @@
-import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import { ScrollView, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
 import type { LucideIcon } from "lucide-react-native";
 import {
-  CalendarHeart,
   ChevronRight,
   Gift,
-  Headphones,
-  Info,
-  MessageSquare,
   Phone,
   Settings,
   UploadCloud,
   Users,
+  WalletCards,
 } from "lucide-react-native";
 import { router } from "expo-router";
 
-import { MangalyaHeader, showComingSoon } from "@/components/brand";
-import { AppText, ErrorState, LoadingState, Screen } from "@/components/ui";
+import { MangalyaHeader } from "@/components/brand";
+import { AppText, ErrorState, LoadingState, MotionPressable, Screen } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
+import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 
 import { useWorkspace } from "../provider";
@@ -25,12 +23,23 @@ import { useWorkspace } from "../provider";
 export type MoreFeature = {
   description: string;
   icon: LucideIcon;
-  route?:
-    "/more/backup" | "/more/emergency-contacts" | "/more/gifts" | "/more/guests" | "/more/settings";
+  route:
+    | "/budget/overview"
+    | "/more/backup"
+    | "/more/emergency-contacts"
+    | "/more/gifts"
+    | "/more/guests"
+    | "/more/settings";
   title: string;
 };
 
 const moreItems: MoreFeature[] = [
+  {
+    description: "See your target, spending trends, dates and categories",
+    icon: WalletCards,
+    route: "/budget/overview",
+    title: "Budget & expenses",
+  },
   {
     description: "Manage your preferences and app settings",
     icon: Settings,
@@ -61,71 +70,62 @@ const moreItems: MoreFeature[] = [
     route: "/more/emergency-contacts",
     title: "Emergency Contacts",
   },
-  { description: "Learn more about Mangalya and our mission", icon: Info, title: "About the App" },
 ];
-
-function ShortcutCard({
-  icon: Icon,
-  onPress,
-  title,
-}: {
-  icon: LucideIcon;
-  onPress: () => void;
-  title: string;
-}) {
-  const compact = useWindowDimensions().width < 380;
-
-  return (
-    <Pressable
-      accessibilityLabel={title}
-      accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.primarySoft }}
-      className={`min-h-16 flex-1 flex-row items-center rounded-card border border-borderSubtle bg-elevatedSurface shadow-card active:bg-surfaceMuted ${
-        compact ? "gap-2xs p-xs" : "gap-sm p-sm"
-      }`}
-      onPress={onPress}
-    >
-      <View
-        className={`${compact ? "h-10 w-10" : "h-12 w-12"} items-center justify-center rounded-full bg-primary`}
-      >
-        <Icon color={tokens.colors.onPrimary} size={tokens.iconSize.md} />
-      </View>
-      <AppText className="min-w-0 flex-1" numberOfLines={1} variant="label">
-        {title}
-      </AppText>
-      <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-    </Pressable>
-  );
-}
 
 export function MoreFeatureCard({ item }: { item: MoreFeature }) {
   const Icon = item.icon;
+  const { fontScale } = useWindowDimensions();
+  const largeText = isLargeText(fontScale);
+
   return (
-    <Pressable
-      accessibilityLabel={item.route ? `Open ${item.title}` : `${item.title}, coming soon`}
+    <MotionPressable
+      accessibilityHint={item.description}
+      accessibilityLabel={`Open ${item.title}`}
       accessibilityRole="button"
       android_ripple={{ color: tokens.colors.primarySoft }}
-      className="flex-1 gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-card active:bg-surfaceMuted"
-      onPress={() => (item.route ? router.push(item.route) : showComingSoon(item.title))}
+      className={`flex-1 rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-card active:bg-surfaceMuted ${
+        largeText ? "min-h-20 flex-row items-center gap-sm" : "gap-sm"
+      }`}
+      onPress={() => router.navigate(item.route)}
+      pressedScale={0.985}
     >
-      <View className="flex-row items-start justify-between gap-sm">
-        <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-          <Icon color={tokens.colors.primary} size={tokens.iconSize.lg} />
-        </View>
-        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-      </View>
-      <View className="gap-2xs">
-        <AppText variant="heading">{item.title}</AppText>
-        <AppText tone="muted" variant="caption">
-          {item.description}
-        </AppText>
-      </View>
-    </Pressable>
+      {largeText ? (
+        <>
+          <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
+            <Icon color={tokens.colors.primary} size={tokens.iconSize.lg} />
+          </View>
+          <View className="min-w-0 flex-1 gap-2xs">
+            <AppText variant="heading">{item.title}</AppText>
+            <AppText tone="muted" variant="caption">
+              {item.description}
+            </AppText>
+          </View>
+          <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+        </>
+      ) : (
+        <>
+          <View className="flex-row items-start justify-between gap-sm">
+            <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
+              <Icon color={tokens.colors.primary} size={tokens.iconSize.lg} />
+            </View>
+            <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+          </View>
+          <View className="gap-2xs">
+            <AppText variant="heading">{item.title}</AppText>
+            <AppText tone="muted" variant="caption">
+              {item.description}
+            </AppText>
+          </View>
+        </>
+      )}
+    </MotionPressable>
   );
 }
 
 export function MoreDashboard() {
   const workspace = useWorkspace();
+  const { fontScale } = useWindowDimensions();
+  const itemsPerRow = isLargeText(fontScale) ? 1 : 2;
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -170,54 +170,30 @@ export function MoreDashboard() {
       >
         <MangalyaHeader />
         <View className="gap-2xs">
-          <AppText tone="primary" variant="display">
+          <AppText accessibilityRole="header" tone="primary" variant="display">
             More
           </AppText>
-          <AppText variant="body">Helpful tools and extra features</AppText>
         </View>
-        <View className="flex-row gap-sm">
-          <ShortcutCard
-            icon={CalendarHeart}
-            onPress={() => router.push("/plan")}
-            title="Planning"
-          />
-          <ShortcutCard
-            icon={Headphones}
-            onPress={() => showComingSoon("Support")}
-            title="Support"
-          />
-        </View>
-        <View className="gap-sm">
-          {Array.from({ length: Math.ceil(moreItems.length / 2) }, (_, rowIndex) => {
-            const row = moreItems.slice(rowIndex * 2, rowIndex * 2 + 2);
+        <View className="gap-sm" testID="more-feature-grid">
+          {Array.from({ length: Math.ceil(moreItems.length / itemsPerRow) }, (_, rowIndex) => {
+            const row = moreItems.slice(
+              rowIndex * itemsPerRow,
+              rowIndex * itemsPerRow + itemsPerRow,
+            );
             return (
-              <View className="flex-row items-stretch gap-sm" key={row[0]?.title}>
+              <View
+                className="flex-row items-stretch gap-sm"
+                key={row[0]?.title}
+                testID={`more-feature-row-${rowIndex}`}
+              >
                 {row.map((item) => (
                   <MoreFeatureCard item={item} key={item.title} />
                 ))}
-                {row.length === 1 ? <View className="flex-1" /> : null}
+                {itemsPerRow > 1 && row.length === 1 ? <View className="flex-1" /> : null}
               </View>
             );
           })}
         </View>
-        <Pressable
-          accessibilityLabel="Feedback, coming soon"
-          accessibilityRole="button"
-          android_ripple={{ color: tokens.colors.primarySoft }}
-          className="min-h-20 flex-row items-center gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-card active:bg-surfaceMuted"
-          onPress={() => showComingSoon("Feedback")}
-        >
-          <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-            <MessageSquare color={tokens.colors.primary} size={tokens.iconSize.lg} />
-          </View>
-          <View className="min-w-0 flex-1 gap-2xs">
-            <AppText variant="heading">Feedback</AppText>
-            <AppText tone="muted" variant="caption">
-              Share your thoughts and help us improve
-            </AppText>
-          </View>
-          <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-        </Pressable>
       </ScrollView>
     </Screen>
   );

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { memo, useEffect, useRef } from "react";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import {
   Camera,
   Car,
@@ -15,6 +15,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-na
 
 import { AppText, StatusBadge } from "@/components/ui";
 import { formatDateOnly, formatShortDateOnly } from "@/lib/dates";
+import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 import {
   exitTransition,
@@ -86,6 +87,10 @@ const styles = StyleSheet.create({
     paddingRight: spacingXs,
     paddingTop: spacingSm,
   },
+  detailAreaLargeText: {
+    alignItems: "stretch",
+    flexDirection: "column",
+  },
   disabled: {
     opacity: 0.5,
   },
@@ -115,15 +120,15 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     minHeight: tokens.touchTarget,
   },
-  titleScrollContent: {
-    alignItems: "center",
-    paddingRight: spacingXs,
-  },
-  titleScroller: {
+  openButtonLargeText: {
     alignSelf: "stretch",
-    flexGrow: 0,
-    flexShrink: 0,
+    justifyContent: "space-between",
+    paddingTop: spacingXs,
+  },
+  titleButton: {
+    alignSelf: "stretch",
     minWidth: 0,
+    paddingRight: spacingXs,
   },
 });
 
@@ -182,7 +187,7 @@ export type TaskCompletionRowProps = {
   variant?: "compact" | "detailed";
 };
 
-export function TaskCompletionRow({
+export const TaskCompletionRow = memo(function TaskCompletionRow({
   disabled = false,
   eventName,
   onPress,
@@ -191,6 +196,7 @@ export function TaskCompletionRow({
   today,
   variant = "detailed",
 }: TaskCompletionRowProps) {
+  const { fontScale } = useWindowDimensions();
   const completed = task.status === "Completed";
   const overdue = !completed && task.status !== "Cancelled" && isOverdue(task.dueDate, today);
   const badge = taskBadge(task, overdue);
@@ -204,8 +210,7 @@ export function TaskCompletionRow({
   const rowMinHeight = variant === "compact" ? compactRowHeight : detailedRowHeight;
   const completion = useSharedValue(completed ? 1 : 0);
   const previousTaskId = useRef(task.id);
-  const titleTouchStart = useRef<{ x: number; y: number } | null>(null);
-  const titleWasDragged = useRef(false);
+  const largeText = isLargeText(fontScale);
 
   useEffect(() => {
     if (previousTaskId.current !== task.id) {
@@ -298,68 +303,31 @@ export function TaskCompletionRow({
             <TaskCategoryIcon task={task} />
           </View>
         </View>
-        <View style={[styles.detailArea, { minHeight: rowMinHeight }]}>
+        <View
+          style={[
+            styles.detailArea,
+            { minHeight: rowMinHeight },
+            largeText ? styles.detailAreaLargeText : undefined,
+          ]}
+          testID="task-detail-area"
+        >
           <View style={styles.contentColumn}>
             <Animated.View style={[styles.content, contentStyle]}>
-              <ScrollView
+              <Pressable
                 accessible={false}
-                bounces={false}
-                contentContainerStyle={styles.titleScrollContent}
-                directionalLockEnabled
-                fadingEdgeLength={spacingSm}
-                horizontal
-                key={`${task.id}:${task.title}`}
-                nestedScrollEnabled
-                onScrollBeginDrag={() => {
-                  titleWasDragged.current = true;
-                }}
-                onTouchCancel={() => {
-                  titleTouchStart.current = null;
-                  titleWasDragged.current = false;
-                }}
-                onTouchEnd={(event) => {
-                  const start = titleTouchStart.current;
-                  const wasDragged = titleWasDragged.current;
-                  titleTouchStart.current = null;
-                  titleWasDragged.current = false;
-
-                  if (!start || wasDragged) return;
-
-                  const horizontalTravel = Math.abs(event.nativeEvent.pageX - start.x);
-                  const verticalTravel = Math.abs(event.nativeEvent.pageY - start.y);
-                  if (horizontalTravel < spacingXs && verticalTravel < spacingXs) onPress();
-                }}
-                onTouchMove={(event) => {
-                  const start = titleTouchStart.current;
-                  if (!start) return;
-
-                  const horizontalTravel = Math.abs(event.nativeEvent.pageX - start.x);
-                  const verticalTravel = Math.abs(event.nativeEvent.pageY - start.y);
-                  if (horizontalTravel >= spacingXs || verticalTravel >= spacingXs) {
-                    titleWasDragged.current = true;
-                  }
-                }}
-                onTouchStart={(event) => {
-                  titleTouchStart.current = {
-                    x: event.nativeEvent.pageX,
-                    y: event.nativeEvent.pageY,
-                  };
-                  titleWasDragged.current = false;
-                }}
-                overScrollMode="never"
-                showsHorizontalScrollIndicator={false}
-                style={styles.titleScroller}
-                testID={`task-title-scroll-${task.id}`}
+                onPress={onPress}
+                style={styles.titleButton}
+                testID={`task-title-button-${task.id}`}
               >
                 <AppText
                   accessible={false}
-                  numberOfLines={1}
+                  numberOfLines={2}
                   style={completed ? { textDecorationLine: "line-through" } : undefined}
                   variant="label"
                 >
                   {task.title}
                 </AppText>
-              </ScrollView>
+              </Pressable>
               <View style={styles.metadata}>
                 {eventName ? (
                   <View style={styles.metadataItem}>
@@ -390,7 +358,7 @@ export function TaskCompletionRow({
             accessibilityRole="button"
             android_ripple={{ color: tokens.colors.primarySoft }}
             onPress={onPress}
-            style={styles.openButton}
+            style={[styles.openButton, largeText ? styles.openButtonLargeText : undefined]}
           >
             <View style={styles.badgeContainer}>
               <StatusBadge label={visibleBadge.label} tone={visibleBadge.tone} />
@@ -407,4 +375,4 @@ export function TaskCompletionRow({
       </View>
     </Animated.View>
   );
-}
+});

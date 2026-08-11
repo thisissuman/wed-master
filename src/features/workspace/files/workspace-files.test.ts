@@ -140,6 +140,9 @@ describe("wedding cover files", () => {
 
     const result = await pickWeddingCoverPhoto();
 
+    expect(mockImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ allowsEditing: true, aspect: [16, 9] }),
+    );
     expect(result.status).toBe("selected");
     if (result.status === "selected") {
       expect(result.uri).toContain("/mangalya/cover-photos/wedding-cover-");
@@ -216,10 +219,13 @@ describe("wedding cover files", () => {
   it("removes individual covers and clears all workspace media", () => {
     const coverDirectory = "file:///documents/mangalya/cover-photos";
     const attachmentDirectory = "file:///documents/mangalya/attachments";
+    const exportDirectory = "file:///documents/mangalya/exports";
     mockFileSystem.__directories.add(coverDirectory);
     mockFileSystem.__directories.add(attachmentDirectory);
+    mockFileSystem.__directories.add(exportDirectory);
     mockFileSystem.__files.set(`${coverDirectory}/current.jpg`, { size: 1_000 });
     mockFileSystem.__files.set(`${attachmentDirectory}/receipt.pdf`, { size: 1_000 });
+    mockFileSystem.__files.set(`${exportDirectory}/backup.json`, { size: 1_000 });
 
     expect(removeWeddingCoverPhoto(`${coverDirectory}/current.jpg`)).toBe(true);
     expect(mockFileSystem.__files.has(`${coverDirectory}/current.jpg`)).toBe(false);
@@ -228,6 +234,7 @@ describe("wedding cover files", () => {
     expect(clearWorkspaceLocalFiles()).toBe(true);
     expect(mockFileSystem.__directories.has(coverDirectory)).toBe(false);
     expect(mockFileSystem.__directories.has(attachmentDirectory)).toBe(false);
+    expect(mockFileSystem.__directories.has(exportDirectory)).toBe(false);
     expect(mockFileSystem.__files.size).toBe(0);
   });
 });

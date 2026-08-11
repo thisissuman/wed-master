@@ -3,9 +3,7 @@ import { type PropsWithChildren, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { RepositoryProvider } from "@/features/workspace";
-
-import { SessionProvider } from "./session-provider";
-import { ThemeProvider } from "./theme-provider";
+import { FeedbackHost } from "@/features/feedback/FeedbackHost";
 
 export function AppProviders({ children }: PropsWithChildren) {
   const [queryClient] = useState(
@@ -23,11 +21,10 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <SessionProvider>
-            <RepositoryProvider>{children}</RepositoryProvider>
-          </SessionProvider>
-        </ThemeProvider>
+        <RepositoryProvider>
+          {children}
+          <FeedbackHost />
+        </RepositoryProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

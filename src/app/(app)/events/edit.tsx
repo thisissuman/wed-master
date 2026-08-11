@@ -1,21 +1,23 @@
 import { useLocalSearchParams } from "expo-router";
-import { AppText, LoadingState, Screen } from "@/components/ui";
 import { EventForm, useWorkspace } from "@/features/workspace";
+import {
+  RouteLoadError,
+  RouteLoading,
+  RouteNotFound,
+} from "@/features/workspace/routes/RouteStates";
 export default function EditEventRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useWorkspace();
-  if (!data)
+  const workspace = useWorkspace();
+  if (workspace.isError)
     return (
-      <Screen>
-        <LoadingState />
-      </Screen>
+      <RouteLoadError
+        error={workspace.error}
+        fallback="/plan"
+        onRetry={() => void workspace.refetch()}
+        title="We could not open this event"
+      />
     );
-  const event = data.events.find((item) => item.id === id);
-  return event ? (
-    <EventForm event={event} />
-  ) : (
-    <Screen>
-      <AppText>Event not found.</AppText>
-    </Screen>
-  );
+  if (!workspace.data) return <RouteLoading label="Opening event" />;
+  const event = workspace.data.events.find((item) => item.id === id);
+  return event ? <EventForm event={event} /> : <RouteNotFound entity="Event" fallback="/plan" />;
 }

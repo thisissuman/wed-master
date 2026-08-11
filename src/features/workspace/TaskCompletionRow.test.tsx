@@ -1,4 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
+import * as ReactNative from "react-native";
 
 import type { Task } from "./types";
 import { TaskCompletionRow } from "./TaskCompletionRow";
@@ -13,7 +14,17 @@ const baseTask: Task = {
   attachments: [],
 };
 
+const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
+
 describe("TaskCompletionRow", () => {
+  beforeEach(() => {
+    useWindowDimensionsSpy.mockReturnValue({ fontScale: 1, height: 800, scale: 2, width: 411 });
+  });
+
+  afterAll(() => {
+    useWindowDimensionsSpy.mockRestore();
+  });
+
   it("exposes completion and reversible reopen states", async () => {
     const onToggle = jest.fn();
     const screen = await render(
@@ -81,26 +92,36 @@ describe("TaskCompletionRow", () => {
       />,
     );
 
-    const titleScroller = screen.getByTestId("task-title-scroll-task");
-    expect(titleScroller.props.horizontal).toBe(true);
-    expect(titleScroller.props.showsHorizontalScrollIndicator).toBe(false);
-    expect(screen.getByText(title)).toBeTruthy();
+    const titleButton = screen.getByTestId("task-title-button-task");
+    expect(screen.getByText(title).props.numberOfLines).toBe(2);
     expect(screen.getByText("Wedding")).toBeTruthy();
     expect(screen.getByText("Today")).toBeTruthy();
     expect(screen.getByText("High")).toBeTruthy();
 
-    await fireEvent(titleScroller, "touchStart", {
-      nativeEvent: { pageX: 240, pageY: 24 },
-    });
-    await fireEvent(titleScroller, "touchMove", {
-      nativeEvent: { pageX: 100, pageY: 24 },
-    });
-    await fireEvent(titleScroller, "touchEnd", {
-      nativeEvent: { pageX: 100, pageY: 24 },
-    });
-    expect(onPress).not.toHaveBeenCalled();
+    await fireEvent.press(titleButton);
+    expect(onPress).toHaveBeenCalledTimes(1);
 
     await fireEvent.press(screen.getByRole("button", { name: `Open task: ${title}` }));
-    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(onPress).toHaveBeenCalledTimes(2);
+  });
+
+  it("stacks task metadata and the status action at large text sizes", async () => {
+    useWindowDimensionsSpy.mockReturnValue({ fontScale: 1.3, height: 800, scale: 2, width: 411 });
+    const screen = await render(
+      <TaskCompletionRow
+        eventName="Wedding"
+        onPress={jest.fn()}
+        onToggle={jest.fn()}
+        task={baseTask}
+        today="2026-07-17"
+      />,
+    );
+
+    expect(
+      ReactNative.StyleSheet.flatten(screen.getByTestId("task-detail-area").props.style),
+    ).toMatchObject({
+      alignItems: "stretch",
+      flexDirection: "column",
+    });
   });
 });

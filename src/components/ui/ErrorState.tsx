@@ -3,9 +3,21 @@ import { View } from "react-native";
 import { AppText } from "./AppText";
 import { Button } from "./Button";
 
-type ErrorStateProps = { message: string; onRetry?: () => void; title?: string };
+type ErrorStateProps = {
+  actionLabel?: string;
+  message: string;
+  onAction?: () => void;
+  onRetry?: () => void;
+  title?: string;
+};
 
-export function ErrorState({ message, onRetry, title = "Something went wrong" }: ErrorStateProps) {
+export function ErrorState({
+  actionLabel,
+  message,
+  onAction,
+  onRetry,
+  title = "Something went wrong",
+}: ErrorStateProps) {
   return (
     <View
       accessibilityRole="alert"
@@ -13,7 +25,14 @@ export function ErrorState({ message, onRetry, title = "Something went wrong" }:
     >
       <AppText variant="heading">{title}</AppText>
       <AppText tone="muted">{message}</AppText>
-      {onRetry ? <Button label="Try again" onPress={onRetry} variant="secondary" /> : null}
+      {onRetry || (actionLabel && onAction) ? (
+        <View className="flex-row flex-wrap gap-sm">
+          {onRetry ? <Button label="Try again" onPress={onRetry} variant="secondary" /> : null}
+          {actionLabel && onAction ? (
+            <Button label={actionLabel} onPress={onAction} variant="secondary" />
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }

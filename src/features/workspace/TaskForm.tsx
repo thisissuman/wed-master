@@ -18,8 +18,11 @@ import {
 } from "lucide-react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 
 import {
+  Button,
+  ConfirmationDialog,
   DateField,
   Disclosure,
   Screen,
@@ -29,11 +32,17 @@ import {
 } from "@/components/ui";
 import { formatDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
+import {
+  feedbackActionDurationMilliseconds,
+  useFeedbackStore,
+} from "@/features/feedback/feedback-store";
 
 import { taskFormSchema, type TaskFormValues } from "./forms";
+import { removeWorkspaceAttachment } from "./files/workspace-files";
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 import { taskPriorities, taskStatuses, type Task } from "./types";
 import { FormShell } from "./ui";
+import { useUnsavedChangesGuard } from "./useUnsavedChangesGuard";
 
 const priorityOptions: SelectOption[] = taskPriorities.map((value) => ({
   label: value,
@@ -80,12 +89,16 @@ const statusOptions: SelectOption[] = taskStatuses.map((value) => ({
 export function TaskForm({ initialEventId = "", task }: { initialEventId?: string; task?: Task }) {
   const { data } = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    setError,
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
+    mode: "onTouched",
     defaultValues: task
       ? {
           title: task.title,
@@ -111,7 +124,20 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
         },
   });
 
+  const { exitAfterSave, requestExit } = useUnsavedChangesGuard({
+    isDirty,
+    isSubmitting: isSubmitting || mutation.isPending,
+  });
+
   const save = handleSubmit(async (values) => {
+    const linkedEvent = data?.events.find((event) => event.id === values.eventId);
+    if (values.dueDate && linkedEvent && values.dueDate > linkedEvent.date) {
+      setError("dueDate", {
+        message: `Choose a date on or before ${formatDateOnly(linkedEvent.date)}.`,
+        type: "validate",
+      });
+      return;
+    }
     await mutation.mutateAsync((repositories) =>
       task
         ? repositories.tasks.updateTask({
@@ -137,7 +163,8 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
           }),
     );
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    showFeedback({ message: task ? "Task updated" : "Task created" });
+    exitAfterSave();
   });
 
   const text = (
@@ -151,6 +178,9 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
       name={name}
       render={({ field }) => (
         <TextField
+          autoCapitalize="sentences"
+          autoComplete={name === "responsiblePerson" ? "name" : "off"}
+          autoFocus={name === "title"}
           error={errors[name]?.message}
           icon={icon}
           label={label}
@@ -159,6 +189,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
           onChangeText={field.onChange}
           optional={options?.optional}
           placeholder={options?.placeholder}
+          returnKeyType={options?.multiline ? "default" : "done"}
           required={options?.required}
           value={field.value}
         />
@@ -209,12 +240,30 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
     task && (task.category || task.notes || task.status !== "Not Started"),
   );
 
+  const deleteTask = async () => {
+    if (!task) return;
+    await mutation.mutateAsync((repositories) => repositories.tasks.deleteTask(task.id));
+    let restored = false;
+    setTimeout(() => {
+      if (!restored) task.attachments.forEach(removeWorkspaceAttachment);
+    }, feedbackActionDurationMilliseconds);
+    showFeedback({
+      actionLabel: "Undo",
+      message: "Task deleted",
+      onAction: async () => {
+        restored = true;
+        await mutation.mutateAsync((repositories) => repositories.tasks.restoreTask(task));
+      },
+    });
+    router.replace("/plan");
+  };
+
   return (
     <Screen>
       <FormShell
         description="Keep every detail on track without making simple tasks feel heavy."
         isSubmitting={isSubmitting || mutation.isPending}
-        onCancel={() => router.back()}
+        onCancel={requestExit}
         onSubmit={save}
         submitLabel={task ? "Save changes" : "Create task"}
         submissionError={mutation.error ? toUserMessage(mutation.error) : undefined}
@@ -265,7 +314,19 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
             placeholder: "Anything else to remember",
           })}
         </Disclosure>
+        {task ? (
+          <Button label="Delete task" onPress={() => setDeleteOpen(true)} variant="dangerGhost" />
+        ) : null}
       </FormShell>
+      <ConfirmationDialog
+        confirmLabel="Delete task"
+        description="This task and its saved local files will be removed."
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={() => void deleteTask()}
+        pending={mutation.isPending}
+        title="Delete this task?"
+        visible={deleteOpen}
+      />
     </Screen>
   );
 }

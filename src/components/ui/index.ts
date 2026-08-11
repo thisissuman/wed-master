@@ -1,7 +1,6 @@
 export { AppText } from "./AppText";
 export { Button } from "./Button";
 export { Card } from "./Card";
-export { CircularProgress } from "./CircularProgress";
 export { ConfirmationDialog } from "./ConfirmationDialog";
 export { DateField } from "./DateField";
 export { Disclosure } from "./Disclosure";
@@ -15,7 +14,6 @@ export { ListRow } from "./ListRow";
 export { LoadingState } from "./LoadingState";
 export { MotionPressable } from "./MotionPressable";
 export { NumberStepper } from "./NumberStepper";
-export { PlaceholderScreen } from "./PlaceholderScreen";
 export { ProgressBar } from "./ProgressBar";
 export { Screen } from "./Screen";
 export {

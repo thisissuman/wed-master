@@ -1,118 +1,98 @@
-import { router } from "expo-router";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import type { TextInput } from "react-native";
 
-import { DateField, Disclosure, Screen, SelectField, TextField } from "@/components/ui";
-import { toDateOnly } from "@/lib/dates";
+import { Button, ConfirmationDialog, Disclosure, Screen, TextField } from "@/components/ui";
+import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { toUserMessage } from "@/lib/errors";
 
 import { fromPaise, giftFormSchema, toPaise, type GiftFormValues } from "../forms";
 import { useWorkspaceMutation } from "../provider";
-import { giftKinds, giftProgressStatuses, type GiftRecord } from "../types";
+import type { GiftRecord } from "../types";
 import { FormShell } from "../ui";
+import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
 
-export function GiftForm({
-  gift,
-  initialKind = "Received",
-}: {
-  gift?: GiftRecord;
-  initialKind?: GiftRecord["kind"];
-}) {
+export function GiftForm({ gift }: { gift?: GiftRecord }) {
   const mutation = useWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const valueInputRef = useRef<TextInput>(null);
+  const relationshipInputRef = useRef<TextInput>(null);
+  const itemInputRef = useRef<TextInput>(null);
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<GiftFormValues>({
     resolver: zodResolver(giftFormSchema),
-    defaultValues: gift
-      ? {
-          kind: gift.kind,
-          personName: gift.personName,
-          relationship: gift.relationship ?? "",
-          itemName: gift.itemName,
-          value: fromPaise(gift.valuePaise),
-          valueIsEstimated: gift.valueIsEstimated ? "Yes" : "No",
-          date: gift.date ?? "",
-          thankedStatus: gift.thankedStatus,
-          returnGiftStatus: gift.returnGiftStatus,
-          notes: gift.notes ?? "",
-        }
-      : {
-          kind: initialKind,
-          personName: "",
-          relationship: "",
-          itemName: "",
-          value: "",
-          valueIsEstimated: "No",
-          date: "",
-          thankedStatus: "Pending",
-          returnGiftStatus: "Pending",
-          notes: "",
-        },
+    mode: "onTouched",
+    defaultValues: {
+      personName: gift?.personName ?? "",
+      relationship: gift?.relationship ?? "",
+      itemName: gift?.itemName ?? "",
+      value: fromPaise(gift?.valuePaise),
+    },
+  });
+  const { exitAfterSave, requestExit } = useUnsavedChangesGuard({
+    isDirty,
+    isSubmitting: isSubmitting || mutation.isPending,
   });
 
   const save = handleSubmit(async (values) => {
-    const today = toDateOnly(new Date()) as GiftRecord["thankedDate"];
     const record = {
-      kind: values.kind,
+      ...(gift ?? {}),
       personName: values.personName,
       relationship: values.relationship || undefined,
-      itemName: values.itemName,
+      itemName: values.itemName || undefined,
       valuePaise: values.value ? toPaise(values.value) : undefined,
-      valueIsEstimated: values.valueIsEstimated === "Yes" || undefined,
-      date: (values.date || undefined) as GiftRecord["date"],
-      thankedStatus: values.thankedStatus,
-      thankedDate: values.thankedStatus === "Done" ? (gift?.thankedDate ?? today) : undefined,
-      returnGiftStatus: values.returnGiftStatus,
-      returnGiftDate:
-        values.returnGiftStatus === "Done" ? (gift?.returnGiftDate ?? today) : undefined,
-      notes: values.notes || undefined,
     };
     await mutation.mutateAsync((repositories) =>
       gift
         ? repositories.gifts.updateGift({ ...record, id: gift.id })
         : repositories.gifts.createGift(record),
     );
-    router.back();
+    showFeedback({ message: gift ? "Gift updated" : "Gift added" });
+    exitAfterSave();
   });
 
   const text = (
-    name: "personName" | "relationship" | "itemName" | "value" | "notes",
+    name: "itemName" | "personName" | "relationship" | "value",
     label: string,
-    multiline = false,
-    keyboardType?: "decimal-pad",
+    options?: { keyboardType?: "decimal-pad"; optional?: boolean; placeholder?: string },
   ) => (
     <Controller
       control={control}
       name={name}
       render={({ field }) => (
         <TextField
+          autoCapitalize={name === "value" ? "none" : "sentences"}
+          autoComplete={name === "personName" ? "name" : "off"}
+          autoFocus={name === "personName"}
           error={errors[name]?.message}
-          keyboardType={keyboardType}
+          keyboardType={options?.keyboardType}
           label={label}
-          multiline={multiline}
           onBlur={field.onBlur}
           onChangeText={field.onChange}
-          value={field.value}
-        />
-      )}
-    />
-  );
-  const select = (
-    name: "kind" | "valueIsEstimated" | "thankedStatus" | "returnGiftStatus",
-    label: string,
-    values: readonly string[],
-  ) => (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <SelectField
-          error={errors[name]?.message}
-          label={label}
-          onChange={field.onChange}
-          options={values.map((value) => ({ label: value, value }))}
+          onSubmitEditing={
+            name === "personName"
+              ? () => valueInputRef.current?.focus()
+              : name === "relationship"
+                ? () => itemInputRef.current?.focus()
+                : undefined
+          }
+          optional={options?.optional}
+          placeholder={options?.placeholder}
+          ref={
+            name === "value"
+              ? valueInputRef
+              : name === "relationship"
+                ? relationshipInputRef
+                : name === "itemName"
+                  ? itemInputRef
+                  : undefined
+          }
+          returnKeyType={name === "value" || name === "itemName" ? "done" : "next"}
           value={field.value}
         />
       )}
@@ -122,38 +102,56 @@ export function GiftForm({
   return (
     <Screen>
       <FormShell
-        description="Track gifts and follow-ups without adding private records outside this device."
+        description="Record a received gift without unnecessary follow-up fields."
         isSubmitting={isSubmitting || mutation.isPending}
-        onCancel={() => router.back()}
+        onCancel={requestExit}
         onSubmit={save}
         submitLabel={gift ? "Save gift" : "Add gift"}
         submissionError={mutation.error ? toUserMessage(mutation.error) : undefined}
         title={gift ? "Edit gift" : "Add gift"}
       >
-        {select("kind", "Gift type", giftKinds)}
-        {text("personName", "Given by or for")}
-        {text("relationship", "Relationship")}
-        {text("itemName", "Gift")}
-        {text("value", "Value (₹)", false, "decimal-pad")}
-        {select("valueIsEstimated", "Estimated value", ["No", "Yes"])}
-        <Controller
-          control={control}
-          name="date"
-          render={({ field }) => (
-            <DateField
-              error={errors.date?.message}
-              label="Date"
-              onChange={field.onChange}
-              value={field.value}
-            />
-          )}
-        />
-        <Disclosure description="Track thank-you and return-gift follow-up." title="Follow-up">
-          {select("thankedStatus", "Thanked", giftProgressStatuses)}
-          {select("returnGiftStatus", "Return gift", giftProgressStatuses)}
-          {text("notes", "Notes", true)}
+        {text("personName", "Received from")}
+        {text("value", "Value (₹)", { keyboardType: "decimal-pad", optional: true })}
+        <Disclosure
+          description="Add a relationship or describe the gift when useful."
+          initiallyExpanded={Boolean(gift?.relationship || gift?.itemName)}
+          title="More details"
+        >
+          {text("relationship", "Relationship", {
+            optional: true,
+            placeholder: "e.g. Cousin or family friend",
+          })}
+          {text("itemName", "Gift description", {
+            optional: true,
+            placeholder: "e.g. Silver dinner set",
+          })}
         </Disclosure>
+        {gift ? (
+          <Button label="Delete gift" onPress={() => setDeleteOpen(true)} variant="dangerGhost" />
+        ) : null}
       </FormShell>
+      <ConfirmationDialog
+        confirmLabel="Delete gift"
+        description="This gift will be removed from this device."
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          if (!gift) return;
+          mutation.mutate((repositories) => repositories.gifts.deleteGift(gift.id), {
+            onSuccess: () => {
+              showFeedback({
+                actionLabel: "Undo",
+                message: "Gift deleted",
+                onAction: () =>
+                  mutation.mutateAsync((repositories) => repositories.gifts.restoreGift(gift)),
+              });
+              exitAfterSave();
+            },
+          });
+        }}
+        pending={mutation.isPending}
+        title="Delete this gift?"
+        visible={deleteOpen}
+      />
     </Screen>
   );
 }

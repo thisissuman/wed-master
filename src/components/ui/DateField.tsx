@@ -92,10 +92,12 @@ export function DateField({
         <DateTimePicker
           display="default"
           mode="date"
-          onChange={(_, selectedDate) => {
+          onDismiss={() => setOpen(false)}
+          onValueChange={(_, selectedDate) => {
             setOpen(false);
-            if (selectedDate) onChange(toDateOnly(selectedDate));
+            onChange(toDateOnly(selectedDate));
           }}
+          testID="date-picker"
           value={dateFromValue(value)}
         />
       ) : null}

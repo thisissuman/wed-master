@@ -10,21 +10,24 @@ import {
   LoadingState,
   Screen,
   SectionHeader,
-  StatusBadge,
 } from "@/components/ui";
+import { feedbackDurationMilliseconds, useFeedbackStore } from "@/features/feedback/feedback-store";
+import { formatInr } from "@/lib/money";
 
 import { removeWorkspaceAttachment } from "../files/workspace-files";
+import { ExpenseCategoryIcon } from "../money/ExpenseCategoryIcon";
 import { useWorkspace, useWorkspaceMutation } from "../provider";
-import { DetailHeader, formatDate, MoneyLine } from "../ui";
+import { DetailHeader, formatDate } from "../ui";
 
 export function ExpenseDetailDashboard({ expenseId }: { expenseId: string }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { data } = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
 
   if (!data) {
     return (
-      <Screen>
+      <Screen edges={["top", "right", "bottom", "left"]}>
         <LoadingState />
       </Screen>
     );
@@ -33,7 +36,7 @@ export function ExpenseDetailDashboard({ expenseId }: { expenseId: string }) {
   const expense = data.expenses.find((item) => item.id === expenseId);
   if (!expense) {
     return (
-      <Screen className="p-md">
+      <Screen className="p-md" edges={["top", "right", "bottom", "left"]}>
         <AppText>Expense not found.</AppText>
       </Screen>
     );
@@ -41,63 +44,61 @@ export function ExpenseDetailDashboard({ expenseId }: { expenseId: string }) {
 
   const categoryName =
     data.categories.find((category) => category.id === expense.categoryId)?.name ?? "Uncategorised";
-  const paymentTone = expense.paymentStatus === "Paid" ? "success" : "warning";
+  const category = data.categories.find((item) => item.id === expense.categoryId);
 
   const deleteExpense = async () => {
     await mutation.mutateAsync((repositories) => repositories.expenses.deleteExpense(expense.id));
-    removeWorkspaceAttachment(expense.receipt);
+    let restored = false;
+    setTimeout(() => {
+      if (!restored) removeWorkspaceAttachment(expense.receipt);
+    }, feedbackDurationMilliseconds);
+    showFeedback({
+      actionLabel: "Undo",
+      message: "Expense deleted",
+      onAction: async () => {
+        restored = true;
+        await mutation.mutateAsync((repositories) => repositories.expenses.restoreExpense(expense));
+      },
+    });
     router.replace("/budget");
   };
 
   return (
-    <Screen>
+    <Screen edges={["top", "right", "bottom", "left"]}>
       <ScrollView contentContainerClassName="gap-xl p-md pb-2xl">
-        <DetailHeader eyebrow={categoryName} title={expense.title} />
-        <StatusBadge label={expense.paymentStatus} tone={paymentTone} />
-
-        <Card className="gap-sm" variant="subtle">
-          <MoneyLine label="Planned" value={expense.estimatedPaise ?? 0} />
-          <MoneyLine emphasis label="Spent" value={expense.actualPaise} />
-          <MoneyLine label="Paid" value={expense.paidPaise} />
-          <MoneyLine label="Outstanding" value={expense.actualPaise - expense.paidPaise} />
+        <DetailHeader eyebrow={categoryName} fallback="/budget" title={expense.title} />
+        <Card className="gap-md" variant="subtle">
+          <View className="flex-row items-center gap-sm">
+            {category ? <ExpenseCategoryIcon iconKey={category.iconKey} /> : null}
+            <View className="min-w-0 flex-1 gap-2xs">
+              <AppText tone="muted" variant="caption">
+                Amount spent
+              </AppText>
+              {expense.actualPaise > 0 ? (
+                <AppText tone="primary" variant="display">
+                  {formatInr(expense.actualPaise)}
+                </AppText>
+              ) : (
+                <AppText tone="warning" variant="heading">
+                  Amount not recorded
+                </AppText>
+              )}
+            </View>
+          </View>
+          {expense.date ? (
+            <View className="border-t border-borderSubtle pt-sm">
+              <AppText tone="muted" variant="caption">
+                Expense date
+              </AppText>
+              <AppText>{formatDate(expense.date)}</AppText>
+            </View>
+          ) : null}
         </Card>
 
-        {expense.vendorName ||
-        expense.date ||
-        expense.eventId ||
-        expense.dueDate ||
-        expense.notes ||
-        expense.receipt ? (
+        {expense.notes || expense.receipt ? (
           <View className="gap-xs">
             <SectionHeader title="Details" />
             <Card className="gap-md" variant="subtle">
-              {expense.vendorName ? (
-                <View className="gap-2xs">
-                  <AppText variant="caption">Payee or vendor</AppText>
-                  <AppText>{expense.vendorName}</AppText>
-                </View>
-              ) : null}
-              {expense.date ? (
-                <View className="gap-2xs">
-                  <AppText variant="caption">Expense date</AppText>
-                  <AppText>{formatDate(expense.date)}</AppText>
-                </View>
-              ) : null}
-              {expense.eventId ? (
-                <View className="gap-2xs">
-                  <AppText variant="caption">Linked event</AppText>
-                  <AppText>
-                    {data.events.find((event) => event.id === expense.eventId)?.name ??
-                      "Event removed"}
-                  </AppText>
-                </View>
-              ) : null}
-              {expense.dueDate ? (
-                <View className="gap-2xs">
-                  <AppText variant="caption">Payment due</AppText>
-                  <AppText>{formatDate(expense.dueDate)}</AppText>
-                </View>
-              ) : null}
               {expense.notes ? (
                 <View className="gap-2xs">
                   <AppText variant="caption">Notes</AppText>
@@ -116,8 +117,10 @@ export function ExpenseDetailDashboard({ expenseId }: { expenseId: string }) {
 
         <View className="gap-xs pt-sm">
           <Button
-            label="Edit expense"
-            onPress={() => router.push({ pathname: "/expenses/edit", params: { id: expense.id } })}
+            label={expense.actualPaise === 0 ? "Add amount" : "Edit expense"}
+            onPress={() =>
+              router.navigate({ pathname: "/expenses/edit", params: { id: expense.id } })
+            }
           />
           <Button
             label="Delete expense"
@@ -128,7 +131,7 @@ export function ExpenseDetailDashboard({ expenseId }: { expenseId: string }) {
       </ScrollView>
       <ConfirmationDialog
         confirmLabel="Delete expense"
-        description="This cost and its payment information will be removed from the local budget."
+        description="This expense and its attachment will be removed from the local budget."
         onCancel={() => setDeleteOpen(false)}
         onConfirm={() => void deleteExpense()}
         pending={mutation.isPending}

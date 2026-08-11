@@ -1,22 +1,32 @@
 import { useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, View } from "react-native";
+import { Alert, Linking, ScrollView, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import {
   CalendarPlus,
+  CircleCheckBig,
   CheckSquare2,
   ChevronRight,
+  Plus,
   ReceiptIndianRupee,
   UserPlus,
   type LucideIcon,
 } from "lucide-react-native";
 
-import { MangalyaHeader, showComingSoon } from "@/components/brand";
-import { AppText, EmptyState, ErrorState, LoadingState, Screen } from "@/components/ui";
+import { MangalyaHeader } from "@/components/brand";
+import {
+  AppText,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  MotionPressable,
+  Screen,
+} from "@/components/ui";
 import { daysUntilDateOnly, todayDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
+import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 
 import { pickWeddingCoverPhoto, removeWeddingCoverPhoto } from "./files/workspace-files";
@@ -30,6 +40,15 @@ const homeArtworkHeight = 380;
 const homeArtworkFadeHeight = 180;
 const homeArtworkFadeColors = [tokens.gradients.screenTopFade[2], tokens.colors.canvas] as const;
 const homeArtworkSource = require("../../../assets/images/mangalya/home-hearts-glow-v2.jpg");
+
+type HomeAddRoute = "/events/new" | "/expenses/new" | "/more/guests/new" | "/tasks/new";
+
+const homeQuickActions: { icon: LucideIcon; label: string; route: HomeAddRoute }[] = [
+  { icon: CheckSquare2, label: "Add task", route: "/tasks/new" },
+  { icon: ReceiptIndianRupee, label: "Add expense", route: "/expenses/new" },
+  { icon: CalendarPlus, label: "Add event", route: "/events/new" },
+  { icon: UserPlus, label: "Add guest", route: "/more/guests/new" },
+];
 
 const localCoverErrorMessage = (error: unknown) => {
   if (
@@ -79,27 +98,30 @@ function HomeSectionHeader({
   onAction,
   title,
 }: {
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   title: string;
 }) {
   return (
     <View className="flex-row items-center justify-between gap-sm">
-      <AppText className="flex-1" variant="title">
+      <AppText accessibilityRole="header" className="flex-1" variant="title">
         {title}
       </AppText>
-      <Pressable
-        accessibilityLabel={actionLabel}
-        accessibilityRole="button"
-        android_ripple={{ color: tokens.colors.primarySoft }}
-        className="min-h-12 flex-row items-center justify-center gap-2xs rounded-control px-xs active:bg-primarySoft"
-        onPress={onAction}
-      >
-        <AppText tone="primary" variant="label">
-          {actionLabel}
-        </AppText>
-        <ChevronRight color={tokens.colors.primary} size={tokens.iconSize.sm} />
-      </Pressable>
+      {actionLabel && onAction ? (
+        <MotionPressable
+          accessibilityLabel={actionLabel}
+          accessibilityRole="button"
+          android_ripple={{ color: tokens.colors.primarySoft }}
+          className="min-h-12 flex-row items-center justify-center gap-2xs rounded-control px-xs active:bg-primarySoft"
+          onPress={onAction}
+          pressedScale={0.98}
+        >
+          <AppText tone="primary" variant="label">
+            {actionLabel}
+          </AppText>
+          <ChevronRight color={tokens.colors.primary} size={tokens.iconSize.sm} />
+        </MotionPressable>
+      ) : null}
     </View>
   );
 }
@@ -114,12 +136,13 @@ function QuickAction({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityLabel={label}
       accessibilityRole="button"
       android_ripple={{ color: tokens.colors.primarySoft }}
       className="min-h-24 min-w-0 flex-1 items-center justify-center gap-xs rounded-card border border-borderSubtle bg-translucentSurface px-2xs py-sm shadow-card active:bg-primarySoft"
       onPress={onPress}
+      pressedScale={0.98}
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-primarySoft">
         <Icon color={tokens.colors.primary} size={tokens.iconSize.md} strokeWidth={1.7} />
@@ -127,16 +150,18 @@ function QuickAction({
       <AppText className="text-center" numberOfLines={2} variant="caption">
         {label}
       </AppText>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
 export function HomeDashboard() {
+  const { fontScale } = useWindowDimensions();
   const [today] = useState(() => todayDateOnly());
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const workspace = useWorkspace();
   const taskMutation = useWorkspaceMutation();
   const photoMutation = useWorkspaceMutation();
+  const largeText = isLargeText(fontScale);
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -242,20 +267,25 @@ export function HomeDashboard() {
     }
   }
 
-  const openAddRoute = (
-    route: "/events/new" | "/expenses/new" | "/more/guests/new" | "/tasks/new",
-  ) => {
-    router.push(route);
+  const openAddRoute = (route: HomeAddRoute) => {
+    router.navigate(route);
   };
+  const quickActionRows = largeText
+    ? [homeQuickActions.slice(0, 2), homeQuickActions.slice(2)]
+    : [homeQuickActions];
 
   return (
     <Screen>
       <HomeBackdrop />
       <ScrollView
-        contentContainerClassName="gap-lg px-md pb-4xl pt-xs"
+        contentContainerClassName="gap-lg px-md pt-xs"
+        contentContainerStyle={{
+          paddingBottom: tokens.touchTarget + Number.parseInt(tokens.spacing["4xl"], 10),
+        }}
         showsVerticalScrollIndicator={false}
+        testID="home-scroll-view"
       >
-        <MangalyaHeader onSearch={() => showComingSoon("Search")} />
+        <MangalyaHeader />
         <WeddingHero
           completedTasks={progress.completed}
           coverPhotoUri={data.wedding.coverPhotoUri}
@@ -270,7 +300,7 @@ export function HomeDashboard() {
         <View className="gap-sm">
           <HomeSectionHeader
             actionLabel="View all"
-            onAction={() => router.push({ pathname: "/plan", params: { view: "tasks" } })}
+            onAction={() => router.navigate({ pathname: "/plan", params: { view: "tasks" } })}
             title="Focus today"
           />
           {taskMutation.isError ? (
@@ -290,7 +320,7 @@ export function HomeDashboard() {
                   disabled={taskMutation.isPending}
                   eventName={eventNameById.get(task.eventId ?? "")}
                   key={task.id}
-                  onPress={() => router.push(`/tasks/${task.id}`)}
+                  onPress={() => router.navigate(`/tasks/${task.id}`)}
                   onToggle={() => toggleTask(task)}
                   task={task}
                   today={today}
@@ -300,49 +330,61 @@ export function HomeDashboard() {
             </View>
           ) : (
             <EmptyState
-              actionLabel="Add task"
-              description="Add the first action that will move the plan forward."
-              onAction={() => openAddRoute("/tasks/new")}
+              icon={CircleCheckBig}
+              description="You’re all caught up for now."
               title="Nothing needs attention"
             />
           )}
         </View>
 
         <View className="gap-sm">
-          <HomeSectionHeader
-            actionLabel="View details"
-            onAction={() => router.push("/budget")}
-            title="Budget overview"
+          <HomeSectionHeader title="Budget overview" />
+          <HomeBudgetOverview
+            onPress={() => router.navigate("/budget/overview")}
+            summary={budget}
           />
-          <HomeBudgetOverview summary={budget} />
         </View>
 
         <View className="gap-sm">
-          <AppText variant="title">Quick actions</AppText>
-          <View className="flex-row gap-xs">
-            <QuickAction
-              icon={CheckSquare2}
-              label="Add task"
-              onPress={() => openAddRoute("/tasks/new")}
-            />
-            <QuickAction
-              icon={ReceiptIndianRupee}
-              label="Add expense"
-              onPress={() => openAddRoute("/expenses/new")}
-            />
-            <QuickAction
-              icon={CalendarPlus}
-              label="Add event"
-              onPress={() => openAddRoute("/events/new")}
-            />
-            <QuickAction
-              icon={UserPlus}
-              label="Add guest"
-              onPress={() => openAddRoute("/more/guests/new")}
-            />
+          <AppText accessibilityRole="header" variant="title">
+            Quick actions
+          </AppText>
+          <View className="gap-xs" testID="home-quick-actions">
+            {quickActionRows.map((row, rowIndex) => (
+              <View
+                className="flex-row gap-xs"
+                key={row[0]?.label}
+                testID={`home-quick-action-row-${rowIndex}`}
+              >
+                {row.map((action) => (
+                  <QuickAction
+                    icon={action.icon}
+                    key={action.label}
+                    label={action.label}
+                    onPress={() => openAddRoute(action.route)}
+                  />
+                ))}
+              </View>
+            ))}
           </View>
         </View>
       </ScrollView>
+      <View className="absolute bottom-lg right-md">
+        <MotionPressable
+          accessibilityHint="Opens the quick expense form"
+          accessibilityLabel="Add expense"
+          accessibilityRole="button"
+          android_ripple={{ color: tokens.colors.primarySoft, radius: 28 }}
+          className="h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-primary bg-primary shadow-elevated active:opacity-90"
+          onPress={() => {
+            void Haptics.selectionAsync();
+            router.navigate("/expenses/new");
+          }}
+          pressedScale={0.96}
+        >
+          <Plus color={tokens.colors.onPrimary} size={tokens.iconSize.lg} strokeWidth={2.2} />
+        </MotionPressable>
+      </View>
     </Screen>
   );
 }

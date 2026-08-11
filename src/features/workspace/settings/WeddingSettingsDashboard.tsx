@@ -1,18 +1,25 @@
 import { router } from "expo-router";
+import Constants from "expo-constants";
 import {
   CalendarDays,
+  ChartNoAxesCombined,
   ChevronRight,
-  IndianRupee,
-  MapPin,
   RefreshCcw,
-  Sparkles,
   Trash2,
   Users,
-  WalletCards,
   X,
 } from "lucide-react-native";
-import { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import { useRef, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useReducedMotion } from "react-native-reanimated";
@@ -24,19 +31,22 @@ import {
   ConfirmationDialog,
   DateField,
   ErrorState,
+  IconButton,
   LoadingState,
+  MotionPressable,
   Screen,
+  SectionHeader,
   TextField,
 } from "@/components/ui";
-import { formatDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
-import { formatInr } from "@/lib/money";
+import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
+import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
 import { clearWorkspaceLocalFiles } from "../files/workspace-files";
-import { fromPaise, settingsFormSchema, toPaise, type SettingsFormValues } from "../forms";
+import { settingsFormSchema, type SettingsFormValues } from "../forms";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
-import { useWorkspace, useWorkspaceMutation } from "../provider";
+import { useDeleteWorkspaceMutation, useWorkspace, useWorkspaceMutation } from "../provider";
 import type { Wedding } from "../types";
 
 type SettingRowProps = {
@@ -49,11 +59,13 @@ type SettingRowProps = {
 
 function SettingRow({ destructive, icon: Icon, label, onPress, value }: SettingRowProps) {
   return (
-    <Pressable
-      accessibilityLabel={`${label}: ${value}`}
+    <MotionPressable
+      accessibilityHint={value}
+      accessibilityLabel={label}
       accessibilityRole="button"
       className="min-h-20 flex-row items-center gap-sm border-b border-borderSubtle py-sm last:border-b-0"
       onPress={onPress}
+      pressedScale={0.99}
     >
       <View
         className={
@@ -79,30 +91,37 @@ function SettingRow({ destructive, icon: Icon, label, onPress, value }: SettingR
         color={destructive ? tokens.colors.danger : tokens.colors.textSecondary}
         size={tokens.iconSize.sm}
       />
-    </Pressable>
+    </MotionPressable>
   );
 }
 
 export function WeddingSettingsDashboard() {
   const reduceMotion = useReducedMotion();
+  const { fontScale } = useWindowDimensions();
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const deleteMutation = useDeleteWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
+  const submissionInFlight = useRef(false);
   const [editOpen, setEditOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const stackActions = isLargeText(fontScale);
+  const showDemoReset = Constants.expoConfig?.extra?.appVariant === "development";
   const {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
+    mode: "onTouched",
     defaultValues: {
       name: "",
       date: "",
       location: "",
       type: "",
-      guestEstimate: "0",
-      budgetTarget: "",
     },
   });
 
@@ -132,37 +151,52 @@ export function WeddingSettingsDashboard() {
       date: wedding.date,
       location: wedding.location,
       type: wedding.type,
-      guestEstimate: String(wedding.guestEstimate ?? 0),
-      budgetTarget: fromPaise(wedding.budgetTargetPaise),
     });
     setEditOpen(true);
   };
-  const save = handleSubmit(async (values) => {
-    const next: Wedding = {
-      ...wedding,
-      name: values.name,
-      date: values.date as Wedding["date"],
-      location: values.location,
-      type: values.type,
-      guestEstimate: Number(values.guestEstimate),
-      budgetTargetPaise: values.budgetTarget ? toPaise(values.budgetTarget) : undefined,
-    };
-    await mutation.mutateAsync((repositories) => repositories.wedding.updateWedding(next));
-    setEditOpen(false);
-  });
+  const closeEditor = () => {
+    if (mutation.isPending) return;
+    if (!isDirty) {
+      setEditOpen(false);
+      return;
+    }
+    Alert.alert("Discard unsaved changes?", "Your wedding setting changes have not been saved.", [
+      { text: "Keep editing", style: "cancel" },
+      { text: "Discard", style: "destructive", onPress: () => setEditOpen(false) },
+    ]);
+  };
+  const save = () =>
+    handleSubmit(async (values) => {
+      if (submissionInFlight.current) return;
+      submissionInFlight.current = true;
+      const next: Wedding = {
+        ...wedding,
+        name: values.name,
+        date: values.date as Wedding["date"],
+        location: values.location,
+        type: values.type,
+      };
+      try {
+        await mutation.mutateAsync((repositories) => repositories.wedding.updateWedding(next));
+      } catch {
+        return;
+      } finally {
+        submissionInFlight.current = false;
+      }
+      setEditOpen(false);
+      showFeedback({ message: "Wedding details updated" });
+    })();
 
-  const field = (
-    name: "budgetTarget" | "guestEstimate" | "location" | "name" | "type",
-    label: string,
-    keyboardType?: "decimal-pad" | "number-pad",
-  ) => (
+  const field = (name: "location" | "name" | "type", label: string) => (
     <Controller
       control={control}
       name={name}
       render={({ field: input }) => (
         <TextField
+          autoCapitalize="words"
+          autoComplete="off"
+          autoFocus={name === "name"}
           error={errors[name]?.message}
-          keyboardType={keyboardType}
           label={label}
           onBlur={input.onBlur}
           onChangeText={input.onChange}
@@ -178,103 +212,86 @@ export function WeddingSettingsDashboard() {
         contentContainerClassName="gap-xl p-md pb-2xl"
         showsVerticalScrollIndicator={false}
       >
-        <MoreScreenHeader title="Wedding settings" weddingName={wedding.name} />
-        <AppText tone="muted">Manage your wedding details and preferences</AppText>
+        <MoreScreenHeader title="Settings" />
+        <SectionHeader title="Wedding details" />
         <Card className="px-lg py-xs">
           <SettingRow
-            icon={Users}
-            label="Couple or wedding name"
-            onPress={openEditor}
-            value={wedding.name}
-          />
-          <SettingRow
             icon={CalendarDays}
-            label="Wedding date"
+            label="Wedding details"
             onPress={openEditor}
-            value={formatDateOnly(wedding.date)}
-          />
-          <SettingRow icon={MapPin} label="City" onPress={openEditor} value={wedding.location} />
-          <SettingRow
-            icon={Sparkles}
-            label="Wedding style or tradition"
-            onPress={openEditor}
-            value={wedding.type}
-          />
-          <SettingRow
-            icon={Users}
-            label="Guest estimate"
-            onPress={openEditor}
-            value={`${wedding.guestEstimate ?? 0} guests`}
-          />
-          <SettingRow
-            icon={IndianRupee}
-            label="Currency"
-            onPress={() =>
-              Alert.alert("Currency", "Mangalya currently stores all money in INR integer paise.")
-            }
-            value="INR (Indian Rupee)"
-          />
-          <SettingRow
-            icon={CalendarDays}
-            label="Event management"
-            onPress={() => router.push({ pathname: "/plan", params: { view: "events" } })}
-            value={`${workspace.data.events.length} events planned`}
-          />
-          <SettingRow
-            icon={WalletCards}
-            label="Budget target"
-            onPress={openEditor}
-            value={
-              wedding.budgetTargetPaise !== undefined
-                ? formatInr(wedding.budgetTargetPaise)
-                : "Not set"
-            }
+            value="Name, date, city and tradition"
           />
         </Card>
+        <SectionHeader title="Money" />
         <Card className="px-lg py-xs">
           <SettingRow
-            destructive
-            icon={RefreshCcw}
-            label="Reset demo data"
-            onPress={() => setResetOpen(true)}
-            value="Clear local changes and restore editable demo content"
+            icon={ChartNoAxesCombined}
+            label="Budget & expenses"
+            onPress={() => router.navigate("/budget/overview")}
+            value="Target, trends, dates and category insights"
           />
+        </Card>
+        <View className="gap-sm">
+          <SectionHeader title="Data & Privacy" />
+          <AppText tone="muted">
+            Mangalya does not upload your workspace. You choose when to export a backup.
+          </AppText>
+        </View>
+        <Card className="px-lg py-xs">
+          {showDemoReset ? (
+            <SettingRow
+              destructive
+              icon={RefreshCcw}
+              label="Reset demo data"
+              onPress={() => setResetOpen(true)}
+              value="Clear local changes and restore editable demo content"
+            />
+          ) : null}
           <SettingRow
             destructive
             icon={Trash2}
             label="Delete local data"
-            onPress={() =>
-              Alert.alert(
-                "Not available yet",
-                "Full local-data deletion is intentionally deferred until onboarding can safely create a new workspace. No data was changed.",
-              )
-            }
-            value="Deferred until onboarding is functional"
+            onPress={() => {
+              setDeleteConfirmation("");
+              setDeleteOpen(true);
+            }}
+            value="Permanently remove this device's workspace"
           />
         </Card>
       </ScrollView>
 
       <Modal
         animationType={reduceMotion ? "none" : "slide"}
-        onRequestClose={() => setEditOpen(false)}
+        onRequestClose={closeEditor}
         transparent
         visible={editOpen}
       >
-        <View className="flex-1 justify-end bg-overlay">
-          <View className="max-h-[90%] gap-md rounded-t-sheet bg-elevatedSurface p-lg shadow-elevated">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1 justify-end bg-overlay"
+        >
+          <SafeAreaView
+            accessibilityViewIsModal
+            edges={["bottom"]}
+            className="max-h-[90%] gap-md rounded-t-sheet bg-elevatedSurface p-lg shadow-elevated"
+            testID="settings-editor-sheet"
+          >
             <View className="flex-row items-center justify-between">
-              <AppText tone="primary" variant="heading">
+              <AppText accessibilityRole="header" tone="primary" variant="heading">
                 Edit wedding details
               </AppText>
-              <Pressable
+              <IconButton
                 accessibilityLabel="Close settings editor"
-                className="min-h-12 min-w-12 items-center justify-center"
-                onPress={() => setEditOpen(false)}
-              >
-                <X color={tokens.colors.textPrimary} />
-              </Pressable>
+                icon={X}
+                onPress={closeEditor}
+              />
             </View>
-            <ScrollView contentContainerClassName="gap-md" keyboardShouldPersistTaps="handled">
+            <ScrollView
+              className="shrink"
+              contentContainerClassName="gap-md"
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+            >
               {field("name", "Couple or wedding name")}
               <Controller
                 control={control}
@@ -290,41 +307,128 @@ export function WeddingSettingsDashboard() {
               />
               {field("location", "City or location")}
               {field("type", "Wedding style or tradition")}
-              {field("guestEstimate", "Guest estimate", "number-pad")}
-              {field("budgetTarget", "Budget target (₹)", "decimal-pad")}
               {mutation.error ? (
-                <AppText tone="danger" variant="caption">
+                <AppText accessibilityRole="alert" tone="danger" variant="caption">
                   {toUserMessage(mutation.error)}
                 </AppText>
               ) : null}
-              <Button
-                label="Save settings"
-                loading={isSubmitting || mutation.isPending}
-                onPress={save}
-              />
             </ScrollView>
-          </View>
-        </View>
+            <Button
+              label="Save settings"
+              loading={isSubmitting || mutation.isPending}
+              onPress={save}
+            />
+          </SafeAreaView>
+        </KeyboardAvoidingView>
       </Modal>
-      <ConfirmationDialog
-        confirmLabel="Reset demo data"
-        description="All current records, cover photos, and local attachment files will be replaced by the editable Mangalya demo workspace."
-        onCancel={() => setResetOpen(false)}
-        onConfirm={() =>
-          mutation.mutate((repositories) => repositories.workspace.resetDemo(), {
-            onSuccess: () => {
-              clearWorkspaceLocalFiles();
-              setResetOpen(false);
-            },
-            onError: (error) => {
-              Alert.alert("Could not reset demo data", toUserMessage(error));
-            },
-          })
-        }
-        pending={mutation.isPending}
-        title="Restore demo data?"
-        visible={resetOpen}
-      />
+      <Modal
+        animationType={reduceMotion ? "none" : "fade"}
+        onRequestClose={() => {
+          if (!deleteMutation.isPending) setDeleteOpen(false);
+        }}
+        transparent
+        visible={deleteOpen}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1 bg-overlay"
+        >
+          <SafeAreaView className="flex-1 p-md" edges={["bottom"]}>
+            <ScrollView
+              contentContainerClassName="flex-grow justify-center"
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+            >
+              <View
+                accessibilityRole="alert"
+                accessibilityViewIsModal
+                className="w-full gap-lg rounded-sheet bg-elevatedSurface p-xl shadow-elevated"
+                testID="settings-delete-dialog"
+              >
+                <View className="gap-xs">
+                  <AppText accessibilityRole="header" variant="heading">
+                    Delete all local data?
+                  </AppText>
+                  <AppText tone="muted">
+                    This permanently removes the workspace, cover photos, attachments, and exports
+                    from this device. Type DELETE to confirm.
+                  </AppText>
+                </View>
+                <TextField
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  label="Confirmation"
+                  onChangeText={setDeleteConfirmation}
+                  placeholder="DELETE"
+                  value={deleteConfirmation}
+                />
+                {deleteMutation.error ? (
+                  <AppText accessibilityLiveRegion="polite" tone="danger" variant="caption">
+                    {toUserMessage(deleteMutation.error)}
+                  </AppText>
+                ) : null}
+                <View
+                  className="gap-sm"
+                  style={{ flexDirection: stackActions ? "column" : "row" }}
+                  testID="settings-delete-actions"
+                >
+                  <Button
+                    className={stackActions ? "w-full" : "flex-1"}
+                    disabled={deleteMutation.isPending}
+                    label="Cancel"
+                    onPress={() => setDeleteOpen(false)}
+                    variant="secondary"
+                  />
+                  <Button
+                    className={stackActions ? "w-full" : "flex-1"}
+                    disabled={deleteConfirmation !== "DELETE"}
+                    label="Delete data"
+                    loading={deleteMutation.isPending}
+                    onPress={() =>
+                      deleteMutation.mutate(undefined, {
+                        onSuccess: () => {
+                          const filesCleared = clearWorkspaceLocalFiles();
+                          setDeleteOpen(false);
+                          router.replace("/(onboarding)");
+                          if (!filesCleared) {
+                            Alert.alert(
+                              "Workspace deleted",
+                              "The records were removed, but one or more local files could not be cleaned up.",
+                            );
+                          }
+                        },
+                      })
+                    }
+                    variant="destructive"
+                  />
+                </View>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
+      </Modal>
+      {showDemoReset ? (
+        <ConfirmationDialog
+          confirmLabel="Reset demo data"
+          description="All current records, cover photos, and local attachment files will be replaced by the editable Mangalya demo workspace."
+          onCancel={() => setResetOpen(false)}
+          onConfirm={() =>
+            mutation.mutate((repositories) => repositories.workspace.resetDemo(), {
+              onSuccess: () => {
+                clearWorkspaceLocalFiles();
+                setResetOpen(false);
+                showFeedback({ message: "Demo workspace restored" });
+              },
+              onError: (error) => {
+                Alert.alert("Could not reset demo data", toUserMessage(error));
+              },
+            })
+          }
+          pending={mutation.isPending}
+          title="Restore demo data?"
+          visible={resetOpen}
+        />
+      ) : null}
     </Screen>
   );
 }

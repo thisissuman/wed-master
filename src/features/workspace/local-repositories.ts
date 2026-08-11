@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { demoWorkspace } from "./seed";
+import { createDemoWorkspace } from "./seed";
+import { selectRecentExpenses } from "./selectors";
 import type {
   BudgetCategory,
   EmergencyContact,
@@ -15,57 +16,187 @@ import type {
 } from "./types";
 import { parseOrMigrateWorkspaceSnapshot } from "./workspace-schema";
 
-export const workspaceStorageKey = "@wed-master/local-workspace/v2";
+export const workspaceStorageKey = "@wed-master/local-workspace/v4";
+export const workspaceStorageKeyV3 = "@wed-master/local-workspace/v3";
+export const workspaceStorageKeyV2 = "@wed-master/local-workspace/v2";
 export const legacyWorkspaceStorageKey = "@wed-master/local-workspace/v1";
+export const emptyWorkspaceStorageKey = "@wed-master/local-workspace/empty";
 export const makeWorkspaceId = (prefix: string) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-export type KeyValueStorage = Pick<typeof AsyncStorage, "getItem" | "setItem">;
+export type KeyValueStorage = Pick<typeof AsyncStorage, "getItem" | "setItem"> &
+  Partial<Pick<typeof AsyncStorage, "removeItem">>;
+
+export class WorkspaceEmptyError extends Error {
+  constructor() {
+    super("Set up your local wedding workspace to continue.");
+    this.name = "WorkspaceEmptyError";
+  }
+}
+
+export class WorkspaceCorruptionError extends Error {
+  constructor(
+    message: string,
+    readonly recoveryText: string,
+  ) {
+    super(message);
+    this.name = "WorkspaceCorruptionError";
+  }
+}
 
 export class LocalWorkspaceStore {
   private snapshotCache?: WorkspaceSnapshot;
+  private operationQueue: Promise<void> = Promise.resolve();
+
   constructor(private readonly storage: KeyValueStorage = AsyncStorage) {}
 
   async getSnapshot(): Promise<WorkspaceSnapshot> {
-    if (this.snapshotCache) return copy(this.snapshotCache);
+    return this.runExclusive(() => this.getSnapshotUnlocked());
+  }
 
-    const currentStored = await this.storage.getItem(workspaceStorageKey);
-    if (currentStored) {
-      this.snapshotCache = parseOrMigrateWorkspaceSnapshot(JSON.parse(currentStored));
-      return copy(this.snapshotCache);
-    }
-
-    const legacyStored = await this.storage.getItem(legacyWorkspaceStorageKey);
-    this.snapshotCache = legacyStored
-      ? parseOrMigrateWorkspaceSnapshot(JSON.parse(legacyStored))
-      : copy(demoWorkspace);
-    await this.persist();
-    return copy(this.snapshotCache);
+  async getRecoveryText(): Promise<string | null> {
+    return this.runExclusive(async () => {
+      for (const key of [
+        workspaceStorageKey,
+        workspaceStorageKeyV3,
+        workspaceStorageKeyV2,
+        legacyWorkspaceStorageKey,
+      ]) {
+        const value = await this.storage.getItem(key);
+        if (value) return value;
+      }
+      return null;
+    });
   }
 
   async update(mutator: (snapshot: WorkspaceSnapshot) => void): Promise<WorkspaceSnapshot> {
-    const snapshot = await this.getSnapshot();
-    mutator(snapshot);
-    this.snapshotCache = workspaceSnapshotSchemaParse(snapshot);
-    await this.persist();
-    return copy(this.snapshotCache);
+    return this.runExclusive(async () => {
+      const candidate = await this.getSnapshotUnlocked();
+      mutator(candidate);
+      return this.commitCandidate(candidate);
+    });
   }
 
   async replace(snapshot: WorkspaceSnapshot): Promise<WorkspaceSnapshot> {
-    this.snapshotCache = workspaceSnapshotSchemaParse(snapshot);
-    await this.persist();
-    return copy(this.snapshotCache);
+    return this.runExclusive(() => this.commitCandidate(snapshot));
+  }
+
+  async create(snapshot: WorkspaceSnapshot): Promise<WorkspaceSnapshot> {
+    return this.runExclusive(async () => {
+      const validated = workspaceSnapshotSchemaParse(copy(snapshot));
+      await this.storage.setItem(workspaceStorageKey, JSON.stringify(validated));
+      await this.removeStorageKey(emptyWorkspaceStorageKey);
+      this.snapshotCache = validated;
+      return copy(validated);
+    });
   }
 
   async reset(): Promise<WorkspaceSnapshot> {
-    return this.replace(copy(demoWorkspace));
+    return this.replace(createDemoWorkspace());
   }
 
-  private async persist() {
-    if (this.snapshotCache) {
-      await this.storage.setItem(workspaceStorageKey, JSON.stringify(this.snapshotCache));
+  async deleteLocalData(): Promise<void> {
+    return this.runExclusive(async () => {
+      await this.storage.setItem(emptyWorkspaceStorageKey, "true");
+      this.snapshotCache = undefined;
+      await Promise.allSettled([
+        this.removeStorageKey(workspaceStorageKey),
+        this.removeStorageKey(workspaceStorageKeyV3),
+        this.removeStorageKey(workspaceStorageKeyV2),
+        this.removeStorageKey(legacyWorkspaceStorageKey),
+      ]);
+    });
+  }
+
+  private async getSnapshotUnlocked(): Promise<WorkspaceSnapshot> {
+    if (this.snapshotCache) return copy(this.snapshotCache);
+
+    if ((await this.storage.getItem(emptyWorkspaceStorageKey)) === "true") {
+      throw new WorkspaceEmptyError();
     }
+
+    const currentStored = await this.storage.getItem(workspaceStorageKey);
+    if (currentStored) {
+      try {
+        const parsed = parseOrMigrateWorkspaceSnapshot(JSON.parse(currentStored));
+        this.snapshotCache = parsed;
+        return copy(parsed);
+      } catch {
+        throw new WorkspaceCorruptionError(
+          "Mangalya could not safely open the local workspace.",
+          currentStored,
+        );
+      }
+    }
+
+    const versionThreeStored = await this.storage.getItem(workspaceStorageKeyV3);
+    if (versionThreeStored) {
+      try {
+        return this.commitCandidate(
+          parseOrMigrateWorkspaceSnapshot(JSON.parse(versionThreeStored)),
+        );
+      } catch {
+        throw new WorkspaceCorruptionError(
+          "Mangalya could not safely migrate the local workspace.",
+          versionThreeStored,
+        );
+      }
+    }
+
+    const previousStored = await this.storage.getItem(workspaceStorageKeyV2);
+    if (previousStored) {
+      try {
+        return this.commitCandidate(parseOrMigrateWorkspaceSnapshot(JSON.parse(previousStored)));
+      } catch {
+        throw new WorkspaceCorruptionError(
+          "Mangalya could not safely migrate the local workspace.",
+          previousStored,
+        );
+      }
+    }
+
+    const legacyStored = await this.storage.getItem(legacyWorkspaceStorageKey);
+    if (!legacyStored) {
+      throw new WorkspaceEmptyError();
+    }
+
+    try {
+      return this.commitCandidate(parseOrMigrateWorkspaceSnapshot(JSON.parse(legacyStored)));
+    } catch {
+      throw new WorkspaceCorruptionError(
+        "Mangalya could not safely migrate the local workspace.",
+        legacyStored,
+      );
+    }
+  }
+
+  private async commitCandidate(candidate: WorkspaceSnapshot): Promise<WorkspaceSnapshot> {
+    const validated = workspaceSnapshotSchemaParse(copy(candidate));
+    await this.storage.setItem(workspaceStorageKey, JSON.stringify(validated));
+    this.snapshotCache = validated;
+    return copy(validated);
+  }
+
+  private async removeStorageKey(key: string): Promise<void> {
+    try {
+      if (this.storage.removeItem) {
+        await this.storage.removeItem(key);
+        return;
+      }
+    } catch {
+      // Fall through to an overwrite for adapters that cannot remove a key.
+    }
+    await this.storage.setItem(key, "");
+  }
+
+  private runExclusive<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operationQueue.then(operation, operation);
+    this.operationQueue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
   }
 }
 
@@ -79,6 +210,9 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
     workspace: {
       replaceSnapshot: (snapshot) => store.replace(snapshot),
       resetDemo: () => store.reset(),
+      createSnapshot: (snapshot) => store.create(snapshot),
+      deleteLocalData: () => store.deleteLocalData(),
+      getRecoveryText: () => store.getRecoveryText(),
     },
     wedding: {
       getWedding: async () => (await store.getSnapshot()).wedding,
@@ -150,6 +284,10 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
         store.update((snapshot) => {
           snapshot.tasks = snapshot.tasks.filter((task) => task.id !== id);
         }),
+      restoreTask: (task) =>
+        store.update((snapshot) => {
+          if (!snapshot.tasks.some((item) => item.id === task.id)) snapshot.tasks.push(task);
+        }),
     },
     budget: {
       listCategories: async () => (await store.getSnapshot()).categories,
@@ -173,11 +311,18 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
         }),
     },
     expenses: {
-      listExpenses: async () => (await store.getSnapshot()).expenses,
-      createExpense: (expense) =>
-        store.update((snapshot) => {
-          snapshot.expenses.push({ ...expense, id: makeWorkspaceId("expense") });
-        }),
+      listExpenses: async () => selectRecentExpenses((await store.getSnapshot()).expenses),
+      createExpense: async (expense) => {
+        const created: Expense = {
+          ...expense,
+          createdAt: new Date().toISOString(),
+          id: makeWorkspaceId("expense"),
+        };
+        const snapshot = await store.update((candidate) => {
+          candidate.expenses.push(created);
+        });
+        return { expense: copy(created), snapshot };
+      },
       updateExpense: (expense: Expense) =>
         store.update((snapshot) => {
           const index = snapshot.expenses.findIndex((item) => item.id === expense.id);
@@ -186,6 +331,12 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
       deleteExpense: (id) =>
         store.update((snapshot) => {
           snapshot.expenses = snapshot.expenses.filter((expense) => expense.id !== id);
+        }),
+      restoreExpense: (expense) =>
+        store.update((snapshot) => {
+          if (!snapshot.expenses.some((item) => item.id === expense.id)) {
+            snapshot.expenses.push(expense);
+          }
         }),
     },
     households: {
@@ -203,6 +354,12 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
         store.update((snapshot) => {
           snapshot.households = snapshot.households.filter((household) => household.id !== id);
         }),
+      restoreHousehold: (household) =>
+        store.update((snapshot) => {
+          if (!snapshot.households.some((item) => item.id === household.id)) {
+            snapshot.households.push(household);
+          }
+        }),
     },
     gifts: {
       listGifts: async () => (await store.getSnapshot()).gifts,
@@ -218,6 +375,10 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
       deleteGift: (id) =>
         store.update((snapshot) => {
           snapshot.gifts = snapshot.gifts.filter((gift) => gift.id !== id);
+        }),
+      restoreGift: (gift) =>
+        store.update((snapshot) => {
+          if (!snapshot.gifts.some((item) => item.id === gift.id)) snapshot.gifts.push(gift);
         }),
     },
     emergencyContacts: {
@@ -236,6 +397,12 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
           snapshot.emergencyContacts = snapshot.emergencyContacts.filter(
             (contact) => contact.id !== id,
           );
+        }),
+      restoreContact: (contact) =>
+        store.update((snapshot) => {
+          if (!snapshot.emergencyContacts.some((item) => item.id === contact.id)) {
+            snapshot.emergencyContacts.push(contact);
+          }
         }),
     },
     backup: {

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react-native";
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { TextInput, View, type TextInputProps } from "react-native";
 
 import { tokens } from "@/theme";
@@ -17,20 +17,23 @@ type TextFieldProps = Omit<TextInputProps, "className"> & {
   required?: boolean;
 };
 
-export function TextField({
-  className = "",
-  error,
-  helperText,
-  icon: Icon,
-  label,
-  multiline,
-  onBlur,
-  onFocus,
-  optional,
-  required,
-  style,
-  ...props
-}: TextFieldProps) {
+export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
+  {
+    className = "",
+    error,
+    helperText,
+    icon: Icon,
+    label,
+    multiline,
+    onBlur,
+    onFocus,
+    optional,
+    required,
+    style,
+    ...props
+  },
+  ref,
+) {
   const [focused, setFocused] = useState(false);
   const message = error ?? helperText;
 
@@ -39,8 +42,9 @@ export function TextField({
       <FieldLabel label={label} optional={optional} required={required} />
       <View
         className={`${multiline ? "min-h-28 items-start" : "min-h-12 items-center"} flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
-          error ? "border-danger" : focused ? "border-primary shadow-card" : "border-borderStrong"
+          error ? "border-danger" : focused ? "border-primary" : "border-borderStrong"
         }`}
+        style={focused && !error ? { boxShadow: tokens.elevation.card } : undefined}
       >
         {Icon ? (
           <View className={`${multiline ? "pt-sm" : ""} min-w-12 items-center justify-center`}>
@@ -57,6 +61,7 @@ export function TextField({
           </View>
         ) : null}
         <TextInput
+          ref={ref}
           accessibilityHint={error ?? helperText}
           accessibilityLabel={label}
           className={`${multiline ? "min-h-28 py-sm" : "min-h-12"} flex-1 text-body text-textPrimary ${
@@ -88,4 +93,4 @@ export function TextField({
       ) : null}
     </View>
   );
-}
+});

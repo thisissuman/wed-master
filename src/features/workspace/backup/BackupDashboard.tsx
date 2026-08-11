@@ -1,13 +1,4 @@
-import { Image } from "expo-image";
-import {
-  Download,
-  FileArchive,
-  FileSpreadsheet,
-  History,
-  Import,
-  Share2,
-  ShieldCheck,
-} from "lucide-react-native";
+import { Download, FileArchive, FileSpreadsheet, History, Import } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, View } from "react-native";
 
@@ -18,10 +9,9 @@ import { tokens } from "@/theme";
 import {
   clearWorkspaceLocalFiles,
   createExpensesCsv,
-  createGuestsCsv,
-  createTasksCsv,
   createWorkspaceBackupFile,
   pickWorkspaceBackup,
+  removeWorkspaceExport,
   shareWorkspaceFile,
 } from "../files/workspace-files";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
@@ -44,15 +34,15 @@ function ActionRow({ action, disabled }: { action: BackupAction; disabled: boole
       accessibilityLabel={action.label}
       accessibilityRole="button"
       accessibilityState={{ busy: disabled, disabled }}
-      className="min-h-20 flex-row items-center gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-sm shadow-card"
+      className="min-h-16 flex-row items-center gap-sm rounded-control border border-borderSubtle bg-elevatedSurface px-sm py-xs active:bg-surfaceMuted"
       disabled={disabled}
       onPress={() => void action.run()}
     >
       <View
         className={
           accent
-            ? "h-12 w-12 items-center justify-center rounded-full bg-accentSoft"
-            : "h-12 w-12 items-center justify-center rounded-full bg-primarySoft"
+            ? "h-10 w-10 items-center justify-center rounded-control bg-accentSoft"
+            : "h-10 w-10 items-center justify-center rounded-control bg-primarySoft"
         }
       >
         <Icon
@@ -104,7 +94,12 @@ export function BackupDashboard() {
     setBusy(label);
     try {
       const entry = await operation();
-      await addHistory(entry);
+      try {
+        await addHistory(entry);
+      } catch (error) {
+        removeWorkspaceExport(entry.uri);
+        throw error;
+      }
       await shareWorkspaceFile(entry.uri);
     } catch (error) {
       Alert.alert(`${label} unavailable`, toUserMessage(error));
@@ -119,21 +114,6 @@ export function BackupDashboard() {
       if (snapshot) setPendingImport(snapshot);
     } catch (error) {
       Alert.alert("Could not import backup", toUserMessage(error));
-    } finally {
-      setBusy(undefined);
-    }
-  };
-  const shareLatest = async () => {
-    const latest = data.backupHistory.find((entry) => entry.kind === "backup");
-    if (!latest) {
-      await run("Share backup", async () => createWorkspaceBackupFile(data));
-      return;
-    }
-    setBusy("Share backup");
-    try {
-      await shareWorkspaceFile(latest.uri);
-    } catch (error) {
-      Alert.alert("Could not share backup", toUserMessage(error));
     } finally {
       setBusy(undefined);
     }
@@ -166,30 +146,10 @@ export function BackupDashboard() {
       run: importBackup,
     },
     {
-      icon: Share2,
-      label: "Share backup",
-      description: "Share the most recently generated data-backup file",
-      run: shareLatest,
-    },
-    {
       icon: FileSpreadsheet,
       label: "Export expenses CSV",
       description: "Export expenses with INR decimal amounts",
       run: () => run("Export expenses CSV", async () => createExpensesCsv(data)),
-      tone: "accent",
-    },
-    {
-      icon: FileSpreadsheet,
-      label: "Export tasks CSV",
-      description: "Export tasks, status, priority, and event links",
-      run: () => run("Export tasks CSV", async () => createTasksCsv(data)),
-      tone: "accent",
-    },
-    {
-      icon: FileSpreadsheet,
-      label: "Export guests CSV",
-      description: "Export households, guests, and RSVP details",
-      run: () => run("Export guests CSV", async () => createGuestsCsv(data)),
       tone: "accent",
     },
   ];
@@ -197,40 +157,11 @@ export function BackupDashboard() {
   return (
     <Screen>
       <ScrollView
-        contentContainerClassName="gap-xl p-md pb-2xl"
+        contentContainerClassName="gap-lg p-md pb-2xl"
         showsVerticalScrollIndicator={false}
       >
-        <MoreScreenHeader title="Backup & export" weddingName={data.wedding.name} />
-        <AppText tone="muted">Protect your wedding data and share it safely</AppText>
-        <View className="min-h-56 overflow-hidden rounded-card bg-primary p-lg shadow-card">
-          <Image
-            accessible={false}
-            contentFit="cover"
-            pointerEvents="none"
-            source={require("../../../../assets/images/mangalya/mangalya-mandap.jpg")}
-            style={{
-              bottom: 0,
-              opacity: 0.55,
-              position: "absolute",
-              right: 0,
-              top: 0,
-              width: "58%",
-            }}
-          />
-          <View className="w-[58%] gap-sm">
-            <ShieldCheck color={tokens.colors.accent} size={42} />
-            <AppText tone="onPrimary" variant="title">
-              Your data stays local on this device
-            </AppText>
-            <AppText tone="onPrimary" variant="caption">
-              Mangalya does not upload this workspace to a server.
-            </AppText>
-          </View>
-        </View>
+        <MoreScreenHeader title="Backup & export" />
         <View className="gap-xs">
-          <AppText tone="primary" variant="heading">
-            Backup & export options
-          </AppText>
           {actions.map((action) => (
             <ActionRow
               action={action}

@@ -44,6 +44,8 @@ const primaryActionGradient = [
 ] as const;
 
 export function Button({
+  accessibilityLabel,
+  accessibilityState,
   className = "",
   disabled = false,
   icon: Icon,
@@ -68,15 +70,16 @@ export function Button({
 
   return (
     <MotionPressable
+      {...props}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
-      accessibilityState={{ busy: loading, disabled: isDisabled }}
+      accessibilityState={{ ...accessibilityState, busy: loading, disabled: isDisabled }}
       android_ripple={{ color: tokens.colors.surfaceMuted }}
       disabled={isDisabled}
       className={`min-h-12 overflow-hidden rounded-control ${variantClassNames[variant]} ${
         isDisabled ? "opacity-50" : "active:opacity-80"
       } ${className}`}
       pressedScale={variant === "primary" ? 0.975 : 0.985}
-      {...props}
     >
       {variant === "primary" ? (
         <LinearGradient

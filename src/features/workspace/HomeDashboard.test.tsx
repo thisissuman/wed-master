@@ -1,4 +1,5 @@
 import { Alert, Linking } from "react-native";
+import * as ReactNative from "react-native";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -9,7 +10,8 @@ import { HomeDashboard } from "./HomeDashboard";
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 
 jest.mock("expo-router", () => ({
-  router: { push: jest.fn() },
+  router: { navigate: jest.fn(), push: jest.fn() },
+  useFocusEffect: jest.fn(),
 }));
 jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light" },
@@ -32,6 +34,7 @@ const mockRemoveWeddingCoverPhoto = jest.mocked(removeWeddingCoverPhoto);
 const mockRouter = jest.mocked(router);
 const mockMutate = jest.fn();
 const mockMutateAsync = jest.fn();
+const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
 
 const mutationResult = () =>
   ({
@@ -43,8 +46,13 @@ const mutationResult = () =>
   }) as unknown as ReturnType<typeof useWorkspaceMutation>;
 
 describe("HomeDashboard", () => {
+  afterAll(() => {
+    useWindowDimensionsSpy.mockRestore();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    useWindowDimensionsSpy.mockReturnValue({ fontScale: 1, height: 800, scale: 2, width: 411 });
     mockUseWorkspace.mockReturnValue({
       data: structuredClone(demoWorkspace),
       isError: false,
@@ -62,6 +70,9 @@ describe("HomeDashboard", () => {
     expect(screen.getByText("Focus today")).toBeTruthy();
     expect(screen.getByText("Budget overview")).toBeTruthy();
     expect(screen.getByText("Quick actions")).toBeTruthy();
+    expect(screen.getByRole("header", { name: "Focus today" })).toBeTruthy();
+    expect(screen.getByRole("header", { name: "Budget overview" })).toBeTruthy();
+    expect(screen.getByRole("header", { name: "Quick actions" })).toBeTruthy();
     expect(
       screen.getByTestId("home-hearts-background", { includeHiddenElements: true }),
     ).toBeTruthy();
@@ -70,37 +81,59 @@ describe("HomeDashboard", () => {
     expect(screen.queryByRole("button", { name: "Add a task, expense, or event" })).toBeNull();
 
     await fireEvent.press(screen.getByRole("button", { name: "View all" }));
-    expect(mockRouter.push).toHaveBeenCalledWith({
+    expect(mockRouter.navigate).toHaveBeenCalledWith({
       params: { view: "tasks" },
       pathname: "/plan",
     });
-    await fireEvent.press(screen.getByRole("button", { name: "View details" }));
-    expect(mockRouter.push).toHaveBeenCalledWith("/budget");
+    await fireEvent.press(screen.getByRole("button", { name: /Open Budget & expenses/ }));
+    expect(mockRouter.navigate).toHaveBeenCalledWith("/budget/overview");
   });
 
-  it("opens all four direct quick actions", async () => {
+  it("opens all direct quick actions and the expense FAB", async () => {
     const screen = await render(<HomeDashboard />);
 
     for (const [label, route] of [
       ["Add task", "/tasks/new"],
-      ["Add expense", "/expenses/new"],
       ["Add event", "/events/new"],
       ["Add guest", "/more/guests/new"],
     ] as const) {
       await fireEvent.press(screen.getByRole("button", { name: label }));
-      expect(mockRouter.push).toHaveBeenLastCalledWith(route);
+      expect(mockRouter.navigate).toHaveBeenLastCalledWith(route);
     }
+
+    const expenseActions = screen.getAllByRole("button", { name: "Add expense" });
+    expect(expenseActions).toHaveLength(2);
+    await fireEvent.press(expenseActions[0]);
+    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
+    expect(Haptics.selectionAsync).not.toHaveBeenCalled();
+    await fireEvent.press(expenseActions[1]);
+    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps search as a coming-soon alert only", async () => {
-    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
+  it("reflows quick actions into two stable rows for large system text", async () => {
+    useWindowDimensionsSpy.mockReturnValue({
+      fontScale: 1.2999999,
+      height: 800,
+      scale: 2,
+      width: 360,
+    });
+
     const screen = await render(<HomeDashboard />);
 
-    await fireEvent.press(screen.getByRole("button", { name: "Search" }));
+    expect(screen.getAllByTestId(/home-quick-action-row-/)).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /Add (task|expense|event|guest)/ })).toHaveLength(
+      5,
+    );
+    expect(
+      screen.getByTestId("home-scroll-view").props.contentContainerStyle.paddingBottom,
+    ).toBeGreaterThan(48);
+  });
 
-    expect(alert).toHaveBeenCalledWith("Search", "Search is coming in a future Mangalya release.");
-    expect(mockRouter.push).not.toHaveBeenCalled();
-    alert.mockRestore();
+  it("does not expose unfinished global search", async () => {
+    const screen = await render(<HomeDashboard />);
+
+    expect(screen.queryByRole("button", { name: "Search" })).toBeNull();
   });
 
   it("does not persist anything when photo picking is cancelled", async () => {
@@ -122,7 +155,7 @@ describe("HomeDashboard", () => {
 
     const screen = await render(<HomeDashboard />);
     expect(screen.getByText("Nothing needs attention")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: "Add task" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Add task" })).toHaveLength(1);
   });
 
   it("ignores duplicate cover-picker taps while the picker is open", async () => {

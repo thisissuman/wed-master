@@ -1,16 +1,17 @@
 import { forwardRef, type ReactElement, useImperativeHandle, useRef } from "react";
-import { ScrollView, View, type ViewProps } from "react-native";
+import { useWindowDimensions, View, type ViewProps } from "react-native";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import {
   CalendarDays,
   CircleAlert,
   CircleCheckBig,
-  Flag,
+  RotateCcw,
   SlidersHorizontal,
 } from "lucide-react-native";
 import Animated from "react-native-reanimated";
 
 import { AppText, EmptyState, FilterChip } from "@/components/ui";
+import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 import { stateLayoutTransition } from "@/theme/motion";
 
@@ -20,61 +21,112 @@ import type { Task } from "../types";
 import { PlanHeader, type PlanView } from "./PlanShared";
 
 export type TaskSummary = { completed: number; overdue: number; today: number };
-type TaskPreset = "all" | "anchor" | "urgent" | "week" | null;
 
 const contentPadding = Number.parseInt(tokens.spacing.md, 10);
 const itemGap = Number.parseInt(tokens.spacing.sm, 10);
 const listFooterClearance = tokens.touchTarget + Number.parseInt(tokens.spacing["2xl"], 10) * 2;
 
 function SummaryItem({
+  accessibilityLabel,
   icon,
   label,
   tone,
   value,
 }: {
+  accessibilityLabel: string;
   icon: ReactElement;
   label: string;
   tone: "primary" | "danger";
   value: number;
 }) {
   return (
-    <View className="flex-1 items-center gap-xs py-xs">
-      <View
-        className={
-          tone === "danger" ? "rounded-full bg-dangerSoft p-sm" : "rounded-full bg-primarySoft p-sm"
-        }
-      >
-        {icon}
-      </View>
-      <View className="items-center">
-        <AppText variant="caption">{label}</AppText>
-        <AppText tone={tone} variant="title">
-          {value}
-        </AppText>
-      </View>
+    <View
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="text"
+      accessible
+      className="min-h-12 flex-1 flex-row items-center justify-center gap-2xs px-xs"
+    >
+      {icon}
+      <AppText variant="caption">{label}</AppText>
+      <AppText style={{ fontVariant: ["tabular-nums"] }} tone={tone} variant="label">
+        {value}
+      </AppText>
     </View>
   );
 }
 
 export function TaskSummaryCard({ summary }: { summary: TaskSummary }) {
+  const { fontScale } = useWindowDimensions();
+  const largeText = isLargeText(fontScale);
+
+  if (largeText) {
+    return (
+      <View className="gap-2xs rounded-control bg-surfaceMuted p-xs">
+        {[
+          {
+            icon: <CalendarDays color={tokens.colors.primary} size={tokens.iconSize.sm} />,
+            label: "Today",
+            tone: "primary" as const,
+            value: summary.today,
+          },
+          {
+            icon: <CircleAlert color={tokens.colors.danger} size={tokens.iconSize.sm} />,
+            label: "Overdue",
+            tone: "danger" as const,
+            value: summary.overdue,
+          },
+          {
+            icon: <CircleCheckBig color={tokens.colors.primary} size={tokens.iconSize.sm} />,
+            label: "Completed",
+            tone: "primary" as const,
+            value: summary.completed,
+          },
+        ].map((item) => (
+          <View
+            accessibilityLabel={
+              item.label === "Today"
+                ? `${item.value} ${item.value === 1 ? "task" : "tasks"} due today`
+                : `${item.value} ${item.label.toLowerCase()} ${item.value === 1 ? "task" : "tasks"}`
+            }
+            accessibilityRole="text"
+            accessible
+            className="min-h-10 flex-row items-center gap-xs px-sm"
+            key={item.label}
+          >
+            {item.icon}
+            <AppText className="flex-1" variant="caption">
+              {item.label}
+            </AppText>
+            <AppText style={{ fontVariant: ["tabular-nums"] }} tone={item.tone} variant="label">
+              {item.value}
+            </AppText>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-row items-center rounded-card border border-borderSubtle bg-elevatedSurface p-sm">
+    <View className="flex-row items-center rounded-control bg-surfaceMuted px-xs">
       <SummaryItem
-        icon={<CalendarDays color={tokens.colors.primary} size={tokens.iconSize.md} />}
+        accessibilityLabel={`${summary.today} ${summary.today === 1 ? "task" : "tasks"} due today`}
+        icon={<CalendarDays color={tokens.colors.primary} size={tokens.iconSize.sm} />}
         label="Today"
         tone="primary"
         value={summary.today}
       />
-      <View className="h-16 w-px bg-borderSubtle" />
+      <View className="h-6 w-px bg-borderStrong" />
       <SummaryItem
-        icon={<CircleAlert color={tokens.colors.danger} size={tokens.iconSize.md} />}
+        accessibilityLabel={`${summary.overdue} overdue ${summary.overdue === 1 ? "task" : "tasks"}`}
+        icon={<CircleAlert color={tokens.colors.danger} size={tokens.iconSize.sm} />}
         label="Overdue"
         tone="danger"
         value={summary.overdue}
       />
-      <View className="h-16 w-px bg-borderSubtle" />
+      <View className="h-6 w-px bg-borderStrong" />
       <SummaryItem
-        icon={<CircleCheckBig color={tokens.colors.primary} size={tokens.iconSize.md} />}
+        accessibilityLabel={`${summary.completed} completed ${summary.completed === 1 ? "task" : "tasks"}`}
+        icon={<CircleCheckBig color={tokens.colors.primary} size={tokens.iconSize.sm} />}
         label="Completed"
         tone="primary"
         value={summary.completed}
@@ -97,16 +149,14 @@ export type PlanTaskViewHandle = {
 };
 
 type PlanTaskViewProps = {
-  activePreset: TaskPreset;
   advancedFilterCount: number;
-  anchorEvent?: { id: string; name: string };
   eventNameById: (id?: string) => string | undefined;
   filters: TaskFilterState;
   hasAnyTasks: boolean;
   mutationError?: string;
   mutationPending: boolean;
+  onClearFilters: () => void;
   onFiltersOpen: () => void;
-  onPreset: (preset: Exclude<TaskPreset, null>) => void;
   onTaskPress: (task: Task) => void;
   onTaskToggle: (task: Task) => void;
   onViewChange: (view: PlanView) => void;
@@ -117,16 +167,14 @@ type PlanTaskViewProps = {
 
 export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(function PlanTaskView(
   {
-    activePreset,
     advancedFilterCount,
-    anchorEvent,
     eventNameById,
     filters,
     hasAnyTasks,
     mutationError,
     mutationPending,
+    onClearFilters,
     onFiltersOpen,
-    onPreset,
     onTaskPress,
     onTaskToggle,
     onViewChange,
@@ -143,7 +191,7 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
   }));
 
   const header = (
-    <View className="gap-xl pb-lg">
+    <View className="gap-md pb-md">
       <PlanHeader activeView="tasks" onViewChange={onViewChange} />
       <TaskSummaryCard summary={summary} />
       {mutationError ? (
@@ -163,43 +211,24 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
           </AppText>
         </View>
       ) : null}
-      <ScrollView
-        contentContainerClassName="gap-xs pr-md"
-        horizontal
-        showsHorizontalScrollIndicator={false}
-      >
-        <FilterChip label="All" onPress={() => onPreset("all")} selected={activePreset === "all"} />
+      <View className="flex-row items-center justify-between gap-sm">
+        <AppText
+          accessibilityLiveRegion="polite"
+          accessibilityRole="text"
+          className="min-w-0 flex-1"
+          variant="caption"
+        >
+          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+          {filters.dueWindow === "This Week" ? " due this week" : ""}
+        </AppText>
         <FilterChip
-          icon={CalendarDays}
-          label="This week"
-          onPress={() => onPreset("week")}
-          selected={activePreset === "week"}
-        />
-        {anchorEvent ? (
-          <FilterChip
-            label={anchorEvent.name}
-            onPress={() => onPreset("anchor")}
-            selected={activePreset === "anchor"}
-          />
-        ) : null}
-        <FilterChip
-          icon={Flag}
-          label="High priority"
-          onPress={() => onPreset("urgent")}
-          selected={activePreset === "urgent"}
-        />
-        <FilterChip
-          count={activePreset === null ? advancedFilterCount : undefined}
+          count={advancedFilterCount || undefined}
           icon={SlidersHorizontal}
           label="Filters"
           onPress={onFiltersOpen}
-          selected={activePreset === null && advancedFilterCount > 0}
+          selected={advancedFilterCount > 0}
         />
-      </ScrollView>
-      <AppText variant="caption">
-        {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-        {filters.dueWindow === "This Week" ? " due this week" : ""}
-      </AppText>
+      </View>
     </View>
   );
 
@@ -217,14 +246,10 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
       keyExtractor={(task) => task.id}
       ListEmptyComponent={
         <EmptyState
-          description={
-            hasAnyTasks
-              ? "Clear or change the filters to see more tasks."
-              : "Add the first task when you are ready to start planning."
-          }
-          imageSource={
-            hasAnyTasks ? undefined : require("../../../../assets/images/mangalya/empty-tasks.jpg")
-          }
+          actionIcon={hasAnyTasks ? RotateCcw : undefined}
+          actionLabel={hasAnyTasks ? "Clear filters" : undefined}
+          description={hasAnyTasks ? "Change or clear the current filters." : undefined}
+          onAction={hasAnyTasks ? onClearFilters : undefined}
           title={hasAnyTasks ? "No matching tasks" : "No tasks yet"}
         />
       }

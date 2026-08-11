@@ -24,6 +24,7 @@ export type SelectOption = {
 };
 
 type SelectFieldProps = {
+  compact?: boolean;
   error?: string;
   helperText?: string;
   icon?: LucideIcon;
@@ -45,6 +46,7 @@ const toneColors: Record<OptionTone, string> = {
 };
 
 export function SelectField({
+  compact = false,
   error,
   helperText,
   icon: Icon,
@@ -125,28 +127,30 @@ export function SelectField({
         <Animated.View
           entering={sheetEnteringTransition}
           exiting={exitTransition}
-          className="max-h-80 overflow-hidden rounded-sheet border border-borderStrong bg-elevatedSurface shadow-elevated"
+          className={`${compact ? "max-h-64" : "max-h-80"} overflow-hidden rounded-sheet border border-borderStrong bg-elevatedSurface shadow-elevated`}
         >
-          <View className="flex-row items-center gap-sm border-b border-borderSubtle px-md py-xs">
-            <View className="min-w-0 flex-1">
-              <AppText tone="primary" variant="label">
-                {label}
-              </AppText>
-              <AppText tone="muted" variant="caption">
-                Choose one option
-              </AppText>
+          {compact ? null : (
+            <View className="flex-row items-center gap-sm border-b border-borderSubtle px-md py-xs">
+              <View className="min-w-0 flex-1">
+                <AppText tone="primary" variant="label">
+                  {label}
+                </AppText>
+                <AppText tone="muted" variant="caption">
+                  Choose one option
+                </AppText>
+              </View>
+              <IconButton
+                accessibilityLabel="Close options"
+                icon={X}
+                onPress={() => setSheetOpen(false)}
+                variant="subtle"
+              />
             </View>
-            <IconButton
-              accessibilityLabel="Close options"
-              icon={X}
-              onPress={() => setSheetOpen(false)}
-              variant="subtle"
-            />
-          </View>
+          )}
           <ScrollView
             accessibilityLabel={`${label} options`}
             accessibilityRole="radiogroup"
-            contentContainerClassName="gap-2xs p-xs"
+            contentContainerClassName={compact ? "p-xs" : "gap-2xs p-xs"}
             keyboardShouldPersistTaps="handled"
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
@@ -161,7 +165,7 @@ export function SelectField({
                     accessibilityRole="radio"
                     accessibilityState={{ checked: optionSelected }}
                     android_ripple={{ color: tokens.colors.primarySoft }}
-                    className={`min-h-14 flex-row items-center gap-sm rounded-control border px-md py-xs ${
+                    className={`${compact ? "min-h-12" : "min-h-14"} flex-row items-center gap-sm rounded-control border px-md py-xs ${
                       optionSelected
                         ? "border-primary bg-primarySoft"
                         : "border-transparent bg-elevatedSurface active:bg-surfaceMuted"

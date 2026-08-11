@@ -1,76 +1,78 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 
 import {
   AppText,
   Button,
   Card,
   ConfirmationDialog,
-  ErrorState,
   LoadingState,
   Screen,
-  SectionHeader,
   StatusBadge,
 } from "@/components/ui";
+import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
 import { useWorkspace, useWorkspaceMutation } from "../provider";
+import { RouteNotFound } from "../routes/RouteStates";
 import { householdGuestCount } from "../selectors";
-import { rsvpStatuses, type Guest } from "../types";
-
-function nextRsvp(guest: Guest): Guest["rsvpStatus"] {
-  const index = rsvpStatuses.indexOf(guest.rsvpStatus);
-  return rsvpStatuses[(index + 1) % rsvpStatuses.length];
-}
 
 export function HouseholdDetail({ householdId }: { householdId: string }) {
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!workspace.data) {
     return (
-      <Screen>
+      <Screen edges={["top", "right", "bottom", "left"]}>
         <LoadingState label="Opening household" />
       </Screen>
     );
   }
   const household = workspace.data.households.find((item) => item.id === householdId);
   if (!household) {
-    return (
-      <Screen className="justify-center p-md">
-        <ErrorState message="This household may have been deleted." title="Household not found" />
-      </Screen>
-    );
+    return <RouteNotFound entity="Household" fallback="/more/guests" />;
   }
   const totalGuests = householdGuestCount(household);
-  const unnamedGuests = Math.max(0, totalGuests - household.guests.length);
   const remove = async () => {
     await mutation.mutateAsync((repositories) =>
       repositories.households.deleteHousehold(household.id),
     );
+    showFeedback({
+      actionLabel: "Undo",
+      message: "Household deleted",
+      onAction: () =>
+        mutation.mutateAsync((repositories) => repositories.households.restoreHousehold(household)),
+    });
     router.back();
-  };
-  const cycleRsvp = (guest: Guest) => {
-    mutation.mutate((repositories) =>
-      repositories.households.updateHousehold({
-        ...household,
-        guests: household.guests.map((item) =>
-          item.id === guest.id ? { ...item, rsvpStatus: nextRsvp(item) } : item,
-        ),
-      }),
-    );
   };
 
   return (
-    <Screen>
-      <ScrollView contentContainerClassName="gap-xl p-md pb-2xl">
-        <MoreScreenHeader title={household.name} weddingName={workspace.data.wedding.name} />
-        <Card className="gap-md">
+    <Screen edges={["top", "right", "bottom", "left"]}>
+      <ScrollView contentContainerClassName="gap-lg p-md pb-2xl">
+        <MoreScreenHeader title={household.name} />
+        <Card className="gap-sm shadow-none">
           <View className="flex-row justify-between">
             <AppText>Guest count</AppText>
             <AppText variant="label">{totalGuests}</AppText>
           </View>
+          <View className="flex-row items-center justify-between gap-sm rounded-control bg-primarySoft px-sm py-xs">
+            <AppText>Household RSVP</AppText>
+            <StatusBadge
+              label={household.rsvpStatus}
+              tone={
+                household.rsvpStatus === "Confirmed"
+                  ? "success"
+                  : household.rsvpStatus === "Declined"
+                    ? "danger"
+                    : "warning"
+              }
+            />
+          </View>
+        </Card>
+        <View className="gap-sm rounded-card bg-surfaceMuted p-md">
+          <AppText variant="heading">Planning details</AppText>
           <View className="flex-row justify-between">
             <AppText>Invitation</AppText>
             <StatusBadge
@@ -92,54 +94,19 @@ export function HouseholdDetail({ householdId }: { householdId: string }) {
               tone={household.transportStatus === "Booked" ? "success" : "neutral"}
             />
           </View>
-        </Card>
-        <View className="gap-xs">
-          <SectionHeader title="Guests" />
-          <AppText tone="muted" variant="caption">
-            Tap a guest to move between Pending, Confirmed, and Declined.
-          </AppText>
-          {household.guests.map((guest) => (
-            <Pressable
-              accessibilityLabel={`${guest.name}, RSVP ${guest.rsvpStatus}. Change RSVP`}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: mutation.isPending }}
-              className="min-h-14 flex-row items-center justify-between rounded-card border border-borderSubtle bg-elevatedSurface px-lg shadow-card"
-              disabled={mutation.isPending}
-              key={guest.id}
-              onPress={() => cycleRsvp(guest)}
-            >
-              <AppText>{guest.name}</AppText>
-              <StatusBadge
-                label={guest.rsvpStatus}
-                tone={
-                  guest.rsvpStatus === "Confirmed"
-                    ? "success"
-                    : guest.rsvpStatus === "Declined"
-                      ? "danger"
-                      : "warning"
-                }
-              />
-            </Pressable>
-          ))}
-          {unnamedGuests ? (
-            <View className="min-h-14 justify-center rounded-card border border-dashed border-borderStrong bg-surfaceMuted px-lg">
-              <AppText tone="muted">
-                {unnamedGuests} {unnamedGuests === 1 ? "guest name" : "guest names"} can be added
-                later
+          {household.notes ? (
+            <View className="gap-2xs border-t border-borderStrong pt-sm">
+              <AppText tone="muted" variant="caption">
+                Notes
               </AppText>
+              <AppText>{household.notes}</AppText>
             </View>
           ) : null}
         </View>
-        {household.notes ? (
-          <Card className="gap-xs">
-            <SectionHeader title="Notes" />
-            <AppText>{household.notes}</AppText>
-          </Card>
-        ) : null}
         <Button
           label="Edit household"
           onPress={() =>
-            router.push({ pathname: "/more/guests/new", params: { id: household.id } })
+            router.navigate({ pathname: "/more/guests/new", params: { id: household.id } })
           }
         />
         <Button
@@ -150,7 +117,7 @@ export function HouseholdDetail({ householdId }: { householdId: string }) {
       </ScrollView>
       <ConfirmationDialog
         confirmLabel="Delete household"
-        description="All guests in this household will be removed from this device."
+        description="This household and its planning details will be removed from this device."
         onCancel={() => setDeleteOpen(false)}
         onConfirm={() => void remove()}
         pending={mutation.isPending}

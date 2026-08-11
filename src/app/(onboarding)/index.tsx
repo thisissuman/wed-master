@@ -1,10 +1,5 @@
-import { PlaceholderScreen } from "@/components/ui";
+import { LocalSetupScreen } from "@/features/workspace/setup/LocalSetupScreen";
 
-export default function OnboardingPlaceholder() {
-  return (
-    <PlaceholderScreen
-      description="Wedding setup will become the first product vertical slice after authentication is connected."
-      title="Wedding setup"
-    />
-  );
+export default function OnboardingRoute() {
+  return <LocalSetupScreen />;
 }

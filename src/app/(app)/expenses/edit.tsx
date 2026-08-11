@@ -1,21 +1,27 @@
 import { useLocalSearchParams } from "expo-router";
-import { AppText, LoadingState, Screen } from "@/components/ui";
 import { ExpenseForm, useWorkspace } from "@/features/workspace";
+import {
+  RouteLoadError,
+  RouteLoading,
+  RouteNotFound,
+} from "@/features/workspace/routes/RouteStates";
 export default function EditExpenseRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useWorkspace();
-  if (!data)
+  const workspace = useWorkspace();
+  if (workspace.isError)
     return (
-      <Screen>
-        <LoadingState />
-      </Screen>
+      <RouteLoadError
+        error={workspace.error}
+        fallback="/budget"
+        onRetry={() => void workspace.refetch()}
+        title="We could not open this expense"
+      />
     );
-  const expense = data.expenses.find((item) => item.id === id);
+  if (!workspace.data) return <RouteLoading label="Opening expense" />;
+  const expense = workspace.data.expenses.find((item) => item.id === id);
   return expense ? (
     <ExpenseForm expense={expense} />
   ) : (
-    <Screen>
-      <AppText>Expense not found.</AppText>
-    </Screen>
+    <RouteNotFound entity="Expense" fallback="/budget" />
   );
 }

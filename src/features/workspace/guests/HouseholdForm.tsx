@@ -1,5 +1,4 @@
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
 import {
   BedDouble,
@@ -8,7 +7,6 @@ import {
   HeartHandshake,
   Mail,
   MailCheck,
-  MailOpen,
   NotebookPen,
   Send,
   TramFront,
@@ -28,18 +26,19 @@ import {
   TextField,
 } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
+import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
 import { householdFormSchema, type HouseholdFormValues } from "../forms";
-import { makeWorkspaceId } from "../local-repositories";
 import { useWorkspaceMutation } from "../provider";
 import { invitationStatuses, rsvpStatuses, serviceStatuses, type Household } from "../types";
 import { FormShell } from "../ui";
+import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
 
 const sideOptions: SelectOption[] = [
-  { icon: UserRound, label: "Partner one family", value: "partnerOne" },
-  { icon: UserRound, label: "Partner two family", value: "partnerTwo" },
+  { icon: UserRound, label: "Partner one’s family", value: "partnerOne" },
+  { icon: UserRound, label: "Partner two’s family", value: "partnerTwo" },
   { icon: HeartHandshake, label: "Both families", value: "both" },
-  { icon: UsersRound, label: "Friends or other guests", value: "other" },
+  { icon: UsersRound, label: "Other guests", value: "other" },
 ];
 
 const rsvpIcons = {
@@ -59,19 +58,20 @@ const serviceTone = (value: string): SelectOption["tone"] =>
 
 export function HouseholdForm({ household }: { household?: Household }) {
   const mutation = useWorkspaceMutation();
+  const showFeedback = useFeedbackStore((state) => state.show);
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<HouseholdFormValues>({
     resolver: zodResolver(householdFormSchema),
+    mode: "onTouched",
     defaultValues: household
       ? {
           name: household.name,
           side: household.side,
           guestCount: String(household.guestCount ?? Math.max(1, household.guests.length)),
-          guestNames: household.guests.map((guest) => guest.name).join("\n"),
-          guestRsvpStatus: household.guests[0]?.rsvpStatus ?? "Pending",
+          rsvpStatus: household.rsvpStatus,
           invitationStatus: household.invitationStatus,
           accommodationStatus: household.accommodationStatus,
           transportStatus: household.transportStatus,
@@ -81,39 +81,29 @@ export function HouseholdForm({ household }: { household?: Household }) {
           name: "",
           side: "both",
           guestCount: "1",
-          guestNames: "",
-          guestRsvpStatus: "Pending",
+          rsvpStatus: "Pending",
           invitationStatus: "Not Sent",
           accommodationStatus: "Not Needed",
           transportStatus: "Not Needed",
           notes: "",
         },
   });
+  const { exitAfterSave, requestExit } = useUnsavedChangesGuard({
+    isDirty,
+    isSubmitting: isSubmitting || mutation.isPending,
+  });
 
   const save = handleSubmit(async (values) => {
-    const names = values.guestNames
-      .split(/[\n,]/)
-      .map((name) => name.trim())
-      .filter(Boolean);
-    const previousGuests = new Map(
-      household?.guests.map((guest) => [guest.name.toLowerCase(), guest]),
-    );
     const record = {
       name: values.name,
       side: values.side,
       guestCount: Number(values.guestCount),
+      rsvpStatus: values.rsvpStatus,
       invitationStatus: values.invitationStatus,
       accommodationStatus: values.accommodationStatus,
       transportStatus: values.transportStatus,
       notes: values.notes || undefined,
-      guests: names.map(
-        (name) =>
-          previousGuests.get(name.toLowerCase()) ?? {
-            id: makeWorkspaceId("guest"),
-            name,
-            rsvpStatus: values.guestRsvpStatus,
-          },
-      ),
+      guests: household?.guests ?? [],
     };
     await mutation.mutateAsync((repositories) =>
       household
@@ -121,11 +111,12 @@ export function HouseholdForm({ household }: { household?: Household }) {
         : repositories.households.createHousehold(record),
     );
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    showFeedback({ message: household ? "Household updated" : "Household added" });
+    exitAfterSave();
   });
 
   const text = (
-    name: "guestNames" | "name" | "notes",
+    name: "name" | "notes",
     label: string,
     icon: LucideIcon,
     options?: {
@@ -141,6 +132,9 @@ export function HouseholdForm({ household }: { household?: Household }) {
       name={name}
       render={({ field }) => (
         <TextField
+          autoCapitalize="words"
+          autoComplete={name === "name" ? "name" : "off"}
+          autoFocus={name === "name"}
           error={errors[name]?.message}
           helperText={options?.helperText}
           icon={icon}
@@ -150,6 +144,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
           onChangeText={field.onChange}
           optional={options?.optional}
           placeholder={options?.placeholder}
+          returnKeyType={options?.multiline ? "default" : "done"}
           required={options?.required}
           value={field.value}
         />
@@ -158,8 +153,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
   );
 
   const select = (
-    name:
-      "accommodationStatus" | "guestRsvpStatus" | "invitationStatus" | "side" | "transportStatus",
+    name: "accommodationStatus" | "invitationStatus" | "rsvpStatus" | "side" | "transportStatus",
     label: string,
     icon: LucideIcon,
     options: SelectOption[],
@@ -196,7 +190,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
       <FormShell
         description="Invite a household and add only the planning details you need."
         isSubmitting={isSubmitting || mutation.isPending}
-        onCancel={() => router.back()}
+        onCancel={requestExit}
         onSubmit={save}
         submitLabel={household ? "Save household" : "Add household"}
         submissionError={mutation.error ? toUserMessage(mutation.error) : undefined}
@@ -220,30 +214,18 @@ export function HouseholdForm({ household }: { household?: Household }) {
             />
           )}
         />
-        <Disclosure
-          description="Individual names are optional and can be added later."
-          initiallyExpanded={Boolean(household?.guests.length)}
-          title="Guest names"
-        >
-          {text("guestNames", "Individual guest names", UserRound, {
-            helperText: "Add one name per line or separate names with commas.",
-            multiline: true,
-            optional: true,
-            placeholder: "Add names when you know them",
-          })}
-          {select(
-            "guestRsvpStatus",
-            "Starting RSVP status",
-            MailOpen,
-            rsvpStatuses.map((value) => ({
-              icon: rsvpIcons[value],
-              label: value,
-              tone: value === "Confirmed" ? "success" : value === "Declined" ? "danger" : "warning",
-              value,
-            })),
-            { optional: true },
-          )}
-        </Disclosure>
+        {select(
+          "rsvpStatus",
+          "Household RSVP",
+          rsvpIcons.Pending,
+          rsvpStatuses.map((value) => ({
+            icon: rsvpIcons[value],
+            label: value,
+            tone: value === "Confirmed" ? "success" : value === "Declined" ? "danger" : "warning",
+            value,
+          })),
+          { required: true },
+        )}
         <Disclosure
           description="Invitation, stay, transport, and private notes."
           initiallyExpanded={planningDetailsAdded}

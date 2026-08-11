@@ -1,29 +1,21 @@
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
 import { Check, Clock3, MapPin, Palette, PartyPopper, StickyNote } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
-import { Alert, Linking, View } from "react-native";
+import { useRef } from "react";
+import { View, type TextInput } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import {
-  AppText,
-  DateField,
-  ImagePickerField,
-  MotionPressable,
-  Screen,
-  TextField,
-  TimeField,
-} from "@/components/ui";
+import { AppText, DateField, MotionPressable, Screen, TextField, TimeField } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
+import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { tokens } from "@/theme";
 
 import { eventFormSchema, type EventFormValues } from "./forms";
-import { pickEventCoverPhoto, removeEventCoverPhoto } from "./files/workspace-files";
 import { useWorkspaceMutation } from "./provider";
 import { eventColorKeys, type EventColorKey, type WeddingEvent } from "./types";
 import { FormShell } from "./ui";
+import { useUnsavedChangesGuard } from "./useUnsavedChangesGuard";
 
 const eventColors: Record<EventColorKey, { color: string; label: string }> = {
   botanical: { color: tokens.colors.eventBotanical, label: "Lavender" },
@@ -31,12 +23,6 @@ const eventColors: Record<EventColorKey, { color: string; label: string }> = {
   terracotta: { color: tokens.colors.eventTerracotta, label: "Terracotta" },
   sage: { color: tokens.colors.eventSage, label: "Sage" },
 };
-
-const eventCoverErrorMessage = (error: unknown) =>
-  error instanceof Error &&
-  /Cover photos must|Choose an image for the event cover/.test(error.message)
-    ? error.message
-    : toUserMessage(error);
 
 function EventColorField({
   error,
@@ -63,7 +49,7 @@ function EventColorField({
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
               className={`h-14 w-14 items-center justify-center rounded-full border-2 ${
-                selected ? "border-primary bg-primarySoft shadow-card" : "border-borderSubtle"
+                selected ? "border-primary bg-primarySoft" : "border-borderSubtle"
               }`}
               key={key}
               onPress={() => {
@@ -71,13 +57,14 @@ function EventColorField({
                 void Haptics.selectionAsync();
               }}
               pressedScale={0.92}
+              style={selected ? { boxShadow: tokens.elevation.card } : undefined}
             >
               <View
                 className="h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: option.color }}
               >
                 {selected ? (
-                  <Check color={tokens.colors.onPrimary} size={tokens.iconSize.md} />
+                  <Check color={tokens.colors.textPrimary} size={tokens.iconSize.md} />
                 ) : null}
               </View>
             </MotionPressable>
@@ -98,16 +85,16 @@ function EventColorField({
 
 export function EventForm({ event }: { event?: WeddingEvent }) {
   const mutation = useWorkspaceMutation();
-  const [coverPhotoUri, setCoverPhotoUri] = useState(event?.coverPhotoUri);
-  const [coverPhotoError, setCoverPhotoError] = useState<string>();
-  const [isPickingPhoto, setIsPickingPhoto] = useState(false);
-  const pendingCoverPhotoRef = useRef<string | undefined>(undefined);
+  const showFeedback = useFeedbackStore((state) => state.show);
+  const locationInputRef = useRef<TextInput>(null);
+  const notesInputRef = useRef<TextInput>(null);
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
+    mode: "onTouched",
     defaultValues: event
       ? {
           name: event.name,
@@ -128,15 +115,10 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
           colorToken: "botanical",
         },
   });
-
-  useEffect(
-    () => () => {
-      if (pendingCoverPhotoRef.current) {
-        removeEventCoverPhoto(pendingCoverPhotoRef.current);
-      }
-    },
-    [],
-  );
+  const { exitAfterSave, requestExit } = useUnsavedChangesGuard({
+    isDirty,
+    isSubmitting: isSubmitting || mutation.isPending,
+  });
 
   const saveValues = async (values: EventFormValues) => {
     await mutation.mutateAsync((repositories) =>
@@ -144,7 +126,6 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
         ? repositories.events.updateEvent({
             ...event,
             ...values,
-            coverPhotoUri: coverPhotoUri || undefined,
             date: values.date as WeddingEvent["date"],
             time: values.time || undefined,
             endTime: values.endTime || undefined,
@@ -153,7 +134,6 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
           })
         : repositories.events.createEvent({
             ...values,
-            coverPhotoUri: coverPhotoUri || undefined,
             date: values.date as WeddingEvent["date"],
             time: values.time || undefined,
             endTime: values.endTime || undefined,
@@ -162,12 +142,9 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
             requiredItems: [],
           }),
     );
-    pendingCoverPhotoRef.current = undefined;
-    if (event?.coverPhotoUri && event.coverPhotoUri !== coverPhotoUri) {
-      removeEventCoverPhoto(event.coverPhotoUri);
-    }
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+    showFeedback({ message: event ? "Event updated" : "Event created" });
+    exitAfterSave();
   };
 
   const save = () => {
@@ -175,64 +152,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
   };
 
   const cancel = () => {
-    if (pendingCoverPhotoRef.current) {
-      removeEventCoverPhoto(pendingCoverPhotoRef.current);
-      pendingCoverPhotoRef.current = undefined;
-    }
-    router.back();
-  };
-
-  const pickCoverPhoto = async () => {
-    if (isPickingPhoto) return;
-    setCoverPhotoError(undefined);
-    setIsPickingPhoto(true);
-    try {
-      const result = await pickEventCoverPhoto();
-      if (result.status === "cancelled") return;
-      if (result.status === "permission-denied") {
-        const openSettings = () => {
-          void Linking.openSettings().catch(() => {
-            Alert.alert(
-              "Could not open settings",
-              "Open Mangalya in your device settings and allow photo access.",
-            );
-          });
-        };
-        Alert.alert(
-          "Photo access needed",
-          result.canAskAgain
-            ? "Allow photo access to choose an event cover."
-            : "Photo access is disabled. Open device settings to choose an event cover.",
-          [
-            { style: "cancel", text: "Not now" },
-            { onPress: openSettings, text: "Open settings" },
-            ...(result.canAskAgain
-              ? [{ onPress: () => void pickCoverPhoto(), text: "Try again" }]
-              : []),
-          ],
-        );
-        return;
-      }
-      if (pendingCoverPhotoRef.current) {
-        removeEventCoverPhoto(pendingCoverPhotoRef.current);
-      }
-      pendingCoverPhotoRef.current = result.uri;
-      setCoverPhotoUri(result.uri);
-      void Haptics.selectionAsync();
-    } catch (error) {
-      setCoverPhotoError(eventCoverErrorMessage(error));
-    } finally {
-      setIsPickingPhoto(false);
-    }
-  };
-
-  const removeCoverPhoto = () => {
-    if (pendingCoverPhotoRef.current) {
-      removeEventCoverPhoto(pendingCoverPhotoRef.current);
-      pendingCoverPhotoRef.current = undefined;
-    }
-    setCoverPhotoUri(undefined);
-    setCoverPhotoError(undefined);
+    requestExit();
   };
 
   const field = (
@@ -246,14 +166,28 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
       name={name}
       render={({ field: input }) => (
         <TextField
+          autoCapitalize="sentences"
+          autoComplete="off"
+          autoFocus={name === "name"}
           error={errors[name]?.message}
           icon={icon}
           label={label}
           multiline={options?.multiline}
           onBlur={input.onBlur}
           onChangeText={input.onChange}
+          onSubmitEditing={
+            name === "name"
+              ? () => locationInputRef.current?.focus()
+              : name === "location"
+                ? () => notesInputRef.current?.focus()
+                : undefined
+          }
           optional={options?.optional}
           placeholder={options?.placeholder}
+          ref={
+            name === "location" ? locationInputRef : name === "notes" ? notesInputRef : undefined
+          }
+          returnKeyType={options?.multiline ? "default" : "next"}
           required={options?.required}
           value={input.value}
         />
@@ -337,14 +271,6 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
               value={input.value}
             />
           )}
-        />
-        <ImagePickerField
-          error={coverPhotoError}
-          label="Cover photo"
-          loading={isPickingPhoto}
-          onPick={() => void pickCoverPhoto()}
-          onRemove={removeCoverPhoto}
-          uri={coverPhotoUri}
         />
         {field("notes", "Notes", StickyNote, {
           multiline: true,

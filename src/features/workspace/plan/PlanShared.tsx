@@ -13,7 +13,7 @@ export function PlanHeader({
   onViewChange: (view: PlanView) => void;
 }) {
   return (
-    <View className="gap-xl">
+    <View className="gap-lg">
       <MangalyaHeader />
       <AppText tone="primary" variant="display">
         Plan
@@ -22,8 +22,8 @@ export function PlanHeader({
         accessibilityLabel="Plan view"
         onChange={onViewChange}
         options={[
-          { label: "Events", value: "events" },
           { label: "Tasks", value: "tasks" },
+          { label: "Events", value: "events" },
         ]}
         value={activeView}
       />

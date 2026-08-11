@@ -1,10 +1,12 @@
 import { todayDateOnly, toDateOnly } from "@/lib/dates";
 
 import type {
+  BudgetCategoryIconKey,
   Expense,
   GiftKind,
   GiftRecord,
   Household,
+  ISODate,
   Task,
   TaskPriority,
   TaskStatus,
@@ -36,6 +38,17 @@ export const taskProgress = (tasks: Task[]) => {
   const active = activeTasks(tasks);
   return { completed: completedTaskCount(active), total: active.length };
 };
+
+export function taskProgressByEvent(tasks: Task[]) {
+  return tasks.reduce<Map<string, { completed: number; total: number }>>((progress, task) => {
+    if (!task.eventId || task.status === "Cancelled") return progress;
+    const current = progress.get(task.eventId) ?? { completed: 0, total: 0 };
+    current.total += 1;
+    if (task.status === "Completed") current.completed += 1;
+    progress.set(task.eventId, current);
+    return progress;
+  }, new Map());
+}
 
 const homePriorityOrder: Record<TaskPriority, number> = {
   Critical: 0,
@@ -136,8 +149,9 @@ export const expenseTotals = (expenses: Expense[]) =>
     (totals, expense) => ({
       estimatedPaise: totals.estimatedPaise + (expense.estimatedPaise ?? 0),
       actualPaise: totals.actualPaise + expense.actualPaise,
-      paidPaise: totals.paidPaise + expense.paidPaise,
-      outstandingPaise: totals.outstandingPaise + (expense.actualPaise - expense.paidPaise),
+      paidPaise: totals.paidPaise + (expense.paidPaise ?? 0),
+      outstandingPaise:
+        totals.outstandingPaise + Math.max(0, expense.actualPaise - (expense.paidPaise ?? 0)),
     }),
     { estimatedPaise: 0, actualPaise: 0, paidPaise: 0, outstandingPaise: 0 },
   );
@@ -145,46 +159,203 @@ export const expenseTotals = (expenses: Expense[]) =>
 export type HomeBudgetSummary = ReturnType<typeof homeBudgetSummary>;
 
 export function homeBudgetSummary(snapshot: WorkspaceSnapshot) {
-  const totals = expenseTotals(snapshot.expenses);
-  const positiveTarget = (snapshot.wedding.budgetTargetPaise ?? 0) > 0;
-  const positiveEstimates = totals.estimatedPaise > 0;
-  const plannedPaise = positiveTarget
-    ? (snapshot.wedding.budgetTargetPaise ?? 0)
-    : positiveEstimates
-      ? totals.estimatedPaise
-      : 0;
-  const plannedSource = positiveTarget ? "target" : positiveEstimates ? "estimates" : "none";
-  const percentage = plannedPaise > 0 ? (totals.actualPaise / plannedPaise) * 100 : undefined;
+  const spentPaise = snapshot.expenses.reduce((sum, expense) => sum + expense.actualPaise, 0);
+  const targetPaise = snapshot.wedding.budgetTargetPaise;
+  const hasTarget = targetPaise !== undefined && targetPaise > 0;
+  const differencePaise = hasTarget ? targetPaise - spentPaise : undefined;
+  const percentage = hasTarget ? (spentPaise / targetPaise) * 100 : undefined;
 
   return {
-    ...totals,
-    overBudgetPaise: plannedPaise > 0 ? Math.max(0, totals.actualPaise - plannedPaise) : 0,
+    actualPaise: spentPaise,
+    overBudgetPaise: differencePaise === undefined ? 0 : Math.max(0, -differencePaise),
     percentage,
-    plannedPaise,
-    plannedSource,
+    remainingPaise: differencePaise,
+    spentPaise,
+    targetPaise: hasTarget ? targetPaise : undefined,
   } as const;
 }
 export const categoryTotals = (snapshot: WorkspaceSnapshot, categoryId: string) =>
   expenseTotals(snapshot.expenses.filter((expense) => expense.categoryId === categoryId));
 
+export function selectRecentExpenses(expenses: Expense[]): Expense[] {
+  return [...expenses].sort(
+    (left, right) =>
+      right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id),
+  );
+}
+
+const normalizeExpenseTitle = (value: string) =>
+  value.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-IN");
+
+export type ExpenseTitleSuggestion = Pick<Expense, "categoryId" | "title">;
+
+export function selectExpenseTitleSuggestions(
+  expenses: Expense[],
+  query: string,
+  limit = 5,
+): ExpenseTitleSuggestion[] {
+  const normalizedQuery = normalizeExpenseTitle(query);
+  if (!normalizedQuery) return [];
+
+  const matches = selectRecentExpenses(expenses)
+    .map((expense) => ({ expense, normalizedTitle: normalizeExpenseTitle(expense.title) }))
+    .filter(({ normalizedTitle }) => normalizedTitle.includes(normalizedQuery))
+    .sort((left, right) => {
+      const leftPrefix = left.normalizedTitle.startsWith(normalizedQuery) ? 0 : 1;
+      const rightPrefix = right.normalizedTitle.startsWith(normalizedQuery) ? 0 : 1;
+      return leftPrefix - rightPrefix;
+    });
+  const seen = new Set<string>();
+  const suggestions: ExpenseTitleSuggestion[] = [];
+
+  for (const match of matches) {
+    if (seen.has(match.normalizedTitle)) continue;
+    seen.add(match.normalizedTitle);
+    suggestions.push({ categoryId: match.expense.categoryId, title: match.expense.title });
+    if (suggestions.length >= Math.max(0, limit)) break;
+  }
+  return suggestions;
+}
+
+const categoryOrder: BudgetCategoryIconKey[] = [
+  "event",
+  "task",
+  "shopping",
+  "commute",
+  "gift",
+  "advance",
+  "other",
+];
+
+export type CategorySpending = {
+  actualPaise: number;
+  iconKey: BudgetCategoryIconKey;
+  percentage: number;
+};
+
+export function categorySpending(snapshot: WorkspaceSnapshot): CategorySpending[] {
+  const categories = new Map(snapshot.categories.map((category) => [category.id, category]));
+  const totals = snapshot.expenses.reduce<Map<BudgetCategoryIconKey, number>>((result, expense) => {
+    const iconKey = categories.get(expense.categoryId)?.iconKey ?? "other";
+    result.set(iconKey, (result.get(iconKey) ?? 0) + expense.actualPaise);
+    return result;
+  }, new Map());
+  const spent = [...totals.values()].reduce((sum, amount) => sum + amount, 0);
+
+  return categoryOrder
+    .map((iconKey) => {
+      const actualPaise = totals.get(iconKey) ?? 0;
+      return {
+        actualPaise,
+        iconKey,
+        percentage: spent > 0 ? (actualPaise / spent) * 100 : 0,
+      };
+    })
+    .filter((item) => item.actualPaise > 0)
+    .sort(
+      (left, right) =>
+        right.actualPaise - left.actualPaise ||
+        categoryOrder.indexOf(left.iconKey) - categoryOrder.indexOf(right.iconKey),
+    );
+}
+
+export const spendingTrendRanges = ["30d", "90d", "all"] as const;
+export type SpendingTrendRange = (typeof spendingTrendRanges)[number];
+
+export type SpendingTrendPoint = {
+  actualPaise: number;
+  endDate: ISODate;
+  expenseCount: number;
+  startDate: ISODate;
+};
+
+function dateOnlyDaysBefore(value: string, days: number): ISODate {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() - days);
+  return toDateOnly(date) as ISODate;
+}
+
+export function selectDailySpending(
+  expenses: Expense[],
+  range: SpendingTrendRange,
+  today = todayDateOnly(),
+): SpendingTrendPoint[] {
+  const startDate =
+    range === "30d"
+      ? dateOnlyDaysBefore(today, 29)
+      : range === "90d"
+        ? dateOnlyDaysBefore(today, 89)
+        : undefined;
+  const totals = expenses.reduce<Map<ISODate, { actualPaise: number; expenseCount: number }>>(
+    (result, expense) => {
+      if (
+        !expense.date ||
+        expense.actualPaise <= 0 ||
+        (startDate && (expense.date < startDate || expense.date > today))
+      ) {
+        return result;
+      }
+      const current = result.get(expense.date) ?? { actualPaise: 0, expenseCount: 0 };
+      current.actualPaise += expense.actualPaise;
+      current.expenseCount += 1;
+      result.set(expense.date, current);
+      return result;
+    },
+    new Map(),
+  );
+
+  return [...totals.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, values]) => ({
+      ...values,
+      endDate: date,
+      startDate: date,
+    }));
+}
+
+export function selectSpendingTrend(
+  expenses: Expense[],
+  range: SpendingTrendRange,
+  today = todayDateOnly(),
+  maximumPoints = 10,
+): SpendingTrendPoint[] {
+  const daily = selectDailySpending(expenses, range, today);
+  const pointLimit = Math.max(1, Math.floor(maximumPoints));
+  if (daily.length <= pointLimit) return daily;
+
+  const bucketSize = Math.ceil(daily.length / pointLimit);
+  const points: SpendingTrendPoint[] = [];
+  for (let index = 0; index < daily.length; index += bucketSize) {
+    const bucket = daily.slice(index, index + bucketSize);
+    const first = bucket[0];
+    const last = bucket.at(-1);
+    if (!first || !last) continue;
+    points.push({
+      actualPaise: bucket.reduce((sum, point) => sum + point.actualPaise, 0),
+      endDate: last.endDate,
+      expenseCount: bucket.reduce((sum, point) => sum + point.expenseCount, 0),
+      startDate: first.startDate,
+    });
+  }
+  return points;
+}
+
 export const householdGuestCount = (household: Household) =>
   household.guestCount ?? household.guests.length;
 
 export function householdSummary(households: Household[]) {
-  const allGuests = households.flatMap((household) => household.guests);
-  return {
-    households: households.length,
-    invited: households
-      .filter((household) => household.invitationStatus !== "Not Sent")
-      .reduce((sum, household) => sum + householdGuestCount(household), 0),
-    confirmed: allGuests.filter((guest) => guest.rsvpStatus === "Confirmed").length,
-    stayBooked: households
-      .filter((household) => household.accommodationStatus === "Booked")
-      .reduce((sum, household) => sum + householdGuestCount(household), 0),
-    transportBooked: households
-      .filter((household) => household.transportStatus === "Booked")
-      .reduce((sum, household) => sum + householdGuestCount(household), 0),
-  };
+  return households.reduce(
+    (summary, household) => {
+      const count = householdGuestCount(household);
+      summary.households += 1;
+      if (household.invitationStatus !== "Not Sent") summary.invited += count;
+      if (household.accommodationStatus === "Booked") summary.stayBooked += count;
+      if (household.transportStatus === "Booked") summary.transportBooked += count;
+      if (household.rsvpStatus === "Confirmed") summary.confirmed += count;
+      return summary;
+    },
+    { confirmed: 0, households: 0, invited: 0, stayBooked: 0, transportBooked: 0 },
+  );
 }
 
 export function filterHouseholds(
@@ -194,13 +365,8 @@ export function filterHouseholds(
   const query = filters.query.trim().toLowerCase();
   return households.filter((household) => {
     const sideMatches = filters.side === "all" || household.side === filters.side;
-    const statusMatches =
-      filters.status === "all" ||
-      household.guests.some((guest) => guest.rsvpStatus === filters.status);
-    const searchMatches =
-      !query ||
-      household.name.toLowerCase().includes(query) ||
-      household.guests.some((guest) => guest.name.toLowerCase().includes(query));
+    const statusMatches = filters.status === "all" || household.rsvpStatus === filters.status;
+    const searchMatches = !query || household.name.toLowerCase().includes(query);
     return sideMatches && statusMatches && searchMatches;
   });
 }
@@ -209,8 +375,6 @@ export function giftSummary(gifts: GiftRecord[]) {
   return {
     total: gifts.length,
     totalValuePaise: gifts.reduce((sum, gift) => sum + (gift.valuePaise ?? 0), 0),
-    thanked: gifts.filter((gift) => gift.thankedStatus === "Done").length,
-    returned: gifts.filter((gift) => gift.returnGiftStatus === "Done").length,
   };
 }
 
@@ -220,7 +384,7 @@ export function selectAndSortGifts(
   sort: "name" | "recent" | "value",
 ) {
   return gifts
-    .filter((gift) => gift.kind === kind)
+    .filter((gift) => (gift.kind ?? "Received") === kind)
     .sort((left, right) => {
       if (sort === "value") return (right.valuePaise ?? 0) - (left.valuePaise ?? 0);
       if (sort === "name") return left.personName.localeCompare(right.personName);

@@ -1,23 +1,25 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { AppText, LoadingState, Screen } from "@/components/ui";
 import { GiftForm, useWorkspace } from "@/features/workspace";
+import {
+  RouteLoadError,
+  RouteLoading,
+  RouteNotFound,
+} from "@/features/workspace/routes/RouteStates";
 
 export default function EditGiftRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useWorkspace();
-  if (!data)
+  const workspace = useWorkspace();
+  if (workspace.isError)
     return (
-      <Screen>
-        <LoadingState />
-      </Screen>
+      <RouteLoadError
+        error={workspace.error}
+        fallback="/more/gifts"
+        onRetry={() => void workspace.refetch()}
+        title="We could not open this gift"
+      />
     );
-  const gift = data.gifts.find((item) => item.id === id);
-  return gift ? (
-    <GiftForm gift={gift} />
-  ) : (
-    <Screen className="p-md">
-      <AppText>Gift not found.</AppText>
-    </Screen>
-  );
+  if (!workspace.data) return <RouteLoading label="Opening gift" />;
+  const gift = workspace.data.gifts.find((item) => item.id === id);
+  return gift ? <GiftForm gift={gift} /> : <RouteNotFound entity="Gift" fallback="/more/gifts" />;
 }

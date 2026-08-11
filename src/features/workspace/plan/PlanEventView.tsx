@@ -1,5 +1,6 @@
 import { Pressable, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
+import { memo } from "react";
 import {
   CalendarHeart,
   Diamond,
@@ -23,10 +24,10 @@ const itemGap = Number.parseInt(tokens.spacing.sm, 10);
 const listFooterClearance = tokens.touchTarget + Number.parseInt(tokens.spacing["2xl"], 10) * 2;
 
 const eventColorByKey = {
-  botanical: { color: tokens.colors.eventBotanical, soft: tokens.colors.primarySoft },
-  gold: { color: tokens.colors.eventGold, soft: tokens.colors.accentSoft },
-  terracotta: { color: tokens.colors.eventTerracotta, soft: tokens.colors.dangerSoft },
-  sage: { color: tokens.colors.eventSage, soft: tokens.colors.successSoft },
+  botanical: { color: tokens.colors.primary, soft: tokens.colors.primarySoft },
+  gold: { color: tokens.colors.warning, soft: tokens.colors.accentSoft },
+  terracotta: { color: tokens.colors.danger, soft: tokens.colors.dangerSoft },
+  sage: { color: tokens.colors.success, soft: tokens.colors.successSoft },
 } as const;
 
 function iconKeyForEvent(event: WeddingEvent): EventIconKey {
@@ -88,7 +89,7 @@ export type EventTimelineCardProps = {
   progress: { completed: number; total: number };
 };
 
-export function EventTimelineCard({
+export const EventTimelineCard = memo(function EventTimelineCard({
   event,
   highlighted,
   isFirst,
@@ -102,6 +103,7 @@ export function EventTimelineCard({
   const progressLabel = progress.total
     ? `${progress.completed}/${progress.total} tasks completed`
     : "No tasks linked";
+  const statusLabel = highlighted ? `Wedding date · ${progressLabel}` : progressLabel;
 
   return (
     <View className="flex-row">
@@ -130,7 +132,7 @@ export function EventTimelineCard({
             />
           </View>
           <Pressable
-            accessibilityHint={`${date.weekday}, ${date.spokenDate}. ${progressLabel}`}
+            accessibilityHint={`${date.weekday}, ${date.spokenDate}. ${statusLabel}`}
             accessibilityLabel={`Open event: ${event.name}`}
             accessibilityRole="button"
             android_ripple={{ color: tokens.colors.surfaceMuted }}
@@ -152,9 +154,9 @@ export function EventTimelineCard({
               <AppText numberOfLines={2} tone="primary" variant="heading">
                 {event.name}
               </AppText>
-              <View className="self-start rounded-control bg-primarySoft px-xs py-2xs">
+              <View className="max-w-full self-start rounded-control bg-primarySoft px-xs py-2xs">
                 <AppText tone={highlighted ? "primary" : "muted"} variant="caption">
-                  {progressLabel}
+                  {statusLabel}
                 </AppText>
               </View>
             </View>
@@ -169,7 +171,7 @@ export function EventTimelineCard({
       </View>
     </View>
   );
-}
+});
 
 export function PlanEventView({
   events,
@@ -187,14 +189,11 @@ export function PlanEventView({
   weddingDate: string;
 }) {
   const header = (
-    <View className="gap-xl pb-lg">
+    <View className="gap-lg pb-md">
       <PlanHeader activeView="events" onViewChange={onViewChange} />
-      <View className="gap-2xs">
-        <AppText tone="primary" variant="title">
-          Your wedding events
-        </AppText>
-        <AppText variant="body">Timeline of your celebration</AppText>
-      </View>
+      <AppText tone="primary" variant="title">
+        Your wedding events
+      </AppText>
     </View>
   );
 
@@ -208,12 +207,7 @@ export function PlanEventView({
       data={events}
       ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
       keyExtractor={(event) => event.id}
-      ListEmptyComponent={
-        <EmptyState
-          description="Start with the ceremony or gathering that anchors your plan."
-          title="No events yet"
-        />
-      }
+      ListEmptyComponent={<EmptyState title="No events yet" />}
       ListHeaderComponent={header}
       renderItem={({ index, item }) => (
         <EventTimelineCard

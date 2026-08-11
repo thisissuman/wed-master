@@ -26,20 +26,25 @@ const iconColorByVariant = {
 
 export function IconButton({
   accessibilityLabel,
+  accessibilityState,
   className = "",
+  disabled = false,
   icon: Icon,
   size = "md",
   variant = "default",
   ...props
 }: IconButtonProps) {
+  const isDisabled = disabled === true;
   return (
     <MotionPressable
+      {...props}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      accessibilityState={{ ...accessibilityState, disabled: isDisabled }}
       android_ripple={{ color: tokens.colors.surfaceMuted }}
       className={`min-h-12 min-w-12 items-center justify-center rounded-control active:opacity-80 ${backgroundClassByVariant[variant]} ${className}`}
+      disabled={isDisabled}
       pressedScale={0.94}
-      {...props}
     >
       <Icon color={iconColorByVariant[variant]} size={tokens.iconSize[size]} />
     </MotionPressable>
