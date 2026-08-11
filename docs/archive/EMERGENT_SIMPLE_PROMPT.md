@@ -1,5 +1,9 @@
 # Simple Emergent AI prompt — Mangalya
 
+> **Historical and superseded (archived 2026-08-01).** This prompt predates the current
+> lavender local-beta implementation. It is retained only as historical input and must not guide
+> implementation. Use the canonical documents in the parent `docs/` directory instead.
+
 ## BEGIN PROMPT
 
 Build a polished mobile wedding-planning app called **Mangalya** with the tagline **“Your Wedding, Beautifully Organized.”**
@@ -35,19 +39,19 @@ Tasks:
 - Provide filters for status, priority, event, this week, and overdue tasks.
 - Clearly distinguish completed, upcoming, and overdue tasks.
 
-### 3. Money
+### 3. Budget
 
-- Let users add, edit, view, filter, and delete wedding expenses.
-- Each expense can include a title, category, planned amount, amount spent, amount paid, payment status, expense date, payment due date, related event, vendor, notes, and receipt.
-- Show payment states such as Paid, Partially Paid, and Unpaid.
-- Show clear totals for planned, spent, paid, and outstanding amounts.
+- Let users add, edit, view, filter, and delete wedding expenses through a fast title, visual category, and actual-amount flow.
+- Save the local current date by default, then let users optionally change the date or add a note and one receipt.
+- Show the wedding target, actual spending, pending/over amount, newest expenses, and labelled category bars.
+- Do not expose planned, paid, payment status, due date, vendor, or linked-event fields in new expense flows.
 - Display all money using Indian rupee formatting, such as `₹28,00,000`.
 
 ### 4. More
 
 Include these useful planning tools:
 
-- **Wedding Settings:** edit the wedding name, type, date, location, estimated guest count, and target budget.
+- **Wedding Settings:** use one editor for wedding name, type/tradition, date, and location; edit the target in Budget.
 - **Guests:** organize guests by household or family, track RSVP, invitation status, accommodation, and transport needs.
 - **Gifts:** track gifts given, received, and return gifts, including value, date, thank-you status, and notes.
 - **Emergency Contacts:** save important names, roles, and phone numbers with a tap-to-call option.

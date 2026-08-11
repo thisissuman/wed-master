@@ -32,7 +32,7 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 **Why:** The baseline provides compatible native tooling, typed routing, feature boundaries, consistent visual tokens, and a production path without implementing product features.
 
-**Consequence:** Android development requires a local SDK/emulator and Java runtime. Sentry is installed but remains unconfigured until a private-alpha project/DSN exists.
+**Consequence:** Android development requires a local SDK/emulator and Java runtime. Sentry was initially left unconfigured; the 2026-07-23 decision supersedes that startup behavior with conditional, privacy-scrubbed initialization.
 
 ## 2026-07-13: Restrained planning UI system
 
@@ -93,3 +93,43 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 **Why:** it is the smallest stable persisted key-value solution for a single local demo workspace. SecureStore remains reserved for sensitive credentials; it is not a general application database.
 
 **Deferred:** cloud storage, Supabase tables, synchronisation, conflict handling, background work, and local-to-remote migration UX. These require an authenticated multi-device product decision.
+
+## 2026-07-23: Production-ready private local release
+
+**Decision:** Ship the current Mangalya scope as one validated device-local workspace. Serialize persist-first mutations, retain explicit v1/v2 migration into the current version, provide corruption recovery and real deletion/setup, and keep Supabase as an inactive future repository boundary.
+
+**Why:** The complete local planning product is useful without accounts or connectivity, while pretending to have remote collaboration would add authorization and conflict risks that are outside this release.
+
+**Consequence:** Development, preview, and production builds have distinct identifiers. Backups are strict data-only contracts; attachments remain device-local. A future shared-data release must implement repository contracts with Supabase RLS and design migration/sync explicitly rather than layering client filters or an implicit offline queue onto this store.
+
+## 2026-07-23: Quick expense capture and workspace snapshot v3
+
+**Decision:** Spending is captured progressively as title, one mandatory visual category, and a positive actual amount. Persist immediately with a local date and creation timestamp, then offer only optional date, note, and one attachment. The Money tab keeps `/budget` and owns the newest-first expense list. The drill-down `/budget/overview` route owns the wedding target editor, date-based spending trend, all-time insights, and category breakdown; Home, More, and Settings open that route. Snapshot v3 adds typed category icon/archive metadata and expense `createdAt` while retaining old accounting fields as hidden optional compatibility data.
+
+**Why:** The previous Basics → Payment → Details workflow made a frequent mobile action feel like invoice accounting. Actual spending and target remaining answer the current user need without deleting historical data. The detailed trend uses the existing SVG/Reanimated stack instead of adding a chart or animation package.
+
+**Consequence:** New workspaces use exactly seven stable core categories. v1/v2 migration preserves category IDs and structured legacy expense fields, archives old categories from selection, adds core categories, and creates deterministic legacy timestamps. New expenses never write planned, paid, status, due, vendor, or linked-event fields. Expense CSV is simplified; JSON backup remains the compatibility contract.
+
+## 2026-08-01: Canonical lavender local-beta implementation
+
+**Decision:** The live lavender-and-ivory implementation, `src/theme/tokens.json`, and the optimized `home-hearts-glow-v2.jpg` asset are the current visual authority. Legacy Emergent prompts are archived as historical inputs; the July design decisions remain history rather than active implementation guidance.
+
+**Why:** Obsolete green references and a missing mock-up filename were causing audits to describe a visual system the app no longer uses.
+
+**Consequence:** UI work follows the live semantic system, uses a compact navigation bar and expanded navigation rail, supports large text through shared responsive thresholds, and never restores archived prompt styling without a new product decision.
+
+## 2026-08-01: Local-beta activation and Android backup contract
+
+**Decision:** A fresh installation has no implicit demo workspace and must complete minimum local setup. Demo reset remains development-only. Android Auto Backup is disabled, and explicit data-only export is the supported backup path.
+
+**Why:** Silent demo records obscure real activation, while automatic platform backup contradicts absolute single-device privacy language.
+
+**Consequence:** Missing storage raises `WorkspaceEmptyError`; existing v1/v2/v3 migrations and deletion tombstones remain valid. Copy says that Mangalya does not upload the workspace and that users choose when to export, without promising OEM-independent physical-device residency.
+
+## 2026-08-08: Household-level planning and editable starter events
+
+**Decision:** Workspace v4 adds stable starter-event identifiers and one household-level RSVP status. Suggested Indian wedding events are opt-in editable data, not mandatory ceremony definitions. Required-item counters, individual guest editing, task checklist/attachment controls, event-cover selection, and gift follow-up fields leave the active UI while their historical data remains readable.
+
+**Why:** Tasks already provide the actionable event-planning model, and the removed controls made common mobile flows heavier without enough value. Household-level RSVP and a lightweight received-gift record match the intended local-beta workflow while preserving upgrade safety.
+
+**Consequence:** v3 migration derives household RSVP conservatively, annotates familiar starter-event names, and writes v4 without deleting older storage. Partial household attendance is intentionally not represented. Event cover files and other legacy fields remain until their owning record or workspace is deleted. The wedding photo uses native cropping only; no image-manipulation dependency is added.

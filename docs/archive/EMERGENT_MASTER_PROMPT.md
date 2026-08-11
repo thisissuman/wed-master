@@ -1,5 +1,9 @@
 # Emergent AI master build prompt — Mangalya
 
+> **Historical and superseded (archived 2026-08-01).** This prompt predates the current
+> lavender local-beta implementation. It is not a product, architecture, UI, testing, or release
+> contract. Use `PRODUCT_BRIEF.md`, `ARCHITECTURE.md`, `UI_SYSTEM.md`, and `NEXT_STEPS.md` instead.
+
 Copy everything between `BEGIN PROMPT` and `END PROMPT` into a new Emergent AI project.
 
 ---
@@ -106,8 +110,8 @@ Create these tables:
 - `event_required_items`: wedding_id, event_id, label, completed count, total count, sort order, timestamps; enforce non-negative values and completed <= total.
 - `tasks`: wedding_id, optional event_id, title, description, notes, category text, due date, priority `low | medium | high | critical`, status `not_started | in_progress | completed | cancelled`, responsible-person text, timestamps, created_by.
 - `task_checklist_items`: wedding_id, task_id, title, completed, sort order, timestamps.
-- `budget_categories`: wedding_id, editable name, sort order, timestamps.
-- `expenses`: wedding_id, category_id, optional event_id, title, estimated/actual/paid paise, payment status `not_paid | partially_paid | paid`, expense date, due date, vendor/payee, notes, timestamps, created_by. Enforce non-negative integer money; do not silently rewrite user figures.
+- `budget_categories`: wedding_id, editable name, typed icon key, archived/selectable state, sort order, timestamps.
+- `expenses`: wedding_id, category_id, title, actual paise, expense date, notes, timestamps, created_by. Enforce non-negative integer money and preserve nullable legacy estimate/payment/due/vendor/event fields only when migrating historical records; new capture never writes them.
 - `households`: wedding_id, name, side `partner_one | partner_two | both | other`, invitation/accommodation/transport statuses, notes, timestamps, created_by.
 - `guests`: wedding_id, household_id, name, RSVP `pending | confirmed | declined`, timestamps.
 - `gifts`: wedding_id, kind `given | received | return_gift`, person, relationship, item, optional value paise, value-is-estimated, date, thank-you status/date, return-gift status/date, notes, timestamps, created_by.
@@ -159,21 +163,21 @@ Tasks:
 - Task detail shows status, priority, due date, responsible person, event, category, description/notes, editable checklist, private attachments, edit, and confirmed delete.
 - Attachments accept JPG/PNG/PDF up to 5 MB, show name/size, use signed URLs, and can be removed.
 
-### Money
+### Budget
 
-- Expenses screen with quick chips All/Paid/Partially paid/Unpaid, advanced category filter/clear, visible count, and one Add expense action.
-- Use FlashList. Preserve safe-area and fixed-action clearance.
-- Expense cards show title, amount, category, wedding context, optional vendor/due date, and text payment badge. Label estimate-only amounts “Estimate.” A status stripe may be secondary, never the only cue.
+- Use one target-based dashboard: target/spent/pending summary, newest-created expenses, then exact labelled category bars that filter the list.
+- Use FlashList. Preserve safe-area and fixed-action clearance. Do not add payment-status filters or a chart dependency.
+- Expense cards show title, actual amount, category, expense date, note/attachment state, and never repeat wedding context. Zero-actual legacy records say “Amount not recorded” and open editing rather than showing an estimate.
 - Distinguish empty data from no filter matches.
-- Detail shows planned, spent, paid, outstanding, category, vendor, dates, event, notes, receipt, edit, and confirmed delete.
-- Expense form requires purpose, category, amount spent, and expense date. Optional disclosure contains planned/paid values, payment status, due date, linked event, vendor, notes, and receipt.
+- Detail shows category, actual amount, expense date, note, receipt, edit, and confirmed delete.
+- Quick capture is title → mandatory visual category → positive amount → immediate save with the local current date. Previous-title suggestions reuse only title/category. Post-save details are date, note, and one receipt.
 
 ### More
 
 - Header, title, and restrained decorative botanical illustration hidden from accessibility services.
-- Compact Planning and Support shortcuts. Support may honestly say coming soon.
-- Adaptive feature grid: Settings, Guests, Gifts, Backup & Export, Emergency Contacts. About/Feedback may be clearly labeled coming soon, never dead controls.
-- Settings edits wedding fields, keeps INR fixed, separates sign-out and owner-only confirmed deletion. Demo reset exists only in development.
+- Compact Planning shortcuts may link only to implemented flows. Omit unfinished Support interactions.
+- Adaptive feature grid: Budget & Expenses, Settings, Guests, Gifts, Backup & Export, Emergency Contacts. Omit unfinished About/Feedback interactions.
+- Settings has one Wedding details editor for name, date, location, and style/tradition; Budget owns its target. Keep INR fixed and separate sign-out/deletion controls. Demo reset exists only in development.
 - Guests are household-first with search/filter, summary counts, CRUD, nested guests, RSVP and practical statuses, and confirmed deletion.
 - Gifts support filtering and CRUD for given/received/return gifts, value and estimated flag, thank-you/return-gift follow-up, notes, and confirmed deletion.
 - Emergency Contacts support validated CRUD and safe `tel:` calling with error handling.

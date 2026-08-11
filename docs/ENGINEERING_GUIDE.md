@@ -19,14 +19,16 @@
 - NativeWind class strings belong in primitives and feature components; extract a variant map before a class string becomes hard to read or is repeated.
 - Prefer summary surfaces and divider-based rows over feature-specific card variants. A `Card` is not a press target; use `ListRow` or a focused feature row for navigation.
 - A screen owns one clear primary action. Put advanced filtering in `FilterSheet`, optional form fields in `Disclosure`, and destructive work behind `ConfirmationDialog`.
-- Keep tab routes thin. Domain presentation such as event timelines, task completion rows, expense rows, financial summaries, and the quick-add sheet belongs in `src/features/workspace`.
+- Empty lists use the shared compact `EmptyState` row. Make that row actionable only when no footer or FAB already creates the record; otherwise keep it neutral. Filtered-empty states reset filters or search instead of duplicating creation.
+- Use `src/lib/responsive.ts` for shared 600dp expanded-width, 1.3 large-text, and compact control-stacking decisions. Tablet layouts restructure navigation and content instead of stretching phone UI.
+- Keep tab routes thin. Domain presentation such as event timelines, task completion rows, expense rows, financial summaries, and direct creation actions belongs in `src/features/workspace`.
 
 ## Error handling and logging
 
 - Validate untrusted input at form and network boundaries.
 - Normalize provider/database errors into safe, actionable user messages.
 - Never silently swallow an error. Provide retry or clear next action when possible.
-- Do not log names, phone numbers, financial data, documents, tokens, or secrets. Configure Sentry with data scrubbing before beta.
+- Do not log names, phone numbers, financial data, documents, file paths, tokens, or secrets. Keep Sentry disabled without a DSN and preserve the event scrubber when changing observability.
 
 ## Documentation standards
 
@@ -50,10 +52,10 @@ Use `npm run format` only for deliberate formatting changes. Do not run dependen
 
 # First local product slice
 
-Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-safe scrolling, progressive optional fields, and the native Android date picker. Budget-category management remains deferred beyond this first vertical slice.
+Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-safe scrolling, progressive optional fields, and the native Android date picker. Expense creation alone uses a transparent route-backed overlay; expense editing remains a full modal. Budget-category management remains deferred beyond this first vertical slice.
 
-The Plan tab uses one Events/Tasks segmented control. Task filters for status, priority, event, and overdue state are contained in one sheet with a one-tap reset. The Budget tab uses the same pattern for category and payment status. Event ordering remains persisted in the repository for compatibility, but the earlier/later controls are intentionally not exposed in the simplified product UI. Form routes use the shared `FormShell` and field primitives; option lists use the shared bounded inline selector rather than feature-specific dropdown modals.
+The Plan tab uses one Tasks/Events segmented control. It changes a local `activeView` immediately; route parameters initialize deep links and respond to genuine external changes but are not written by taps. A shallow task summary and one active-count filter control replace the former metrics card and visible presets. Task filters for status, priority, event, due-this-week, and overdue state remain contained in one compact sheet with a one-tap reset. Event ordering remains persisted in the repository for compatibility, but earlier/later controls are intentionally not exposed. Form routes use `FormShell` and shared fields except for the purpose-built quick-expense overlay. Expense creation persists title, category, actual paise, local date, optional existing event relationship, and `createdAt` before optional date/note/attachment editing in the same overlay. The category picker is intentionally local UI: Other is first, while Task and Event reveal existing records and reuse the selected record name; no category-management dependency is introduced.
 
-Home exposes four compact direct actions for task, expense, event, and household/guest creation; it does not mount a separate floating Add chooser. The Budget tab shows active categories rather than an empty list of every available category. Detail routes use visible back actions and confirmation dialogs for deletion.
+Home exposes four compact direct actions plus a dedicated expense FAB. The `/budget` Money tab stays focused on the virtualized newest-created expense list. The drill-down `/budget/overview` route is the only budget-target editor and combines a shallow financial summary, highest-first category bars, pure date-range aggregations, and a responsive accessible custom SVG trend without adding a chart dependency. Home, More, and a separate Settings row open the overview route. More resets its nested stack to `index` whenever the tab loses focus. Guests retains name search and underlying household data while exposing one compact summary and one persistent creation FAB. Gifts currently surfaces and creates Received records only; legacy kinds stay readable in storage. Backup UI exposes structured export/import and expenses CSV only. Settings otherwise exposes one Wedding details editor and a separate Data & Privacy section. First-run setup writes the existing wedding contract with required names/date, optional paise budget/photo, and neutral compatibility defaults; it does not change the snapshot version. Detail routes use visible fallback-aware back actions and confirmation dialogs for deletion. Shared task rows clamp titles to two lines and stack status metadata at large text instead of nesting a horizontal scroller inside a vertical list.
 
 Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.
