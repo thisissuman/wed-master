@@ -1,0 +1,16 @@
+- launchApp:
+    clearState: true
+- openLink: "exp+mangalya://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+- extendedWaitUntil:
+    visible: "Continue|Set up Mangalya"
+    timeout: 120000
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - extendedWaitUntil:
+          visible: "Close"
+          timeout: 10000
+      - tapOn: "Close"
+- assertVisible: "Set up Mangalya"

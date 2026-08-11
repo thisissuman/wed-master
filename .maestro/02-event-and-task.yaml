@@ -1,0 +1,27 @@
+appId: com.suman.mangalya.development
+---
+- runFlow:
+    file: subflows/open-development-app.yaml
+- runFlow:
+    file: subflows/create-workspace.yaml
+- tapOn: "Plan"
+- tapOn: "Events"
+- tapOn: "Add event"
+- tapOn: "Event name"
+- inputText: "Family gathering"
+- tapOn: "Date: Select date"
+- tapOn: "OK"
+- hideKeyboard
+- tapOn: "Create event"
+- assertVisible: "Family gathering"
+- tapOn: "Tasks"
+- tapOn: "Add task"
+- tapOn: "Task title"
+- inputText: "Confirm transport"
+- hideKeyboard
+- tapOn: "Linked event"
+- tapOn: "Family gathering"
+- tapOn: "Create task"
+- assertVisible: "Confirm transport"
+- tapOn: "Mark complete: Confirm transport"
+- assertVisible: "Completed"

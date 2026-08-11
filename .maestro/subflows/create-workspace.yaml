@@ -1,0 +1,8 @@
+- assertVisible: "Set up Mangalya"
+- tapOn: "Couple names"
+- inputText: "Asha and Dev"
+- hideKeyboard
+- tapOn: "Wedding date: Select date"
+- tapOn: "OK"
+- tapOn: "Create private workspace"
+- assertVisible: "Asha and Dev"

@@ -1,0 +1,14 @@
+appId: com.suman.mangalya.development
+---
+- runFlow:
+    file: subflows/open-development-app.yaml
+- runFlow:
+    file: subflows/create-workspace.yaml
+- tapOn: "More"
+- tapOn: "Open Settings"
+- tapOn: "Delete local data"
+- tapOn: "Confirmation"
+- inputText: "DELETE"
+- hideKeyboard
+- tapOn: "Delete data"
+- assertVisible: "Set up Mangalya"

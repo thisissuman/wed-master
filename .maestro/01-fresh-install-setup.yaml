@@ -1,0 +1,7 @@
+appId: com.suman.mangalya.development
+---
+- runFlow:
+    file: subflows/open-development-app.yaml
+- runFlow:
+    file: subflows/create-workspace.yaml
+- assertVisible: "Home"
