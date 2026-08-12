@@ -75,6 +75,8 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
 - A fresh preview prebuild followed by `:app:processReleaseMainManifest` passed. The merged release
   manifest retains version code 4, `mangalya-preview`, and `allowBackup=false`, while overlay,
   camera, and microphone permissions are absent.
+- Corrected EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe` is queued from commit `accd3cd`;
+  the signed replacement artifact has not yet been inspected.
 - No emulator or physical device was connected. Replacement installation, launcher/splash
   rendering, runtime deep links, device performance/accessibility, and Sentry delivery/source maps
   are not claimed.

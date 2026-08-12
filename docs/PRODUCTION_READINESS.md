@@ -69,10 +69,11 @@ Emergent prompts are not active visual guidance.
   `SYSTEM_ALERT_WINDOW` permission, so build 3 is not the accepted preview artifact. The config now
   blocks that permission and advances Android version code to 4. A fresh preview prebuild and
   `processReleaseMainManifest` verify the merged release manifest contains none of overlay, camera,
-  or microphone permissions; a replacement signed build is still required. No Android target is
-  connected, so installation, launcher/splash rendering, runtime deep links, and physical-device
-  behavior remain unverified. Sentry delivery/source maps also remain unverified because the
-  preview build had no Sentry build credentials.
+  or microphone permissions. Replacement EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe`
+  is queued from commit `accd3cd`. No Android target is connected, so artifact inspection,
+  installation, launcher/splash rendering, runtime deep links, and physical-device behavior remain
+  unverified. Sentry delivery/source maps also remain unverified because the preview environment
+  has no Sentry build credentials.
 
 The emulator debug-client smoke above is native identity and behavior evidence. It is not
 representative release-performance measurement, a TalkBack pass, or physical-device acceptance.
@@ -86,8 +87,8 @@ representative release-performance measurement, a TalkBack pass, or physical-dev
 3. Complete physical Android QA at 360dp and expanded width, portrait/landscape, largest text,
    TalkBack, keyboard/IME, reduced motion, file/share pickers, permission denial, process
    termination, and upgrade install.
-4. Produce and inspect preview build 4 without `SYSTEM_ALERT_WINDOW`, then install it and verify
-   launcher/splash rendering, runtime deep links, scrubbed Sentry delivery, and source maps.
+4. Wait for and inspect queued preview build 4 without `SYSTEM_ALERT_WINDOW`, then install it and
+   verify launcher/splash rendering, runtime deep links, scrubbed Sentry delivery, and source maps.
 
 Public release requires zero unresolved P0/P1 findings and evidence for every gate above. A skipped
 or credential-blocked check is recorded as blocked, never as passing.
