@@ -61,6 +61,24 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
 - Maestro setup and backup selectors were reconciled with the current UI. The Maestro CLI remains
   unavailable, so the seven journeys are still not recorded as executed or passing.
 
+### 2026-08-12 signed preview artifact
+
+- EAS preview build 3 `74eb2e9f-82d3-4444-8477-9966daea829c` finished successfully from commit
+  `9bc370a`. The 119,139,677-byte APK has SHA-256
+  `b811e96a42c3e716eee9fc3bf194ecfe51e54005cf26b84d860ccdb7a4846729`.
+- Static APK inspection verifies its v2 signature, `com.suman.mangalya.preview` identity,
+  `mangalya-preview` scheme, `0.1.0 (3)` version, API 24–36 range, disabled Android backup, and no
+  camera or microphone permission.
+- Inspection also found `SYSTEM_ALERT_WINDOW`. Because Mangalya has no overlay feature, app config
+  now blocks the permission and advances Android version code to 4; build 3 is not accepted for
+  distribution.
+- A fresh preview prebuild followed by `:app:processReleaseMainManifest` passed. The merged release
+  manifest retains version code 4, `mangalya-preview`, and `allowBackup=false`, while overlay,
+  camera, and microphone permissions are absent.
+- No emulator or physical device was connected. Replacement installation, launcher/splash
+  rendering, runtime deep links, device performance/accessibility, and Sentry delivery/source maps
+  are not claimed.
+
 Tracked Android journeys live under `.maestro/` and target `com.suman.mangalya.development`:
 
 ```bash
