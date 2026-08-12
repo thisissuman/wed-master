@@ -73,10 +73,20 @@ Emergent prompts are not active visual guidance.
   finished from commit `accd3cd`. Local inspection verifies its v2 signature, version `0.1.0 (4)`,
   expected package/scheme, API 24–36, `allowBackup=false`, release-mode manifest, and absence of
   overlay, camera, and microphone permissions. The 119,139,681-byte APK has SHA-256
-  `0066a5db2216e70772ba149c2cac055a244ae333428236e62e32c2c0b55d2e58`. No Android target is
-  connected, so installation, launcher/splash rendering, runtime deep links, and physical-device
-  behavior remain unverified. Sentry delivery/source maps also remain unverified because the
-  preview environment has no Sentry build credentials.
+  `0066a5db2216e70772ba149c2cac055a244ae333428236e62e32c2c0b55d2e58`. No physical Android target
+  is connected, so phone-specific launcher/splash rendering and device behavior remain unverified.
+  Sentry delivery/source maps also remain unverified because the preview environment has no Sentry
+  build credentials.
+- The exact build-4 APK was installed on the API 36 emulator as
+  `com.suman.mangalya.preview` without replacing the development or legacy packages. Fresh setup,
+  event creation, task creation/completion, ₹12,500 expense capture, a confirmed two-person
+  household, cold-restart persistence, invalid-household recovery, Android Back, data-backup share
+  and history, the system photo picker, reduced motion, and 1.3×/2.0× text passed. The preview
+  process recorded no fatal Android or unhandled JavaScript error during the session.
+- Landscape did not pass. On the 1080×2400, 420-dpi emulator rotated to landscape, the material
+  navigation rail rendered clipped icons and only 12-pixel-wide (about 4.6dp) accessible bounds for
+  each root destination. This violates the 48dp target and blocks expanded-width acceptance. Keep
+  this finding in the next batched fix; do not create an intermediate APK solely for it.
 
 The emulator debug-client smoke above is native identity and behavior evidence. It is not
 representative release-performance measurement, a TalkBack pass, or physical-device acceptance.
@@ -87,11 +97,11 @@ representative release-performance measurement, a TalkBack pass, or physical-dev
    tooling approval.
 2. Profile a preview/release build against cold-start, persistence, expense-save, scrolling, and
    bundle-growth targets in `TESTING.md`.
-3. Complete physical Android QA at 360dp and expanded width, portrait/landscape, largest text,
-   TalkBack, keyboard/IME, reduced motion, file/share pickers, permission denial, process
-   termination, and upgrade install.
-4. Install verified preview build 4 and verify launcher/splash rendering, runtime deep links,
-   scrubbed Sentry delivery, and source maps.
+3. Fix and re-run the expanded-width navigation rail check, then complete physical Android QA at
+   360dp and expanded width, portrait/landscape, largest text, TalkBack, keyboard/IME, reduced
+   motion, file/share pickers, permission denial, process termination, and upgrade install.
+4. Verify launcher/splash rendering on a physical phone plus scrubbed Sentry delivery and source
+   maps. Runtime preview-scheme deep links already pass on the emulator.
 
 Public release requires zero unresolved P0/P1 findings and evidence for every gate above. A skipped
 or credential-blocked check is recorded as blocked, never as passing.

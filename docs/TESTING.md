@@ -83,6 +83,23 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
 - No emulator or physical device was connected. Installation, launcher/splash rendering, runtime
   deep links, device performance/accessibility, and Sentry delivery/source maps are not claimed.
 
+### 2026-08-13 signed preview emulator acceptance
+
+- The inspected build-4 APK was installed side by side on the API 36 emulator as
+  `com.suman.mangalya.preview`; `dumpsys package` reports `0.1.0 (4)` and release flags.
+- Fresh setup, event creation, task creation/completion, ₹12,500 expense capture, a confirmed
+  two-person household, cold-restart persistence, invalid-household recovery, Android hardware
+  Back, JSON backup/share/history, the system photo picker, reduced motion, and 1.3×/2.0× text
+  passed. The process log contained no fatal Android or unhandled JavaScript error.
+- Landscape failed on the 1080×2400, 420-dpi emulator. The left material navigation rail displayed
+  clipped icons and exposed only 12-pixel-wide (about 4.6dp) accessibility bounds for Home, Plan,
+  Money, and More. This is below the required 48dp target and must be fixed and re-tested in the
+  batched release-candidate work.
+- Emulator results do not replace TalkBack testing, launcher/splash review, representative hardware
+  performance, permission-denial coverage, or physical-phone acceptance. No new APK should be
+  produced until the current test findings are batched, unless a newly found native defect makes
+  further testing unsafe or invalid.
+
 Tracked Android journeys live under `.maestro/` and target `com.suman.mangalya.development`:
 
 ```bash
