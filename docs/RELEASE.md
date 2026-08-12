@@ -37,6 +37,10 @@ Run `npx expo-doctor` when obtainable. Inspect export size, Hermes bundle size, 
 
 ## Device/EAS gate
 
+- Do not create a signed APK for every JavaScript, styling, copy, documentation, or test change.
+  During a device-test cycle, record and batch ordinary fixes, then produce one final candidate.
+  Rebuild earlier only when native configuration/dependencies changed or a defect makes the current
+  artifact unsafe, unrepresentative, or impossible to test.
 - Verify fresh setup and upgrade/migration without data loss.
 - Exercise all create/edit/detail/delete/undo flows, backup/restore/recovery, attachment permissions, and share sheets.
 - Test 360dp, landscape, largest text, TalkBack, reduced motion, keyboard, hardware/predictive back, background/termination, and rapid duplicate taps on a physical Android device.

@@ -75,11 +75,13 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
 - A fresh preview prebuild followed by `:app:processReleaseMainManifest` passed. The merged release
   manifest retains version code 4, `mangalya-preview`, and `allowBackup=false`, while overlay,
   camera, and microphone permissions are absent.
-- Corrected EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe` is queued from commit `accd3cd`;
-  the signed replacement artifact has not yet been inspected.
-- No emulator or physical device was connected. Replacement installation, launcher/splash
-  rendering, runtime deep links, device performance/accessibility, and Sentry delivery/source maps
-  are not claimed.
+- Corrected EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe` finished from commit `accd3cd`.
+  Static inspection verifies its v2 signature, `0.1.0 (4)` identity, release-mode manifest, API
+  24–36 range, disabled backup, and absence of overlay, camera, and microphone permissions. The
+  119,139,681-byte APK has SHA-256
+  `0066a5db2216e70772ba149c2cac055a244ae333428236e62e32c2c0b55d2e58`.
+- No emulator or physical device was connected. Installation, launcher/splash rendering, runtime
+  deep links, device performance/accessibility, and Sentry delivery/source maps are not claimed.
 
 Tracked Android journeys live under `.maestro/` and target `com.suman.mangalya.development`:
 

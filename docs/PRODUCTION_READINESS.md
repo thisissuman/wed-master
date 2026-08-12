@@ -1,6 +1,6 @@
 # Mangalya production readiness
 
-Date: 2026-08-12
+Date: 2026-08-13
 
 ## Executive status
 
@@ -70,10 +70,13 @@ Emergent prompts are not active visual guidance.
   blocks that permission and advances Android version code to 4. A fresh preview prebuild and
   `processReleaseMainManifest` verify the merged release manifest contains none of overlay, camera,
   or microphone permissions. Replacement EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe`
-  is queued from commit `accd3cd`. No Android target is connected, so artifact inspection,
-  installation, launcher/splash rendering, runtime deep links, and physical-device behavior remain
-  unverified. Sentry delivery/source maps also remain unverified because the preview environment
-  has no Sentry build credentials.
+  finished from commit `accd3cd`. Local inspection verifies its v2 signature, version `0.1.0 (4)`,
+  expected package/scheme, API 24–36, `allowBackup=false`, release-mode manifest, and absence of
+  overlay, camera, and microphone permissions. The 119,139,681-byte APK has SHA-256
+  `0066a5db2216e70772ba149c2cac055a244ae333428236e62e32c2c0b55d2e58`. No Android target is
+  connected, so installation, launcher/splash rendering, runtime deep links, and physical-device
+  behavior remain unverified. Sentry delivery/source maps also remain unverified because the
+  preview environment has no Sentry build credentials.
 
 The emulator debug-client smoke above is native identity and behavior evidence. It is not
 representative release-performance measurement, a TalkBack pass, or physical-device acceptance.
@@ -87,8 +90,8 @@ representative release-performance measurement, a TalkBack pass, or physical-dev
 3. Complete physical Android QA at 360dp and expanded width, portrait/landscape, largest text,
    TalkBack, keyboard/IME, reduced motion, file/share pickers, permission denial, process
    termination, and upgrade install.
-4. Wait for and inspect queued preview build 4 without `SYSTEM_ALERT_WINDOW`, then install it and
-   verify launcher/splash rendering, runtime deep links, scrubbed Sentry delivery, and source maps.
+4. Install verified preview build 4 and verify launcher/splash rendering, runtime deep links,
+   scrubbed Sentry delivery, and source maps.
 
 Public release requires zero unresolved P0/P1 findings and evidence for every gate above. A skipped
 or credential-blocked check is recorded as blocked, never as passing.
