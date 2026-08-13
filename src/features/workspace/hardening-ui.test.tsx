@@ -18,6 +18,8 @@ import { demoWorkspace } from "./seed";
 import { LocalSetupScreen } from "./setup/LocalSetupScreen";
 import type { WorkspaceSnapshot } from "./types";
 
+jest.setTimeout(10_000);
+
 jest.mock("expo-router", () => ({
   router: {
     back: jest.fn(),
@@ -138,42 +140,25 @@ describe("local beta UI hardening", () => {
     });
   });
 
-  it("starts onboarding with truthful privacy copy and no forced keyboard focus", async () => {
-    const screen = await render(<LocalSetupScreen />);
+  const finishIntroduction = async (screen: Awaited<ReturnType<typeof render>>) => {
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Get started" }));
+  };
 
-    expect(await screen.findByText("PRIVATE WORKSPACE")).toBeTruthy();
+  const reachCoverStep = async (screen: Awaited<ReturnType<typeof render>>) => {
+    await finishIntroduction(screen);
+    await fireEvent.changeText(screen.getByLabelText("Your name"), "Asha");
+    await fireEvent.changeText(screen.getByLabelText("Partner’s name"), "Dev");
+    expect(screen.getByText("Asha", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText("Dev", { includeHiddenElements: true })).toBeTruthy();
     expect(
-      await screen.findByText(
-        /Mangalya keeps this workspace on your device; you choose when to export a backup\./,
-      ),
-    ).toBeTruthy();
-    expect(screen.getByLabelText("Couple names").props.autoFocus).toBeFalsy();
-    expect(screen.getAllByLabelText("required")).toHaveLength(2);
-    expect(screen.getAllByText("Optional")).toHaveLength(2);
-  });
-
-  it("lets setup opt into editable suggested events without forcing customs", async () => {
-    const screen = await render(<LocalSetupScreen />);
-
-    expect(screen.getByText("1 selected · dates can be changed later")).toBeTruthy();
-    await fireEvent.press(screen.getByRole("button", { name: "Choose events" }));
+      screen.getByTestId("names-artwork-your-name", { includeHiddenElements: true }).props.style,
+    ).toEqual(expect.objectContaining({ left: "5%", top: "61%", width: "37%" }));
     expect(
-      (await screen.findByRole("checkbox", { name: "Wedding, Wedding day" })).props
-        .accessibilityState,
-    ).toEqual({ checked: true });
-    await fireEvent.press(screen.getByRole("button", { name: "Select all" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Use selected events" }));
-
-    expect(screen.getByText("7 selected · dates can be changed later")).toBeTruthy();
-  });
-
-  it("persists the essential setup fields and safely adopts a staged wedding photo", async () => {
-    const coverPhotoUri = "file:///documents/wedding-covers/selected.jpg";
-    mockPickWeddingCoverPhoto.mockResolvedValue({ status: "selected", uri: coverPhotoUri });
-    createWorkspaceMutateAsync.mockResolvedValue(undefined);
-    const screen = await render(<LocalSetupScreen />);
-
-    await fireEvent.changeText(screen.getByLabelText("Couple names"), "Asha & Dev");
+      screen.getByTestId("names-artwork-partner-name", { includeHiddenElements: true }).props.style,
+    ).toEqual(expect.objectContaining({ left: "58%", top: "61%", width: "37%" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
     await fireEvent.press(screen.getByRole("button", { name: "Wedding date: Select date" }));
     await fireEvent(
       screen.getByTestId("date-picker"),
@@ -181,10 +166,93 @@ describe("local beta UI hardening", () => {
       undefined,
       new Date("2026-08-15T12:00:00"),
     );
-    await fireEvent.changeText(screen.getByLabelText("Budget target in ₹"), "1200000");
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+  };
+
+  it("starts with three branded introduction slides before asking for details", async () => {
+    const screen = await render(<LocalSetupScreen />);
+
+    expect(screen.getByText("Mangalya")).toBeTruthy();
+    expect(screen.getByText("Plan your wedding, together")).toBeTruthy();
+    expect(screen.getByLabelText("Slide 1 of 3")).toBeTruthy();
+    expect(screen.getByTestId("intro-dot-1").props.style.width).toBe(28);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByLabelText("Slide 2 of 3")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("button", { name: "Get started" })).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Get started" }));
+
+    expect(screen.getByText("Who’s getting married?")).toBeTruthy();
+    expect(screen.getByLabelText("Your name").props.autoFocus).toBeFalsy();
+    expect(screen.getAllByLabelText("required")).toHaveLength(2);
+  });
+
+  it("validates required names and retains them when navigating back", async () => {
+    const screen = await render(<LocalSetupScreen />);
+    await finishIntroduction(screen);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Enter your name.")).toBeTruthy();
+    expect(screen.getByText("Enter your partner’s name.")).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText("Your name"), "Asha");
+    await fireEvent.changeText(screen.getByLabelText("Partner’s name"), "Dev");
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+
+    expect(screen.getByLabelText("Your name").props.value).toBe("Asha");
+    expect(screen.getByLabelText("Partner’s name").props.value).toBe("Dev");
+  });
+
+  it("persists the completed onboarding values and safely adopts a staged wedding photo", async () => {
+    const coverPhotoUri = "file:///documents/wedding-covers/selected.jpg";
+    mockPickWeddingCoverPhoto.mockResolvedValue({ status: "selected", uri: coverPhotoUri });
+    createWorkspaceMutateAsync.mockResolvedValue(undefined);
+    const screen = await render(<LocalSetupScreen />);
+
+    await reachCoverStep(screen);
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    await fireEvent.changeText(screen.getByLabelText("Target budget"), "1200000");
+    expect(screen.getByLabelText("Target budget").props.value).toBe("12,00,000");
+    expect(screen.getByText("₹12,00,000", { includeHiddenElements: true })).toBeTruthy();
+    expect(
+      screen.getByTestId("milestones-artwork-budget", { includeHiddenElements: true }).props.style,
+    ).toEqual(expect.objectContaining({ left: "60%", top: "28%", width: "32%" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
     await fireEvent.press(screen.getByRole("button", { name: "Choose wedding photo" }));
-    await screen.findByLabelText("Wedding photo preview");
-    await fireEvent.press(screen.getByRole("button", { name: "Create private workspace" }));
+    await screen.findByLabelText("Wedding photo preview", { includeHiddenElements: true });
+    expect(
+      screen.getByTestId("wedding-photo-artwork-preview", { includeHiddenElements: true }).props
+        .style,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ height: "49%", left: "25.5%", top: "20%", width: "49%" }),
+      ]),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("1 selected")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "Wedding" }).props.accessibilityState).toEqual({
+      checked: true,
+    });
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Mehendi" }));
+    expect(
+      screen.getByTestId("events-artwork-event-1", { includeHiddenElements: true }),
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("events-artwork-event-2", { includeHiddenElements: true }),
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Review my planner" }));
+    expect(screen.getByText("Asha & Dev")).toBeTruthy();
+    expect(screen.getByText("2 selected")).toBeTruthy();
+    expect(screen.getByTestId("review-summary-grid")).toBeTruthy();
+    expect(screen.getByTestId("review-build-footer").props.style.position).toBe("absolute");
+    expect(
+      screen.getByTestId("review-artwork-names", { includeHiddenElements: true }),
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("review-artwork-photo", { includeHiddenElements: true }),
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Build my planner" }));
 
     await waitFor(() => expect(createWorkspaceMutateAsync).toHaveBeenCalledTimes(1));
     expect(createWorkspaceMutateAsync).toHaveBeenCalledWith(
@@ -201,7 +269,10 @@ describe("local beta UI hardening", () => {
         }),
       }),
     );
-    expect(mockRouter.replace).toHaveBeenCalledWith("/(app)/(tabs)");
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(app)/(tabs)"), {
+      timeout: 6_000,
+    });
+    expect(createWorkspaceMutateAsync.mock.calls[0]?.[0].events).toHaveLength(2);
 
     await screen.unmount();
     expect(mockRemoveWeddingCoverPhoto).not.toHaveBeenCalled();
@@ -215,8 +286,9 @@ describe("local beta UI hardening", () => {
       .mockResolvedValueOnce({ status: "selected", uri: secondPhoto });
     const screen = await render(<LocalSetupScreen />);
 
+    await reachCoverStep(screen);
     await fireEvent.press(screen.getByRole("button", { name: "Choose wedding photo" }));
-    await screen.findByLabelText("Wedding photo preview");
+    await screen.findByLabelText("Wedding photo preview", { includeHiddenElements: true });
     await fireEvent.press(screen.getByRole("button", { name: "Change wedding photo" }));
 
     await waitFor(() => expect(mockRemoveWeddingCoverPhoto).toHaveBeenCalledWith(firstPhoto));
@@ -232,16 +304,60 @@ describe("local beta UI hardening", () => {
     });
     const screen = await render(<LocalSetupScreen />);
 
+    await reachCoverStep(screen);
     await fireEvent.press(screen.getByRole("button", { name: "Choose wedding photo" }));
     await waitFor(() => expect(alert).toHaveBeenCalledTimes(1));
 
     const actions = alert.mock.calls[0]?.[2];
     expect(actions?.map((action) => action.text)).toContain("Continue without photo");
-    expect(
-      screen.getByRole("button", { name: "Create private workspace" }).props.accessibilityState
-        .disabled,
-    ).toBe(false);
+    expect(screen.getByRole("button", { name: "Next" }).props.accessibilityState.disabled).toBe(
+      false,
+    );
     alert.mockRestore();
+  });
+
+  it("retains setup values and offers retry when workspace creation fails", async () => {
+    createWorkspaceMutateAsync
+      .mockRejectedValueOnce(new Error("Storage unavailable"))
+      .mockResolvedValueOnce(undefined);
+    const screen = await render(<LocalSetupScreen />);
+
+    await reachCoverStep(screen);
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Review my planner" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Build my planner" }));
+
+    expect(await screen.findByText("We couldn’t finish your planner")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Back to review" }));
+    expect(screen.getByText("Asha & Dev")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Build my planner" }));
+
+    await waitFor(() => expect(createWorkspaceMutateAsync).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(app)/(tabs)"), {
+      timeout: 6_000,
+    });
+  });
+
+  it("prevents duplicate workspace creation while submission is active", async () => {
+    let resolveCreation: (() => void) | undefined;
+    createWorkspaceMutateAsync.mockImplementation(
+      () => new Promise<void>((resolve) => (resolveCreation = resolve)),
+    );
+    const screen = await render(<LocalSetupScreen />);
+
+    await reachCoverStep(screen);
+    await fireEvent.press(screen.getByRole("button", { name: "Next" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Review my planner" }));
+    const buildButton = screen.getByRole("button", { name: "Build my planner" });
+    await fireEvent.press(buildButton);
+    await fireEvent.press(buildButton);
+
+    expect(createWorkspaceMutateAsync).toHaveBeenCalledTimes(1);
+    resolveCreation?.();
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(app)/(tabs)"), {
+      timeout: 6_000,
+    });
   });
 
   it("keeps event detail compact and uses tasks instead of required-item counters", async () => {

@@ -3,6 +3,7 @@ import "../global.css";
 import { useEffect } from "react";
 import { EBGaramond_500Medium } from "@expo-google-fonts/eb-garamond/500Medium";
 import { EBGaramond_600SemiBold } from "@expo-google-fonts/eb-garamond/600SemiBold";
+import { EBGaramond_700Bold_Italic } from "@expo-google-fonts/eb-garamond/700Bold_Italic";
 import { Manrope_400Regular } from "@expo-google-fonts/manrope/400Regular";
 import { Manrope_500Medium } from "@expo-google-fonts/manrope/500Medium";
 import { Manrope_600SemiBold } from "@expo-google-fonts/manrope/600SemiBold";
@@ -22,6 +23,7 @@ function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     EBGaramond_500Medium,
     EBGaramond_600SemiBold,
+    EBGaramond_700Bold_Italic,
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
