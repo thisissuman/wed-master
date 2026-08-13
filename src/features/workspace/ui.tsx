@@ -1,10 +1,8 @@
 import { type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { ChevronLeft, MapPin, Sparkles } from "lucide-react-native";
+import { ChevronLeft, MapPin } from "lucide-react-native";
 import type { Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Circle, Path } from "react-native-svg";
 
 import { AppText, Button, IconButton, ListRow } from "@/components/ui";
 import { formatDateOnly } from "@/lib/dates";
@@ -120,7 +118,6 @@ export function ExpenseListItem({
 
 type FormShellProps = {
   children: ReactNode;
-  description: string;
   footer?: ReactNode;
   isSubmitting: boolean;
   onCancel: () => void;
@@ -130,57 +127,8 @@ type FormShellProps = {
   title: string;
 };
 
-const formCanvasGradient = [
-  tokens.gradients.formCanvas[0],
-  tokens.gradients.formCanvas[1],
-  tokens.gradients.formCanvas[2],
-] as const;
-
-function FormBackdrop() {
-  return (
-    <View
-      accessibilityElementsHidden
-      className="absolute inset-0"
-      importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-    >
-      <LinearGradient
-        colors={formCanvasGradient}
-        end={{ x: 0.5, y: 1 }}
-        start={{ x: 0.5, y: 0 }}
-        style={{ bottom: 0, left: 0, position: "absolute", right: 0, top: 0 }}
-      />
-      <Svg
-        accessible={false}
-        height={180}
-        style={{ opacity: 0.18, position: "absolute", right: -28, top: -12 }}
-        viewBox="0 0 180 180"
-        width={180}
-      >
-        <Path
-          d="M174 8c-31 15-53 38-65 68-8 21-11 45-9 72M110 74c18-3 33 2 45 16M103 94c-20-2-36 5-48 20M125 52c3-17 12-31 28-40M97 119c18 3 32 13 41 30"
-          fill="none"
-          stroke={tokens.colors.primary}
-          strokeLinecap="round"
-          strokeWidth="1.5"
-        />
-        <Path
-          d="M148 84c8-11 18-13 27-8-1 13-9 21-24 22M77 110c-12-8-23-7-31 2 5 13 16 18 31 12M122 46c-8-12-7-23 3-31 12 6 16 17 10 32M112 132c12 0 21 6 27 18-10 9-21 9-32 0"
-          fill="none"
-          stroke={tokens.colors.primary}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.5"
-        />
-        <Circle cx="105" cy="93" fill={tokens.colors.primarySoft} r="4" />
-      </Svg>
-    </View>
-  );
-}
-
 export function FormShell({
   children,
-  description,
   footer,
   isSubmitting,
   onCancel,
@@ -194,29 +142,18 @@ export function FormShell({
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1"
     >
-      <FormBackdrop />
       <ScrollView
         contentContainerClassName="gap-lg p-md pb-2xl"
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="mb-xs flex-row items-start gap-xs pr-xl">
+        <View className="mb-xs flex-row items-center gap-xs pr-xl">
           <IconButton accessibilityLabel="Go back" icon={ChevronLeft} onPress={onCancel} />
-          <View className="min-w-0 flex-1 gap-2xs pt-2xs">
+          <View className="min-w-0 flex-1">
             <AppText accessibilityRole="header" tone="primary" variant="formTitle">
               {title}
             </AppText>
-            <AppText tone="muted">{description}</AppText>
-            <View
-              accessibilityElementsHidden
-              className="mt-xs flex-row items-center gap-xs"
-              importantForAccessibility="no-hide-descendants"
-            >
-              <View className="h-px w-12 bg-borderStrong" />
-              <Sparkles color={tokens.colors.eventBotanical} size={tokens.iconSize.sm} />
-              <View className="h-px w-8 bg-borderStrong" />
-            </View>
           </View>
         </View>
         {submissionError ? (
@@ -235,7 +172,6 @@ export function FormShell({
         {footer ?? (
           <Button
             disabled={isSubmitting}
-            icon={Sparkles}
             label={submitLabel}
             loading={isSubmitting}
             onPress={onSubmit}

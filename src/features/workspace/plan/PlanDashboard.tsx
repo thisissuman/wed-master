@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
-import { Plus, Sparkles } from "lucide-react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { Check, Plus, Sparkles } from "lucide-react-native";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Animated from "react-native-reanimated";
 
 import {
   Button,
+  AppText,
   ErrorState,
   FilterSheet,
   LoadingState,
+  MotionPressable,
   Screen,
-  SelectField,
 } from "@/components/ui";
+import { tokens } from "@/theme";
 import { todayDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
 import { stateEnteringTransition } from "@/theme/motion";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import {
   emptyTaskFilters,
   filterTasks,
@@ -81,8 +83,55 @@ const viewFromParam = (view: string | string[] | undefined): PlanView => {
   return value === "tasks" ? "tasks" : "events";
 };
 
+function FilterChoiceGroup({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  options: { label: string; value: string }[];
+  value: string;
+}) {
+  return (
+    <View className="gap-xs">
+      <AppText variant="label">{label}</AppText>
+      <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-xs">
+        {options.map((option) => {
+          const selected = option.value === value;
+          return (
+            <MotionPressable
+              accessibilityLabel={option.label}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected }}
+              android_ripple={{ color: tokens.colors.primarySoft }}
+              className={`min-h-12 flex-row items-center gap-2xs rounded-control border px-md ${
+                selected
+                  ? "border-primary bg-primary"
+                  : "border-borderStrong bg-elevatedSurface active:bg-surfaceMuted"
+              }`}
+              key={option.value}
+              onPress={() => onChange(option.value)}
+              pressedScale={0.97}
+            >
+              {selected ? (
+                <Check color={tokens.colors.onPrimary} size={tokens.iconSize.sm} />
+              ) : null}
+              <AppText tone={selected ? "onPrimary" : undefined} variant="label">
+                {option.label}
+              </AppText>
+            </MotionPressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export function PlanDashboard() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const isScreenFocused = useIsFocused();
   const routeViewParam = Array.isArray(params.view) ? params.view[0] : params.view;
   const requestedView = viewFromParam(routeViewParam);
   const lastRouteViewParam = useRef(routeViewParam);
@@ -94,7 +143,9 @@ export function PlanDashboard() {
   const [suggestedSelection, setSuggestedSelection] = useState<StarterEventKey[]>([]);
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const taskListRef = useRef<PlanTaskViewHandle>(null);
 
   useEffect(() => {
@@ -144,7 +195,6 @@ export function PlanDashboard() {
     (view: PlanView) => {
       if (view === activeView) return;
       setActiveView(view);
-      void Haptics.selectionAsync();
     },
     [activeView],
   );
@@ -208,10 +258,11 @@ export function PlanDashboard() {
     );
     setSuggestionsOpen(false);
     setSuggestedSelection([]);
-    showFeedback({
-      message: `${created.length} ${created.length === 1 ? "event" : "events"} added`,
-    });
-  }, [data, mutation, showFeedback, suggestedSelection]);
+    markCreatedItem(
+      "event",
+      created.map((event) => event.id),
+    );
+  }, [data, markCreatedItem, mutation, suggestedSelection]);
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -252,6 +303,10 @@ export function PlanDashboard() {
             summary={summary}
             tasks={tasks}
             today={today}
+            createdHighlight={
+              isScreenFocused && createdHighlight?.kind === "task" ? createdHighlight : undefined
+            }
+            onCreatedHighlightFinished={clearCreatedHighlight}
           />
         ) : (
           <PlanEventView
@@ -261,6 +316,10 @@ export function PlanDashboard() {
             onViewChange={changeView}
             progressForEvent={progressForEvent}
             weddingDate={workspace.data.wedding.date}
+            createdHighlight={
+              isScreenFocused && createdHighlight?.kind === "event" ? createdHighlight : undefined
+            }
+            onCreatedHighlightFinished={clearCreatedHighlight}
           />
         )}
       </Animated.View>
@@ -302,8 +361,7 @@ export function PlanDashboard() {
         title="Filter tasks"
         visible={filtersOpen}
       >
-        <SelectField
-          compact
+        <FilterChoiceGroup
           label="Status"
           onChange={(status) => setCustomFilter({ status: taskStatusFilter(status) })}
           options={[
@@ -312,8 +370,7 @@ export function PlanDashboard() {
           ]}
           value={filters.status}
         />
-        <SelectField
-          compact
+        <FilterChoiceGroup
           label="Priority"
           onChange={(priority) => setCustomFilter({ priority: taskPriorityFilter(priority) })}
           options={[
@@ -323,8 +380,7 @@ export function PlanDashboard() {
           ]}
           value={filters.priority}
         />
-        <SelectField
-          compact
+        <FilterChoiceGroup
           label="Related event"
           onChange={(eventId) => setCustomFilter({ eventId })}
           options={[
@@ -334,8 +390,7 @@ export function PlanDashboard() {
           ]}
           value={filters.eventId}
         />
-        <SelectField
-          compact
+        <FilterChoiceGroup
           label="Due date"
           onChange={(value) => {
             if (value === "Overdue") {

@@ -23,12 +23,11 @@ const mockRouter = jest.mocked(router);
 const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
 
 const destinations = [
-  ["Budget & expenses", "/budget/overview"],
-  ["Settings", "/more/settings"],
   ["Guests", "/more/guests"],
   ["Gifts", "/more/gifts"],
-  ["Backup & Export", "/more/backup"],
-  ["Emergency Contacts", "/more/emergency-contacts"],
+  ["Emergency contacts", "/more/emergency-contacts"],
+  ["Backup & export", "/more/backup"],
+  ["Settings", "/more/settings"],
 ] as const;
 
 describe("MoreDashboard", () => {
@@ -53,6 +52,11 @@ describe("MoreDashboard", () => {
     expect(screen.queryByRole("button", { name: "Support" })).toBeNull();
     expect(screen.queryByText("About the App")).toBeNull();
     expect(screen.queryByText("Feedback")).toBeNull();
+    expect(screen.queryByText("Budget & expenses")).toBeNull();
+    expect(screen.getByRole("header", { name: "More" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open Guests" }).props.className).toContain(
+      "shadow-raised",
+    );
   });
 
   it("routes implemented destinations", async () => {
@@ -66,7 +70,7 @@ describe("MoreDashboard", () => {
     }
   });
 
-  it("uses full-width feature rows for large system text", async () => {
+  it("stacks every destination for large system text", async () => {
     useWindowDimensionsSpy.mockReturnValue({
       fontScale: 1.2999999,
       height: 800,

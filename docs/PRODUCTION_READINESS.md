@@ -7,14 +7,15 @@ Date: 2026-08-13
 Mangalya has a strong local-first Android beta foundation, but public release is not approved yet.
 The pre-hardening native audit scored **14/20 (Good)**: Accessibility 3/4, Performance 3/4,
 Appearance & Theming 3/4, Platform Conformance 3/4, and Adaptivity 2/4. The post-hardening
-repository/emulator audit is provisionally **16/20 (Good)**: Accessibility 3/4, Performance 3/4,
-Appearance & Theming 4/4, Platform Conformance 3/4, and Adaptivity 3/4. There are no known P0
+repository/emulator audit is provisionally **17/20 (Good)**: Accessibility 3/4, Performance 3/4,
+Appearance & Theming 4/4, Platform Conformance 3/4, and Adaptivity 4/4. There are no known P0
 findings. Remaining P1 items are release-evidence gates, not claims of completion; physical device,
 runtime performance, Maestro, replacement EAS, and Sentry evidence remains tracked in
 [Next Steps](NEXT_STEPS.md).
 
-The lavender-and-ivory implementation is canonical. Deleted Stitch references and archived
-Emergent prompts are not active visual guidance.
+The warm ivory/lavender system with selective deep-plum night surfaces is canonical. Deleted
+Stitch references, the retired full-screen heart artwork, and archived Emergent prompts are not
+active visual guidance.
 
 ## Completed hardening
 
@@ -36,6 +37,8 @@ Emergent prompts are not active visual guidance.
   action at large text sizes while preserving full accessibility labels.
 - Shared 600dp expanded-width, 1.3 large-text, and 380dp compact-control thresholds drive layout.
 - Compact windows retain bottom navigation; expanded windows use a left material navigation rail.
+  An explicit 78dp rail-item wrapper prevents React Navigation's material item from collapsing to
+  the icon width while preserving at least 48dp in both dimensions.
 - Guest filters, summaries, household counters, and the backup hero recompose for narrow/large-text
   layouts.
 
@@ -83,10 +86,15 @@ Emergent prompts are not active visual guidance.
   household, cold-restart persistence, invalid-household recovery, Android Back, data-backup share
   and history, the system photo picker, reduced motion, and 1.3×/2.0× text passed. The preview
   process recorded no fatal Android or unhandled JavaScript error during the session.
-- Landscape did not pass. On the 1080×2400, 420-dpi emulator rotated to landscape, the material
-  navigation rail rendered clipped icons and only 12-pixel-wide (about 4.6dp) accessible bounds for
-  each root destination. This violates the 48dp target and blocks expanded-width acceptance. Keep
-  this finding in the next batched fix; do not create an intermediate APK solely for it.
+- The corrected source was loaded into the existing `com.suman.mangalya.development` client without
+  producing an intermediate APK. On the 1080×2400, 420-dpi emulator rotated to 914dp landscape,
+  the material rail rendered complete icons, labels, and active state. UIAutomator measured each
+  root target at 151×168–169 pixels, approximately 57.5×64dp, and Home/Plan navigation passed.
+  Portrait Home, Plan, Money, More, quick expense, and category selection also passed visual smoke;
+  Home and More remained scrollable and unclipped at 1.3× and 2.0× text.
+- Corrected preview build 4 predates this redesign and therefore does not prove the rail fix. Keep
+  the user's requested single final APK until the source batch is complete, then repeat landscape
+  and physical-device acceptance on that exact signed artifact.
 
 The emulator debug-client smoke above is native identity and behavior evidence. It is not
 representative release-performance measurement, a TalkBack pass, or physical-device acceptance.
@@ -97,9 +105,9 @@ representative release-performance measurement, a TalkBack pass, or physical-dev
    tooling approval.
 2. Profile a preview/release build against cold-start, persistence, expense-save, scrolling, and
    bundle-growth targets in `TESTING.md`.
-3. Fix and re-run the expanded-width navigation rail check, then complete physical Android QA at
-   360dp and expanded width, portrait/landscape, largest text, TalkBack, keyboard/IME, reduced
-   motion, file/share pickers, permission denial, process termination, and upgrade install.
+3. Complete physical Android QA at 360dp and expanded width, portrait/landscape, largest text,
+   TalkBack, keyboard/IME, reduced motion, file/share pickers, permission denial, process
+   termination, and upgrade install. Repeat the now-passing rail check on the exact final signed APK.
 4. Verify launcher/splash rendering on a physical phone plus scrubbed Sentry delivery and source
    maps. Runtime preview-scheme deep links already pass on the emulator.
 

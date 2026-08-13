@@ -51,7 +51,7 @@ export function TimeField({
     <View className="gap-2xs">
       <FieldLabel label={label} optional={optional} />
       <View
-        className={`min-h-12 flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
+        className={`min-h-14 flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
           error ? "border-danger" : "border-borderStrong"
         }`}
       >
@@ -59,10 +59,10 @@ export function TimeField({
           accessibilityLabel={`${label}: ${formatted}`}
           accessibilityRole="button"
           android_ripple={{ color: tokens.colors.surfaceMuted }}
-          className="min-h-12 min-w-0 flex-1 flex-row items-center active:opacity-80"
+          className="min-h-14 min-w-0 flex-1 flex-row items-center active:opacity-80"
           onPress={() => setOpen(true)}
         >
-          <View className="min-w-12 items-center justify-center">
+          <View className="min-w-14 items-center justify-center">
             <Icon
               color={error ? tokens.colors.danger : tokens.colors.textSecondary}
               size={tokens.iconSize.md}
@@ -72,7 +72,7 @@ export function TimeField({
             {formatted}
           </AppText>
           {!optional || !value ? (
-            <View className="min-h-12 min-w-12 items-center justify-center">
+            <View className="min-h-14 min-w-14 items-center justify-center">
               <ChevronDown color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
             </View>
           ) : null}
@@ -81,7 +81,7 @@ export function TimeField({
           <MotionPressable
             accessibilityLabel={`Clear ${label.toLowerCase()}`}
             accessibilityRole="button"
-            className="min-h-12 min-w-12 items-center justify-center border-l border-borderSubtle active:bg-surfaceMuted"
+            className="min-h-14 min-w-14 items-center justify-center border-l border-borderSubtle active:bg-surfaceMuted"
             onPress={() => onChange("")}
             pressedScale={0.94}
           >

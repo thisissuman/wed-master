@@ -39,7 +39,7 @@ export function NumberStepper({
     <View className="gap-2xs">
       <FieldLabel label={label} required={required} />
       <View
-        className={`min-h-12 flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
+        className={`min-h-14 flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
           error ? "border-danger" : "border-borderStrong"
         }`}
       >
@@ -47,7 +47,7 @@ export function NumberStepper({
           accessibilityLabel={`Decrease ${label.toLowerCase()}`}
           accessibilityRole="button"
           accessibilityState={{ disabled: decrementDisabled }}
-          className={`min-h-12 min-w-12 items-center justify-center border-r border-borderSubtle ${
+          className={`min-h-14 min-w-14 items-center justify-center border-r border-borderSubtle ${
             decrementDisabled ? "opacity-40" : "active:bg-primarySoft"
           }`}
           disabled={decrementDisabled}
@@ -58,7 +58,7 @@ export function NumberStepper({
         </MotionPressable>
         <TextInput
           accessibilityLabel={label}
-          className="min-h-12 min-w-16 flex-1 text-center text-heading text-textPrimary"
+          className="min-h-14 min-w-16 flex-1 text-center text-heading text-textPrimary"
           keyboardType="number-pad"
           maxLength={String(maximum).length}
           onChangeText={(next) => onChange(next.replace(/\D/g, ""))}
@@ -70,7 +70,7 @@ export function NumberStepper({
           accessibilityLabel={`Increase ${label.toLowerCase()}`}
           accessibilityRole="button"
           accessibilityState={{ disabled: incrementDisabled }}
-          className={`min-h-12 min-w-12 items-center justify-center border-l border-borderSubtle ${
+          className={`min-h-14 min-w-14 items-center justify-center border-l border-borderSubtle ${
             incrementDisabled ? "opacity-40" : "active:bg-primarySoft"
           }`}
           disabled={incrementDisabled}

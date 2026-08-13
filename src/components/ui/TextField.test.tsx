@@ -13,7 +13,7 @@ describe("TextField", () => {
 
     expect(input.parent?.props.className).toContain("border-primary");
     expect(input.parent?.props.className).not.toContain("shadow-card");
-    expect(input.parent?.props.style).toEqual({ boxShadow: tokens.elevation.card });
+    expect(input.parent?.props.style).toEqual({ boxShadow: tokens.elevation.focus });
 
     await fireEvent(input, "blur");
 

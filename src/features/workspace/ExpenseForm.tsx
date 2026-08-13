@@ -1,15 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Haptics from "expo-haptics";
 import { FlashList } from "@shopify/flash-list";
-import {
-  ArrowLeft,
-  Check,
-  ChevronRight,
-  IndianRupee,
-  Plus,
-  Sparkles,
-  X,
-} from "lucide-react-native";
+import { ArrowLeft, Check, ChevronRight, IndianRupee, X } from "lucide-react-native";
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import {
@@ -32,7 +24,6 @@ import Animated, {
 import {
   AppText,
   Button,
-  Card,
   DateField,
   IconButton,
   MotionPressable,
@@ -41,37 +32,27 @@ import {
 } from "@/components/ui";
 import { formatShortDateOnly, todayDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
-import { formatInr } from "@/lib/money";
 import { tokens } from "@/theme";
 import { sheetEnteringTransition } from "@/theme/motion";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
 import { selectableBudgetCategories } from "./expense-categories";
 import { AttachmentField } from "./files/AttachmentField";
 import { pickWorkspaceAttachment, removeWorkspaceAttachment } from "./files/workspace-files";
 import {
-  expenseDetailsFormSchema,
   expenseFormSchema,
   fromPaise,
   quickExpenseFormSchema,
   toPaise,
-  type ExpenseDetailsFormValues,
   type ExpenseFormValues,
   type QuickExpenseFormValues,
 } from "./forms";
 import { ExpenseCategoryIcon } from "./money/ExpenseCategoryIcon";
 import { useCreateExpenseMutation, useWorkspace, useWorkspaceMutation } from "./provider";
 import { selectExpenseTitleSuggestions } from "./selectors";
-import type {
-  AttachmentRef,
-  BudgetCategory,
-  CreateExpenseResult,
-  Expense,
-  Task,
-  WeddingEvent,
-} from "./types";
+import type { AttachmentRef, BudgetCategory, Expense, Task, WeddingEvent } from "./types";
 import { FormShell } from "./ui";
 import { useUnsavedChangesGuard } from "./useUnsavedChangesGuard";
+import { useCreatedItemHighlight } from "./created-item-highlight";
 
 type PendingReceipt = {
   attachment: AttachmentRef;
@@ -190,9 +171,6 @@ function QuickExpenseSheet({
           style={{ maxHeight: "100%" }}
         >
           <View className="min-h-12 flex-row items-center justify-end px-md">
-            <View className="absolute inset-x-0 items-center">
-              <View className="h-1 w-12 rounded-full bg-borderStrong" />
-            </View>
             <IconButton accessibilityLabel="Close expense form" icon={X} onPress={onCancel} />
           </View>
           <ScrollView
@@ -291,7 +269,6 @@ function CategoryPickerPanel({
       edges={["bottom"]}
       className="min-h-0 flex-1 gap-sm px-md pb-md pt-xs"
     >
-      <View className="self-center h-1 w-12 rounded-full bg-borderStrong" />
       <View className="flex-row items-center gap-sm">
         {activeView !== "categories" ? (
           <IconButton
@@ -349,11 +326,11 @@ function CategoryPickerPanel({
                 >
                   {category.name}
                 </AppText>
-                {selected && !opensItems ? (
-                  <Check color={tokens.colors.primary} size={tokens.iconSize.sm} />
-                ) : (
+                {opensItems ? (
                   <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-                )}
+                ) : selected ? (
+                  <Check color={tokens.colors.primary} size={tokens.iconSize.sm} />
+                ) : null}
               </MotionPressable>
             );
           })}
@@ -625,193 +602,10 @@ function ExpenseTitleSuggestions({
   );
 }
 
-function CreatedExpenseDetails({
-  category,
-  expense,
-  onAddAnother,
-}: {
-  category?: BudgetCategory;
-  expense: Expense;
-  onAddAnother: () => void;
-}) {
-  const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
-  const submissionInFlight = useRef(false);
-  const [receipt, setReceipt] = useState(expense.receipt);
-  const [pendingReceipt, setPendingReceipt] = useState<PendingReceipt>();
-  const [attachmentError, setAttachmentError] = useState<string>();
-  const [pickingAttachment, setPickingAttachment] = useState(false);
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isDirty, isSubmitting },
-  } = useForm<ExpenseDetailsFormValues>({
-    defaultValues: {
-      date: expense.date ?? todayDateOnly(),
-      notes: expense.notes ?? "",
-    },
-    mode: "onTouched",
-    resolver: zodResolver(expenseDetailsFormSchema),
-  });
-  const receiptDirty = receipt?.id !== expense.receipt?.id;
-  const dirty = isDirty || receiptDirty;
-  const busy = isSubmitting || mutation.isPending || pickingAttachment;
-  const { exitAfterSave, requestExit } = useUnsavedChangesGuard({
-    isDirty: dirty,
-    isSubmitting: busy,
-  });
-
-  useEffect(
-    () => () => {
-      pendingReceipt?.remove();
-    },
-    [pendingReceipt],
-  );
-
-  const pickReceipt = async () => {
-    if (pickingAttachment) return;
-    setPickingAttachment(true);
-    setAttachmentError(undefined);
-    try {
-      const picked = await pickWorkspaceAttachment();
-      if (!picked) return;
-      pendingReceipt?.remove();
-      setPendingReceipt(createPendingReceipt(picked));
-      setReceipt(picked);
-    } catch (error) {
-      setAttachmentError(toUserMessage(error));
-    } finally {
-      setPickingAttachment(false);
-    }
-  };
-
-  const finish = (next: "another" | "close") =>
-    handleSubmit(async (values) => {
-      if (submissionInFlight.current) return;
-      submissionInFlight.current = true;
-      try {
-        if (dirty) {
-          await mutation.mutateAsync((repositories) =>
-            repositories.expenses.updateExpense({
-              ...expense,
-              date: values.date as Expense["date"],
-              notes: values.notes || undefined,
-              receipt,
-            }),
-          );
-          pendingReceipt?.preserve();
-          if (expense.receipt && expense.receipt.id !== receipt?.id) {
-            removeWorkspaceAttachment(expense.receipt);
-          }
-          showFeedback({ message: "Expense details saved" });
-        }
-
-        if (next === "another") {
-          onAddAnother();
-        } else {
-          exitAfterSave();
-        }
-      } catch {
-        return;
-      } finally {
-        submissionInFlight.current = false;
-      }
-    })();
-
-  const footer = (
-    <View className="gap-xs">
-      <Button
-        icon={dirty ? Sparkles : Check}
-        label={dirty ? "Save details" : "Done"}
-        loading={busy}
-        onPress={() => void finish("close")}
-      />
-      <Button
-        disabled={busy}
-        icon={Plus}
-        label="Add another expense"
-        onPress={() => void finish("another")}
-        variant="secondary"
-      />
-    </View>
-  );
-
-  return (
-    <QuickExpenseSheet accessibilityLabel="Expense added" footer={footer} onCancel={requestExit}>
-      <Card className="gap-md" variant="subtle">
-        <View className="flex-row items-center gap-sm">
-          {category ? <ExpenseCategoryIcon iconKey={category.iconKey} /> : null}
-          <View className="min-w-0 flex-1 gap-2xs">
-            <AppText numberOfLines={2} variant="heading">
-              {expense.title}
-            </AppText>
-            <AppText tone="muted" variant="caption">
-              {category?.name ?? "Expense"}
-            </AppText>
-          </View>
-          <AppText tone="primary" variant="title">
-            {formatInr(expense.actualPaise)}
-          </AppText>
-        </View>
-      </Card>
-      <AppText tone="primary" variant="label">
-        Optional details
-      </AppText>
-      <Controller
-        control={control}
-        name="date"
-        render={({ field }) => (
-          <DateField
-            error={errors.date?.message}
-            label="Expense date"
-            onChange={field.onChange}
-            value={field.value}
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="notes"
-        render={({ field }) => (
-          <TextField
-            error={errors.notes?.message}
-            label="Note"
-            multiline
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            optional
-            placeholder="Add a reminder or useful context"
-            value={field.value}
-          />
-        )}
-      />
-      <AttachmentField
-        attachment={receipt}
-        error={attachmentError}
-        label="Attachment or receipt"
-        loading={pickingAttachment}
-        onPick={() => void pickReceipt()}
-        onRemove={() => {
-          pendingReceipt?.remove();
-          setPendingReceipt(undefined);
-          setReceipt(undefined);
-        }}
-      />
-      {mutation.error ? (
-        <AppText accessibilityRole="alert" tone="danger" variant="caption">
-          The expense is still saved. {toUserMessage(mutation.error)} Try saving these details
-          again.
-        </AppText>
-      ) : null}
-    </QuickExpenseSheet>
-  );
-}
-
 function CreateExpenseForm() {
   const workspace = useWorkspace();
   const createMutation = useCreateExpenseMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
-  const [createdExpense, setCreatedExpense] = useState<Expense>();
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [relatedSelection, setRelatedSelection] = useState<{
     eventId?: string;
@@ -834,7 +628,6 @@ function CreateExpenseForm() {
     control,
     getValues,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors, isDirty, isSubmitting, isValid },
   } = useForm<QuickExpenseFormValues>({
@@ -848,7 +641,10 @@ function CreateExpenseForm() {
   const selectableCategories = useMemo(() => selectableBudgetCategories(categories), [categories]);
   const selectedCategory = categories.find((category) => category.id === categoryId);
   const busy = isSubmitting || createMutation.isPending;
-  const { requestExit } = useUnsavedChangesGuard({ isDirty, isSubmitting: busy });
+  const { exitAfterSaveDismissTo, requestExit } = useUnsavedChangesGuard({
+    isDirty,
+    isSubmitting: busy,
+  });
 
   useEffect(() => {
     titleFocusFrameRef.current = requestAnimationFrame(() => {
@@ -937,45 +733,27 @@ function CreateExpenseForm() {
       if (submissionInFlight.current) return;
       submissionInFlight.current = true;
       setSuggestionsOpen(false);
-      let result: CreateExpenseResult;
+      let createdExpense: Expense;
       try {
-        result = await createMutation.mutateAsync({
+        const result = await createMutation.mutateAsync({
           actualPaise: toPaise(values.amount),
           categoryId: values.categoryId,
           date: todayDateOnly() as Expense["date"],
           ...(relatedSelection?.eventId ? { eventId: relatedSelection.eventId } : {}),
           title: values.title,
         });
+        createdExpense = result.expense;
       } catch {
         return;
       } finally {
         submissionInFlight.current = false;
       }
-      reset({ amount: "", categoryId: "", title: "" });
-      setRelatedSelection(undefined);
-      setCreatedExpense(result.expense);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showFeedback({ message: "Expense added" });
+      markCreatedItem("expense", [createdExpense.id]);
+      exitAfterSaveDismissTo("/budget");
     })();
 
-  if (createdExpense) {
-    return (
-      <CreatedExpenseDetails
-        category={categories.find((category) => category.id === createdExpense.categoryId)}
-        expense={createdExpense}
-        onAddAnother={() => setCreatedExpense(undefined)}
-      />
-    );
-  }
-
   const footer = (
-    <Button
-      disabled={!isValid || busy}
-      icon={Sparkles}
-      label="Add expense"
-      loading={busy}
-      onPress={save}
-    />
+    <Button disabled={!isValid || busy} label="Add expense" loading={busy} onPress={save} />
   );
 
   return (
@@ -1074,7 +852,6 @@ function CreateExpenseForm() {
 function EditExpenseForm({ expense }: { expense: Expense }) {
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [receipt, setReceipt] = useState(expense.receipt);
   const [pendingReceipt, setPendingReceipt] = useState<PendingReceipt>();
@@ -1163,15 +940,12 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
       if (expense.receipt && expense.receipt.id !== receipt?.id) {
         removeWorkspaceAttachment(expense.receipt);
       }
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showFeedback({ message: "Expense updated" });
       exitAfterSave();
     })();
 
   return (
     <Screen>
       <FormShell
-        description="Update the cost and any useful details."
         isSubmitting={busy}
         onCancel={requestExit}
         onSubmit={save}

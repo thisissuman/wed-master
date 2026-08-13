@@ -13,6 +13,7 @@ import {
   selectExpenseTitleSuggestions,
   selectHomeNextActions,
   selectRecentExpenses,
+  selectExpenseDateGroups,
   selectSpendingTrend,
   taskProgress,
   taskSummary,
@@ -141,6 +142,48 @@ describe("workspace selectors", () => {
     ];
 
     expect(selectRecentExpenses(expenses).map((expense) => expense.id)).toEqual(["newer", "older"]);
+  });
+
+  it("groups expenses by expense date with newest dated groups first", () => {
+    const expenses: Expense[] = [
+      {
+        id: "aug-8-old",
+        title: "Flowers",
+        categoryId: "category-core-event",
+        createdAt: "2026-08-08T10:00:00.000Z",
+        actualPaise: 100,
+        date: "2026-08-08",
+      },
+      {
+        id: "undated",
+        title: "Legacy cost",
+        categoryId: "category-core-other",
+        createdAt: "2026-08-12T10:00:00.000Z",
+        actualPaise: 200,
+      },
+      {
+        id: "aug-10",
+        title: "Catering",
+        categoryId: "category-core-event",
+        createdAt: "2026-08-10T10:00:00.000Z",
+        actualPaise: 300,
+        date: "2026-08-10",
+      },
+      {
+        id: "aug-8-new",
+        title: "Lights",
+        categoryId: "category-core-event",
+        createdAt: "2026-08-09T10:00:00.000Z",
+        actualPaise: 400,
+        date: "2026-08-08",
+      },
+    ];
+
+    expect(selectExpenseDateGroups(expenses)).toEqual([
+      { date: "2026-08-10", expenses: [expenses[2]] },
+      { date: "2026-08-08", expenses: [expenses[3], expenses[0]] },
+      { date: undefined, expenses: [expenses[1]] },
+    ]);
   });
 
   it("ranks and deduplicates normalized title suggestions", () => {

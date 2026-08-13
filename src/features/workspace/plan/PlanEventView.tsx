@@ -13,10 +13,11 @@ import {
   Pencil,
 } from "lucide-react-native";
 
-import { AppText, EmptyState, IconButton } from "@/components/ui";
+import { AppText, CreatedItemPulse, EmptyState, IconButton } from "@/components/ui";
 import { tokens } from "@/theme";
 
 import type { EventIconKey, WeddingEvent } from "../types";
+import type { CreatedItemHighlight } from "../created-item-highlight";
 import { PlanHeader, type PlanView } from "./PlanShared";
 
 const contentPadding = Number.parseInt(tokens.spacing.md, 10);
@@ -117,11 +118,11 @@ export const EventTimelineCard = memo(function EventTimelineCard({
         />
       </View>
       <View
-        className={`ml-2xs flex-1 overflow-hidden rounded-card border bg-elevatedSurface shadow-card ${
+        className={`ml-2xs flex-1 overflow-hidden rounded-card border bg-elevatedSurface ${
           highlighted ? "border-primary" : "border-borderSubtle"
         }`}
       >
-        <View className="flex-row items-center gap-xs p-xs">
+        <View className="flex-row items-center gap-sm p-md">
           <View
             className="h-10 w-10 items-center justify-center rounded-full"
             style={{ backgroundColor: highlighted ? tokens.colors.primarySoft : eventColor.soft }}
@@ -136,28 +137,22 @@ export const EventTimelineCard = memo(function EventTimelineCard({
             accessibilityLabel={`Open event: ${event.name}`}
             accessibilityRole="button"
             android_ripple={{ color: tokens.colors.surfaceMuted }}
-            className="min-h-14 min-w-0 flex-1 flex-row items-center gap-xs rounded-control active:bg-surfaceMuted"
+            className="min-h-14 min-w-0 flex-1 rounded-control active:bg-surfaceMuted"
             onPress={onPress}
           >
-            <View className="w-14 items-center rounded-control bg-surfaceMuted px-2xs py-xs">
-              <AppText tone="primary" variant="caption">
-                {date.weekday}
-              </AppText>
-              <AppText tone="primary" variant="title">
-                {date.day}
-              </AppText>
-              <AppText numberOfLines={1} variant="caption">
-                {date.month}
-              </AppText>
-            </View>
-            <View className="min-w-0 flex-1 gap-xs py-xs">
+            <View className="min-w-0 flex-1 gap-xs py-2xs">
               <AppText numberOfLines={2} tone="primary" variant="heading">
                 {event.name}
               </AppText>
-              <View className="max-w-full self-start rounded-control bg-primarySoft px-xs py-2xs">
-                <AppText tone={highlighted ? "primary" : "muted"} variant="caption">
-                  {statusLabel}
+              <View className="flex-row flex-wrap items-center gap-xs">
+                <AppText tone="muted" variant="caption">
+                  {date.weekday}, {date.day} {date.month}
                 </AppText>
+                <View className="max-w-full rounded-control bg-primarySoft px-xs py-2xs">
+                  <AppText tone={highlighted ? "primary" : "muted"} variant="caption">
+                    {statusLabel}
+                  </AppText>
+                </View>
               </View>
             </View>
           </Pressable>
@@ -180,6 +175,8 @@ export function PlanEventView({
   onViewChange,
   progressForEvent,
   weddingDate,
+  createdHighlight,
+  onCreatedHighlightFinished,
 }: {
   events: WeddingEvent[];
   onEdit: (event: WeddingEvent) => void;
@@ -187,9 +184,11 @@ export function PlanEventView({
   onViewChange: (view: PlanView) => void;
   progressForEvent: (id: string) => { completed: number; total: number };
   weddingDate: string;
+  createdHighlight?: CreatedItemHighlight;
+  onCreatedHighlightFinished: (nonce: number) => void;
 }) {
   const header = (
-    <View className="gap-lg pb-md">
+    <View className="gap-md pb-md">
       <PlanHeader activeView="events" onViewChange={onViewChange} />
       <AppText tone="primary" variant="title">
         Your wedding events
@@ -205,20 +204,28 @@ export function PlanEventView({
         paddingTop: contentPadding,
       }}
       data={events}
+      extraData={createdHighlight?.nonce}
       ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
       keyExtractor={(event) => event.id}
       ListEmptyComponent={<EmptyState title="No events yet" />}
       ListHeaderComponent={header}
       renderItem={({ index, item }) => (
-        <EventTimelineCard
-          event={item}
-          highlighted={item.date === weddingDate}
-          isFirst={index === 0}
-          isLast={index === events.length - 1}
-          onEdit={() => onEdit(item)}
-          onPress={() => onEventPress(item)}
-          progress={progressForEvent(item.id)}
-        />
+        <CreatedItemPulse
+          active={Boolean(createdHighlight?.ids.includes(item.id))}
+          onFinished={() => {
+            if (createdHighlight) onCreatedHighlightFinished(createdHighlight.nonce);
+          }}
+        >
+          <EventTimelineCard
+            event={item}
+            highlighted={item.date === weddingDate}
+            isFirst={index === 0}
+            isLast={index === events.length - 1}
+            onEdit={() => onEdit(item)}
+            onPress={() => onEventPress(item)}
+            progress={progressForEvent(item.id)}
+          />
+        </CreatedItemPulse>
       )}
       showsVerticalScrollIndicator={false}
     />

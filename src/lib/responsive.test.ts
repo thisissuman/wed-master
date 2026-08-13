@@ -1,5 +1,6 @@
 import {
   adaptiveTabBarConfig,
+  adaptiveTabBarItemStyle,
   isExpandedLayout,
   isLargeText,
   shouldStackCompactControls,
@@ -14,6 +15,17 @@ describe("responsive layout contracts", () => {
   it("uses a phone navigation bar and an expanded navigation rail", () => {
     expect(adaptiveTabBarConfig(411)).toEqual({ position: "bottom", variant: "uikit" });
     expect(adaptiveTabBarConfig(800)).toEqual({ position: "left", variant: "material" });
+  });
+
+  it("keeps every expanded rail item full-width and at least 48dp", () => {
+    expect(adaptiveTabBarItemStyle(800)).toEqual({
+      alignSelf: "center",
+      flex: 1,
+      minHeight: 48,
+      minWidth: 48,
+      width: 78,
+    });
+    expect(adaptiveTabBarItemStyle(411)).toEqual({ minHeight: 48, minWidth: 48 });
   });
 
   it("treats 1.3 font scale as the named large-text threshold", () => {

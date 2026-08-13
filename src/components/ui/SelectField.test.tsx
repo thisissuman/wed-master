@@ -44,4 +44,24 @@ describe("SelectField", () => {
     expect(screen.queryByText("Choose one option")).toBeNull();
     expect(screen.getByRole("radio", { name: "Completed" }).props.className).toContain("min-h-12");
   });
+
+  it("adds search automatically for long option lists", async () => {
+    const screen = await render(
+      <SelectField
+        label="Related event"
+        onChange={jest.fn()}
+        options={Array.from({ length: 9 }, (_, index) => ({
+          label: `Event ${index + 1}`,
+          value: String(index + 1),
+        }))}
+        value="1"
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Related event: Event 1" }));
+    await fireEvent.changeText(screen.getByLabelText("Search options"), "Event 9");
+
+    expect(screen.getByRole("radio", { name: "Event 9" })).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "Event 2" })).toBeNull();
+  });
 });

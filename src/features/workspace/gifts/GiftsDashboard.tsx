@@ -8,6 +8,7 @@ import {
   AppText,
   Button,
   Card,
+  CreatedItemPulse,
   EmptyState,
   ErrorState,
   FilterSheet,
@@ -22,6 +23,7 @@ import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 
 import { useWorkspace } from "../provider";
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import type { GiftRecord } from "../types";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
 
@@ -108,6 +110,8 @@ function GiftCard({ gift }: { gift: GiftRecord }) {
 
 export function GiftsDashboard() {
   const workspace = useWorkspace();
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
   const { fontScale } = useWindowDimensions();
   const [sort, setSort] = useState<GiftSort>("recent");
   const [sortOpen, setSortOpen] = useState(false);
@@ -196,7 +200,18 @@ export function GiftsDashboard() {
           />
         }
         ListHeaderComponent={header}
-        renderItem={({ item }) => <GiftCard gift={item} />}
+        renderItem={({ item }) => (
+          <CreatedItemPulse
+            active={Boolean(
+              createdHighlight?.kind === "gift" && createdHighlight.ids.includes(item.id),
+            )}
+            onFinished={() => {
+              if (createdHighlight) clearCreatedHighlight(createdHighlight.nonce);
+            }}
+          >
+            <GiftCard gift={item} />
+          </CreatedItemPulse>
+        )}
         showsVerticalScrollIndicator={false}
       />
       {gifts.length ? (

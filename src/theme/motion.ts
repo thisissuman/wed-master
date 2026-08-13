@@ -4,15 +4,17 @@ import {
   FadeOut,
   LinearTransition,
   ReduceMotion,
-  SlideInDown,
+  SlideInUp,
+  SlideOutDown,
 } from "react-native-reanimated";
 
 import { motionDurations } from "./index";
 
 export const motionEasing = {
-  enter: Easing.out(Easing.cubic),
-  exit: Easing.in(Easing.quad),
-  feedback: Easing.out(Easing.quad),
+  enter: Easing.bezier(0.23, 1, 0.32, 1),
+  exit: Easing.bezier(0.23, 1, 0.32, 1),
+  feedback: Easing.bezier(0.23, 1, 0.32, 1),
+  move: Easing.bezier(0.77, 0, 0.175, 1),
 } as const;
 
 export const motionTiming = {
@@ -50,6 +52,14 @@ export const exitTransition = FadeOut.duration(motionDurations.exit)
   .easing(motionEasing.exit)
   .reduceMotion(ReduceMotion.System);
 
-export const sheetEnteringTransition = SlideInDown.duration(motionDurations.entrance)
+export const sheetEnteringTransition = SlideInUp.duration(motionDurations.entrance)
+  .easing(motionEasing.enter)
+  .reduceMotion(ReduceMotion.System);
+
+export const sheetExitTransition = SlideOutDown.duration(motionDurations.exit)
+  .easing(motionEasing.exit)
+  .reduceMotion(ReduceMotion.System);
+
+export const dialogEnteringTransition = FadeIn.duration(motionDurations.fast)
   .easing(motionEasing.enter)
   .reduceMotion(ReduceMotion.System);

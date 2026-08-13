@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
 import {
@@ -38,6 +37,7 @@ import {
 } from "@/features/feedback/feedback-store";
 
 import { taskFormSchema, type TaskFormValues } from "./forms";
+import { useCreatedItemHighlight } from "./created-item-highlight";
 import { removeWorkspaceAttachment } from "./files/workspace-files";
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 import { taskPriorities, taskStatuses, type Task } from "./types";
@@ -90,6 +90,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
   const { data } = useWorkspace();
   const mutation = useWorkspaceMutation();
   const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const {
     control,
@@ -138,7 +139,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
       });
       return;
     }
-    await mutation.mutateAsync((repositories) =>
+    const snapshot = await mutation.mutateAsync((repositories) =>
       task
         ? repositories.tasks.updateTask({
             ...task,
@@ -162,8 +163,11 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
             attachments: [],
           }),
     );
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showFeedback({ message: task ? "Task updated" : "Task created" });
+    if (!task) {
+      const existingIds = new Set(data?.tasks.map((item) => item.id) ?? []);
+      const created = snapshot.tasks.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("task", [created.id]);
+    }
     exitAfterSave();
   });
 
@@ -261,7 +265,6 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
   return (
     <Screen>
       <FormShell
-        description="Keep every detail on track without making simple tasks feel heavy."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={requestExit}
         onSubmit={save}

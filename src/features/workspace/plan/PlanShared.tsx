@@ -1,7 +1,6 @@
 import { View } from "react-native";
 
-import { MangalyaHeader } from "@/components/brand";
-import { AppText, SegmentedControl } from "@/components/ui";
+import { PageHeader, SegmentedControl } from "@/components/ui";
 
 export type PlanView = "events" | "tasks";
 
@@ -13,11 +12,8 @@ export function PlanHeader({
   onViewChange: (view: PlanView) => void;
 }) {
   return (
-    <View className="gap-lg">
-      <MangalyaHeader />
-      <AppText tone="primary" variant="display">
-        Plan
-      </AppText>
+    <View className="gap-md">
+      <PageHeader title="Plan" />
       <SegmentedControl
         accessibilityLabel="Plan view"
         onChange={onViewChange}

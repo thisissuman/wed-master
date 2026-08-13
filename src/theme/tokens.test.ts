@@ -32,6 +32,11 @@ describe("light lavender theme", () => {
     ["danger state", tokens.colors.danger, tokens.colors.dangerSoft],
     ["gradient action start", tokens.colors.onPrimary, tokens.gradients.primaryAction[0]],
     ["gradient action end", tokens.colors.onPrimary, tokens.gradients.primaryAction[1]],
+    ["night text", tokens.colors.onNight, tokens.colors.nightSurface],
+    ["night secondary text", tokens.colors.onNightMuted, tokens.colors.nightSurface],
+    ["night accent", tokens.colors.nightAccent, tokens.colors.nightSurface],
+    ["navigation text", tokens.colors.onNightMuted, tokens.colors.navigationSurface],
+    ["navigation accent", tokens.colors.nightAccent, tokens.colors.navigationSurface],
   ])("keeps %s at WCAG AA contrast", (_label, foreground, background) => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(4.5);
   });

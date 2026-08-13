@@ -29,7 +29,7 @@ export function ImagePickerField({
   return (
     <View className="gap-2xs">
       <FieldLabel label={label} optional={optional} />
-      <View className="relative overflow-hidden rounded-card border border-borderStrong bg-elevatedSurface shadow-card">
+      <View className="relative overflow-hidden rounded-card border border-borderStrong bg-elevatedSurface">
         <MotionPressable
           accessibilityLabel={
             uri ? `Change ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`

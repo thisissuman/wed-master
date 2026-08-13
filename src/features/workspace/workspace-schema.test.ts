@@ -135,6 +135,18 @@ describe("workspace snapshot v4", () => {
     expect(parseOrMigrateWorkspaceSnapshot(snapshot).wedding.coverPhotoUri).toBeUndefined();
   });
 
+  it("accepts an optional wedding keepsake message while older v4 data remains valid", () => {
+    const snapshot = structuredClone(demoWorkspace);
+    snapshot.wedding.keepsakeMessage = "The beginning of our forever.";
+
+    expect(parseOrMigrateWorkspaceSnapshot(snapshot).wedding.keepsakeMessage).toBe(
+      "The beginning of our forever.",
+    );
+
+    delete snapshot.wedding.keepsakeMessage;
+    expect(parseOrMigrateWorkspaceSnapshot(snapshot).wedding.keepsakeMessage).toBeUndefined();
+  });
+
   it("keeps hidden legacy guest names without blocking a smaller household count", () => {
     const snapshot = structuredClone(demoWorkspace);
     if (snapshot.households[0]) snapshot.households[0].guestCount = 1;
@@ -147,6 +159,7 @@ describe("workspace snapshot v4", () => {
 
   it("excludes local media references and history from data-only backups", () => {
     const snapshot = structuredClone(demoWorkspace);
+    snapshot.wedding.keepsakeMessage = "Always, together.";
     snapshot.wedding.coverPhotoUri = "file:///documents/mangalya/cover-photos/cover.jpg";
     if (snapshot.events[0]) {
       snapshot.events[0].coverPhotoUri = "file:///documents/mangalya/cover-photos/event-cover.jpg";
@@ -161,6 +174,7 @@ describe("workspace snapshot v4", () => {
     });
     const exported = createDataOnlySnapshot(snapshot);
     expect(exported.wedding.coverPhotoUri).toBeUndefined();
+    expect(exported.wedding.keepsakeMessage).toBe("Always, together.");
     expect(exported.events[0]?.coverPhotoUri).toBeUndefined();
     expect(exported.tasks[0]?.attachments).toEqual([]);
     expect(exported.backupHistory).toEqual([]);

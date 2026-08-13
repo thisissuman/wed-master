@@ -104,7 +104,7 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 ## 2026-07-23: Quick expense capture and workspace snapshot v3
 
-**Decision:** Spending is captured progressively as title, one mandatory visual category, and a positive actual amount. Persist immediately with a local date and creation timestamp, then offer only optional date, note, and one attachment. The Money tab keeps `/budget` and owns the newest-first expense list. The drill-down `/budget/overview` route owns the wedding target editor, date-based spending trend, all-time insights, and category breakdown; Home, More, and Settings open that route. Snapshot v3 adds typed category icon/archive metadata and expense `createdAt` while retaining old accounting fields as hidden optional compatibility data.
+**Decision:** Spending is captured progressively as title, one mandatory visual category, and a positive actual amount. Persist immediately with a local date and creation timestamp, then offer only optional date, note, and one attachment. The Money tab keeps `/budget` and owns the newest-first expense list. The drill-down `/budget/overview` route owns the wedding target editor, date-based spending trend, all-time insights, and category breakdown; Home, the Money summary, and Settings open that route. Snapshot v3 adds typed category icon/archive metadata and expense `createdAt` while retaining old accounting fields as hidden optional compatibility data.
 
 **Why:** The previous Basics → Payment → Details workflow made a frequent mobile action feel like invoice accounting. Actual spending and target remaining answer the current user need without deleting historical data. The detailed trend uses the existing SVG/Reanimated stack instead of adding a chart or animation package.
 
@@ -112,11 +112,19 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 ## 2026-08-01: Canonical lavender local-beta implementation
 
-**Decision:** The live lavender-and-ivory implementation, `src/theme/tokens.json`, and the optimized `home-hearts-glow-v2.jpg` asset are the current visual authority. Legacy Emergent prompts are archived as historical inputs; the July design decisions remain history rather than active implementation guidance.
+**Decision:** At this checkpoint, the live lavender-and-ivory implementation, `src/theme/tokens.json`, and the optimized `home-hearts-glow-v2.jpg` asset became the visual authority. Legacy Emergent prompts were archived as historical inputs; the July design decisions remain history rather than active implementation guidance. The decorative-asset detail is superseded by the 2026-08-13 refinement below.
 
 **Why:** Obsolete green references and a missing mock-up filename were causing audits to describe a visual system the app no longer uses.
 
 **Consequence:** UI work follows the live semantic system, uses a compact navigation bar and expanded navigation rail, supports large text through shared responsive thresholds, and never restores archived prompt styling without a new product decision.
+
+## 2026-08-13: Selective night surfaces and restrained product motion
+
+**Decision:** Keep the warm ivory/lavender semantic base, but use deep-plum night surfaces for the navigation shell, wedding hero, and Money summary. Reserve the serif face for the wordmark, wedding identity, and countdown; functional page titles and forms use Manrope. Remove the full-screen heart artwork, repeated wordmarks, redundant shortcuts, routine card shadows, and fake drag affordances. Shared bottom sheets, selectors, segmented controls, press feedback, haptics, and short reduced-motion-aware transitions own interaction polish. This is not an app-wide dark mode and adds no UI-kit dependency.
+
+**Why:** Stronger hierarchy and calmer surfaces make high-frequency planning workflows feel premium without sacrificing legibility, native behavior, accessibility, or the existing Expo architecture.
+
+**Consequence:** Home has one wedding focal surface and four direct actions; Money owns the persistent Add expense action; More uses grouped rows. Compact navigation remains a bottom bar, expanded navigation remains a full-width accessible rail, and modal choice/filter experiences use the shared sheet contract.
 
 ## 2026-08-01: Local-beta activation and Android backup contract
 

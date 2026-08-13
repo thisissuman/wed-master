@@ -29,8 +29,8 @@ Use an Expo development build as the normal local runtime once the application i
 - `src/lib/supabase` validates public environment values and uses SecureStore-backed session persistence; it performs no schema or remote setup.
 - `src/theme/tokens.json` is the shared token source consumed by TypeScript and `tailwind.config.js`.
 - `src/components/ui` contains domain-neutral primitives. The local workspace feature owns planner, money, people, backup, and settings presentation and behavior.
-- The workspace uses one fixed light lavender-and-ivory theme. Root layouts own light system chrome with dark status-bar content, platform-default detail transitions, reduced-motion-aware form modals, and an adaptive four-destination shell: bottom navigation on compact windows and a left material rail at 600dp and above.
-- Home composes feature-owned wedding-summary and budget sections with live code-native content plus optimized decorative assets; Home, Plan, and event detail reuse the feature-owned `TaskCompletionRow` completion contract.
+- The workspace uses a warm ivory-and-lavender semantic base with selective deep-plum night surfaces for navigation and high-information wedding/money summaries; it is not an app-wide dark mode. Root layouts own light system chrome with dark status-bar content, platform-default detail transitions, reduced-motion-aware sheets/modals, and an adaptive four-destination shell: bottom navigation on compact windows and a left material rail at 600dp and above.
+- Home composes feature-owned wedding-summary and budget sections with restrained code-native ornament; its wedding profile includes an optional backup-safe keepsake message rendered by the dependency-free Reanimated focus/flip interaction. Home, Plan, and event detail reuse the feature-owned `TaskCompletionRow` completion contract.
 
 ## Future expansion without premature infrastructure
 

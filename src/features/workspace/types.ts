@@ -17,6 +17,7 @@ export type Wedding = {
   location: string;
   currency: "INR";
   coverPhotoUri?: string;
+  keepsakeMessage?: string;
   guestEstimate?: number;
   budgetTargetPaise?: number;
 };

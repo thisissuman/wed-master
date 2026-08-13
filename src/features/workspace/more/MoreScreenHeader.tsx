@@ -1,8 +1,6 @@
 import { View } from "react-native";
 import type { Href } from "expo-router";
 
-import { MangalyaHeader } from "@/components/brand";
-
 import { DetailHeader } from "../ui";
 
 export function MoreScreenHeader({
@@ -13,8 +11,7 @@ export function MoreScreenHeader({
   title: string;
 }) {
   return (
-    <View className="gap-lg">
-      <MangalyaHeader />
+    <View className="gap-md">
       <DetailHeader fallback={fallback} title={title} />
     </View>
   );

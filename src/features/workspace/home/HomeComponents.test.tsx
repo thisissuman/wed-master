@@ -3,11 +3,7 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { demoWorkspace } from "../seed";
 import { homeBudgetSummary } from "../selectors";
 import { HomeBudgetOverview } from "./HomeBudgetOverview";
-import { WeddingHero, WeddingNameSparkles } from "./WeddingHero";
-
-jest.mock("expo-router", () => ({
-  useFocusEffect: jest.fn(),
-}));
+import { WeddingHero } from "./WeddingHero";
 
 describe("Home components", () => {
   it("shows real hero data, an accessible countdown, and zero-state planning progress", async () => {
@@ -16,6 +12,7 @@ describe("Home components", () => {
         completedTasks={0}
         daysUntilWedding={150}
         isPhotoPending={false}
+        keepsakeMessage="Forever starts in all these little moments."
         name="Asha & Ravi"
         onPhotoPress={jest.fn()}
         totalTasks={0}
@@ -25,19 +22,59 @@ describe("Home components", () => {
 
     expect(screen.getByText("Asha & Ravi")).toBeTruthy();
     expect(screen.getByText("150", { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByText("days", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText("days to go", { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText("Berhampur, Odisha")).toBeNull();
     expect(screen.queryByText("NEXT EVENT")).toBeNull();
-    expect(screen.getByTestId("countdown-halo", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByTestId("wedding-hero").props.colors).toHaveLength(3);
     expect(
       screen.getByRole("progressbar", { name: "Planning progress" }).props.accessibilityValue,
     ).toEqual({ max: 100, min: 0, now: 0, text: "No planning tasks yet, 0% planned" });
     expect(screen.getByLabelText("150 days until the wedding")).toBeTruthy();
-    const sparkles = screen.getByTestId("wedding-title-sparkles", {
-      includeHiddenElements: true,
+    expect(
+      screen.getByRole("button", { name: "Wedding card for Asha & Ravi. Tap the card" }),
+    ).toBeTruthy();
+    expect(screen.queryByText("A little something for the two of you")).toBeNull();
+    expect(screen.queryByText("Open")).toBeNull();
+  });
+
+  it("centres the keepsake card, then flips to the editable message", async () => {
+    const message = "Forever starts in all these little moments.";
+    const screen = await render(
+      <WeddingHero
+        completedTasks={1}
+        daysUntilWedding={14}
+        isPhotoPending={false}
+        keepsakeMessage={message}
+        name="Asha & Ravi"
+        onPhotoPress={jest.fn()}
+        totalTasks={4}
+        weddingDate="2026-12-14"
+      />,
+    );
+
+    const homeCard = screen.getByRole("button", {
+      name: "Wedding card for Asha & Ravi. Tap the card",
     });
-    expect(sparkles.props.accessibilityElementsHidden).toBe(true);
-    expect(sparkles.props.importantForAccessibility).toBe("no-hide-descendants");
+    await fireEvent(homeCard, "layout", {
+      nativeEvent: { layout: { height: 286, width: 379, x: 0, y: 0 } },
+    });
+    await fireEvent.press(homeCard);
+
+    expect(screen.getByTestId("wedding-keepsake-dialog").props.accessibilityViewIsModal).toBe(true);
+    expect(screen.getByTestId("wedding-keepsake-card").props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ height: 286 })]),
+    );
+    expect(screen.getByText("Tap the card")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Flip to our message" })).toBeNull();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Tap the card" }));
+
+    expect(screen.getByText(`“${message}”`)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Wedding message. Tap the card" })).toBeTruthy();
+    await fireEvent.press(
+      screen.getByTestId("wedding-keepsake-backdrop", { includeHiddenElements: true }),
+    );
+    expect(screen.queryByTestId("wedding-keepsake-dialog")).toBeNull();
   });
 
   it("uses explicit wedding-day and past-date states", async () => {
@@ -79,14 +116,6 @@ describe("Home components", () => {
     expect(screen.getByRole("button", { name: "Add wedding cover photo" })).toBeTruthy();
   });
 
-  it("removes decorative title sparkles when Reduce Motion is enabled", async () => {
-    const screen = await render(<WeddingNameSparkles reduceMotion />);
-
-    expect(
-      screen.queryByTestId("wedding-title-sparkles", { includeHiddenElements: true }),
-    ).toBeNull();
-  });
-
   it("shows the actual over-budget percentage and warning", async () => {
     const snapshot = structuredClone(demoWorkspace);
     snapshot.wedding.budgetTargetPaise = 100_000;
@@ -113,6 +142,9 @@ describe("Home components", () => {
     ).toContain("125% of target spent");
     expect(screen.getByText("Target")).toBeTruthy();
     expect(screen.getByText("Spent")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Open Budget & expenses/ }).props.className,
+    ).toContain("shadow-raised");
     expect(screen.queryByText("Review the largest spending categories")).toBeNull();
     expect(
       screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLiveRegion,

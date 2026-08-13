@@ -62,7 +62,7 @@ describe("BudgetOverviewDashboard", () => {
     const screen = await render(<BudgetOverviewScreen />);
 
     expect(screen.getByText("Budget & expenses")).toBeTruthy();
-    expect(screen.queryByText("Budget position")).toBeNull();
+    expect(screen.getByText("Budget position")).toBeTruthy();
     expect(screen.queryByText("Target compared with actual recorded spending")).toBeNull();
     expect(screen.queryByText("Target, spending trends, and category insights.")).toBeNull();
     expect(screen.getByText("Target")).toBeTruthy();
@@ -140,7 +140,6 @@ describe("BudgetOverviewDashboard", () => {
     const screen = await render(<BudgetOverviewScreen />);
 
     expect(screen.getByTestId("budget-summary-layout").props.style.flexDirection).toBe("column");
-    expect(screen.getByTestId("budget-summary-metrics").props.style.flexDirection).toBe("column");
     expect(screen.getByTestId("spending-trend-header").props.style.flexDirection).toBe("column");
     expect(screen.getByTestId("category-breakdown-heading-event").props.style.flexDirection).toBe(
       "column",

@@ -76,7 +76,7 @@ describe("WeddingSettingsDashboard", () => {
     expect(screen.queryByText(demoWorkspace.wedding.name)).toBeNull();
     expect(screen.getByRole("button", { name: "Wedding details" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Wedding details" }).props.accessibilityHint).toBe(
-      "Name, date, city and tradition",
+      "Name, date, tradition and keepsake message",
     );
     expect(screen.queryByText("Currency")).toBeNull();
     expect(screen.queryByText("Event management")).toBeNull();
@@ -119,10 +119,15 @@ describe("WeddingSettingsDashboard", () => {
     );
     expect(screen.getByLabelText("City or location")).toBeTruthy();
     expect(screen.getByLabelText("Wedding style or tradition")).toBeTruthy();
+    expect(screen.getByLabelText("Keepsake message").props.value).toBe(
+      demoWorkspace.wedding.keepsakeMessage,
+    );
     expect(screen.queryByLabelText("Guest estimate")).toBeNull();
     expect(screen.queryByLabelText("Budget target (₹)")).toBeNull();
 
+    const keepsakeMessage = "Hand in hand, through every beautiful chapter.";
     await fireEvent.changeText(screen.getByLabelText("City or location"), "Bhubaneswar");
+    await fireEvent.changeText(screen.getByLabelText("Keepsake message"), keepsakeMessage);
     await fireEvent.press(screen.getByRole("button", { name: "Save settings" }));
 
     await waitFor(() => expect(updateWedding).toHaveBeenCalledTimes(1));
@@ -130,6 +135,7 @@ describe("WeddingSettingsDashboard", () => {
       expect.objectContaining({
         budgetTargetPaise: demoWorkspace.wedding.budgetTargetPaise,
         guestEstimate: demoWorkspace.wedding.guestEstimate,
+        keepsakeMessage,
         location: "Bhubaneswar",
       }),
     );

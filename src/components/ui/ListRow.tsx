@@ -1,9 +1,10 @@
 import { type ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import { tokens } from "@/theme";
 
 import { AppText } from "./AppText";
+import { MotionPressable } from "./MotionPressable";
 
 type ListRowProps = {
   accessory?: ReactNode;
@@ -43,14 +44,15 @@ export function ListRow({
   }
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
       android_ripple={{ color: tokens.colors.surfaceMuted }}
       className="rounded-control active:bg-surfaceMuted"
       onPress={onPress}
+      pressedScale={0.99}
     >
       {content}
-    </Pressable>
+    </MotionPressable>
   );
 }

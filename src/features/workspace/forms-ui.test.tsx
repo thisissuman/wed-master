@@ -1,4 +1,5 @@
 import { act, fireEvent, render, waitFor, within } from "@testing-library/react-native";
+import { router } from "expo-router";
 import { Keyboard, Platform, StyleSheet, type KeyboardEvent } from "react-native";
 
 import { todayDateOnly } from "@/lib/dates";
@@ -15,6 +16,7 @@ jest.mock("expo-router", () => ({
   router: {
     back: jest.fn(),
     canGoBack: jest.fn(() => true),
+    dismissTo: jest.fn(),
     replace: jest.fn(),
   },
   useNavigation: () => ({ addListener: jest.fn(() => jest.fn()), dispatch: jest.fn() }),
@@ -99,6 +101,16 @@ describe("workspace forms", () => {
       "Gift",
       "Advance",
     ]);
+  });
+
+  it("keeps shared task forms functional without decorative marketing copy", async () => {
+    const screen = await render(<TaskForm />);
+
+    expect(screen.getByRole("header", { name: "Add task" })).toBeTruthy();
+    expect(
+      screen.queryByText("Keep every detail on track without making simple tasks feel heavy."),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: "Create task" })).toBeTruthy();
   });
 
   it("opens categories only after a visible Android keyboard finishes closing", async () => {
@@ -231,7 +243,7 @@ describe("workspace forms", () => {
     expect(screen.getByLabelText("Amount").props.value).toBe("");
   });
 
-  it("creates an actual-only expense and moves to optional details", async () => {
+  it("creates an actual-only expense and returns directly to Money", async () => {
     const created: Expense = {
       actualPaise: 12_345,
       categoryId: "category-core-shopping",
@@ -257,14 +269,9 @@ describe("workspace forms", () => {
         title: "Wedding shoes",
       }),
     );
-    expect(await screen.findByLabelText("Expense added")).toBeTruthy();
-    expect(screen.getByTestId("quick-expense-overlay")).toBeTruthy();
-    expect(screen.getByText("Optional details")).toBeTruthy();
-    expect(screen.getByLabelText(/^Expense date:/)).toBeTruthy();
-    expect(screen.getByLabelText("Note")).toBeTruthy();
-    expect(screen.getByText("Attachment or receipt")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Done" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Add another expense" })).toBeTruthy();
+    expect(router.dismissTo).toHaveBeenCalledWith("/budget");
+    expect(screen.queryByLabelText("Expense added")).toBeNull();
+    expect(screen.queryByText("Optional details")).toBeNull();
   });
 
   it("preserves hidden legacy fields while editing visible expense details", async () => {

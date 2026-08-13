@@ -1,16 +1,44 @@
+import { useEffect } from "react";
 import { useWindowDimensions, View, type ColorValue } from "react-native";
 import { Grid2X2, House, IndianRupee, NotebookTabs, type LucideIcon } from "lucide-react-native";
 import { Tabs, usePathname } from "expo-router";
-import { useReducedMotion } from "react-native-reanimated";
+import { PlatformPressable } from "expo-router/build/react-navigation/elements";
+import type { BottomTabBarButtonProps } from "expo-router/build/react-navigation/bottom-tabs";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { motionDurations, tokens } from "@/theme";
+import { motionEasing } from "@/theme/motion";
 import { isRootTabPath, moreTabResetOptions } from "@/lib/navigation";
-import { adaptiveTabBarConfig } from "@/lib/responsive";
+import { adaptiveTabBarConfig, adaptiveTabBarItemStyle } from "@/lib/responsive";
 
 const tabIconSize = tokens.iconSize.md;
 const tabInset = Number.parseInt(tokens.spacing.sm, 10);
 const tabOuterGap = Number.parseInt(tokens.spacing.xs, 10);
 const tabInnerGap = Number.parseInt(tokens.spacing["2xs"], 10);
+
+function AdaptiveTabBarButton({ style, ...props }: BottomTabBarButtonProps) {
+  return (
+    <PlatformPressable
+      {...props}
+      style={[
+        style,
+        {
+          alignSelf: "stretch",
+          flex: 1,
+          minHeight: tokens.touchTarget,
+          minWidth: tokens.touchTarget,
+          paddingHorizontal: 0,
+          width: "100%",
+        },
+      ]}
+    />
+  );
+}
 
 function TabIcon({
   color,
@@ -23,14 +51,30 @@ function TabIcon({
   focused: boolean;
   icon: LucideIcon;
 }) {
+  const focus = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    focus.set(
+      withTiming(focused ? 1 : 0, {
+        duration: motionDurations.tab,
+        easing: motionEasing.enter,
+      }),
+    );
+  }, [focus, focused]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: focus.value,
+    transform: [{ scale: 0.9 + focus.value * 0.1 }],
+  }));
+
   return (
     <View className="h-8 w-14 items-center justify-center">
-      {focused ? (
-        expanded ? (
-          <View className="absolute inset-0 rounded-full bg-primarySoft" />
-        ) : (
-          <View className="absolute -top-sm h-0.5 w-14 rounded-full bg-primary" />
-        )
+      <Animated.View
+        className={`absolute inset-0 rounded-full ${expanded ? "bg-nightSoft" : "bg-primarySoft"}`}
+        style={indicatorStyle}
+      />
+      {expanded && focused ? (
+        <View className="absolute -left-xs h-5 w-0.5 rounded-full bg-nightAccent" />
       ) : null}
       <Icon color={color} size={tabIconSize} strokeWidth={1.9} />
     </View>
@@ -44,10 +88,7 @@ export default function TabLayout() {
   const showTabBar = isRootTabPath(pathname);
   const tabBar = adaptiveTabBarConfig(width);
   const expanded = tabBar.position === "left";
-  const backgroundColor =
-    process.env.EXPO_OS === "android"
-      ? tokens.colors.elevatedSurface
-      : tokens.colors.translucentSurface;
+  const itemLayout = adaptiveTabBarItemStyle(width);
 
   return (
     <Tabs
@@ -55,27 +96,33 @@ export default function TabLayout() {
         animation: reduceMotion ? "none" : "fade",
         headerShown: false,
         sceneStyle: { backgroundColor: tokens.colors.canvas },
-        tabBarActiveTintColor: tokens.colors.primary,
+        tabBarActiveBackgroundColor: "transparent",
+        tabBarActiveTintColor: expanded ? tokens.colors.nightAccent : tokens.colors.primary,
+        tabBarButton: AdaptiveTabBarButton,
         tabBarHideOnKeyboard: true,
-        tabBarInactiveTintColor: tokens.colors.textSecondary,
+        tabBarInactiveBackgroundColor: "transparent",
+        tabBarInactiveTintColor: expanded
+          ? tokens.colors.onNightMuted
+          : tokens.colors.textSecondary,
         tabBarLabelPosition: "below-icon",
         tabBarItemStyle: {
           borderRadius: Number.parseInt(tokens.radius.control, 10),
-          marginHorizontal: expanded ? tabOuterGap : tabInnerGap,
+          marginHorizontal: expanded ? 0 : tabInnerGap,
           marginVertical: expanded ? tabOuterGap : tabInnerGap,
-          minHeight: tokens.touchTarget,
+          ...itemLayout,
         },
         tabBarLabelStyle: {
           fontFamily: tokens.fontFamily.sansMedium,
           fontSize: 11,
+          lineHeight: 14,
         },
         tabBarPosition: tabBar.position,
         tabBarStyle: !showTabBar
           ? { display: "none" }
           : expanded
             ? {
-                backgroundColor,
-                borderColor: tokens.colors.borderSubtle,
+                backgroundColor: tokens.colors.navigationSurface,
+                borderColor: tokens.colors.nightBorder,
                 borderRadius: Number.parseInt(tokens.radius.tab, 10),
                 borderWidth: 1,
                 boxShadow: tokens.elevation.elevated,
@@ -87,7 +134,7 @@ export default function TabLayout() {
                 width: tokens.navigation.railWidth,
               }
             : {
-                backgroundColor,
+                backgroundColor: tokens.colors.surface,
                 borderColor: tokens.colors.borderSubtle,
                 borderRadius: Number.parseInt(tokens.radius.tab, 10),
                 borderTopColor: tokens.colors.borderSubtle,

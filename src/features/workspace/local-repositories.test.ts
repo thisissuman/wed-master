@@ -68,6 +68,28 @@ describe("local repositories", () => {
     );
   });
 
+  it("persists the editable wedding keepsake message", async () => {
+    const values = populatedValues();
+    const storage = {
+      getItem: jest.fn(async (key: string) => values.get(key) ?? null),
+      setItem: jest.fn(async (key: string, value: string) => {
+        values.set(key, value);
+      }),
+    };
+    const repositories = createLocalRepositories(new LocalWorkspaceStore(storage));
+    const wedding = await repositories.wedding.getWedding();
+
+    await repositories.wedding.updateWedding({
+      ...wedding,
+      keepsakeMessage: "The beginning of our forever.",
+    });
+
+    const reloaded = createLocalRepositories(new LocalWorkspaceStore(storage));
+    expect((await reloaded.wedding.getWedding()).keepsakeMessage).toBe(
+      "The beginning of our forever.",
+    );
+  });
+
   it("migrates the legacy key without deleting it", async () => {
     const values = new Map<string, string>([
       [

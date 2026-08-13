@@ -1,13 +1,16 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 import PlanScreen from "@/app/(app)/(tabs)/plan";
 import { demoWorkspace } from "@/features/workspace/seed";
+import { motionDurations } from "@/theme";
 
+import { useCreatedItemHighlight } from "./created-item-highlight";
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 
 let mockSearchParams: Record<string, string | undefined> = {};
+let mockIsFocused = true;
 
 jest.mock("expo-router", () => ({
   router: {
@@ -19,6 +22,7 @@ jest.mock("expo-router", () => ({
       mockSearchParams = { ...mockSearchParams, ...params };
     }),
   },
+  useIsFocused: () => mockIsFocused,
   useLocalSearchParams: () => mockSearchParams,
 }));
 
@@ -43,7 +47,10 @@ const mockMutate = jest.fn();
 describe("PlanScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
+    mockIsFocused = true;
     mockSearchParams = {};
+    useCreatedItemHighlight.setState({ current: undefined });
     mockUseWorkspace.mockReturnValue({
       data: demoWorkspace,
       isError: false,
@@ -53,6 +60,30 @@ describe("PlanScreen", () => {
       isPending: false,
       mutate: mockMutate,
     } as unknown as ReturnType<typeof useWorkspaceMutation>);
+  });
+
+  it("waits for Plan to regain focus before completing the new-task breath", async () => {
+    jest.useFakeTimers();
+    const task = demoWorkspace.tasks[0];
+    useCreatedItemHighlight.getState().mark("task", [task.id]);
+    mockIsFocused = false;
+    mockSearchParams = { view: "tasks" };
+
+    const screen = await render(<PlanScreen />);
+    const completedBreathDuration =
+      motionDurations.fast +
+      (motionDurations.state + motionDurations.press) * 2 +
+      motionDurations.press;
+
+    await act(async () => jest.advanceTimersByTime(completedBreathDuration));
+    expect(useCreatedItemHighlight.getState().current?.ids).toContain(task.id);
+
+    mockIsFocused = true;
+    await screen.rerender(<PlanScreen />);
+    await act(async () => jest.advanceTimersByTime(completedBreathDuration));
+
+    expect(useCreatedItemHighlight.getState().current).toBeUndefined();
+    jest.useRealTimers();
   });
 
   it("starts on events and switches views immediately without route writes", async () => {
@@ -98,14 +129,12 @@ describe("PlanScreen", () => {
     expect(screen.queryByRole("button", { name: "All" })).toBeNull();
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
-    expect(screen.getByRole("button", { name: "Status: All statuses" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Priority: All priorities" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Related event: All events" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Due date: Any due date" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "All statuses" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "All priorities" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "All events" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Any due date" })).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole("button", { name: "Related event: All events" }));
-    expect(screen.queryByText("Choose one option")).toBeNull();
-    await fireEvent.press(await screen.findByRole("radio", { name: "Wedding" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "Wedding" }));
     await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
 
     expect(screen.getByText("Confirm catering menu")).toBeTruthy();
@@ -135,8 +164,7 @@ describe("PlanScreen", () => {
     const screen = await render(<PlanScreen />);
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Status: All statuses" }));
-    await fireEvent.press(await screen.findByRole("radio", { name: "Completed" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "Completed" }));
 
     await waitFor(() => {
       expect(screen.getByText("Book bridal mehendi artist")).toBeTruthy();
@@ -161,8 +189,7 @@ describe("PlanScreen", () => {
     const screen = await render(<PlanScreen />);
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Status: All statuses" }));
-    await fireEvent.press(await screen.findByRole("radio", { name: "Cancelled" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "Cancelled" }));
     await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
 
     expect(await screen.findByText("No matching tasks")).toBeTruthy();

@@ -13,7 +13,6 @@ import {
   Screen,
   TextField,
 } from "@/components/ui";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { toUserMessage } from "@/lib/errors";
 
 import { pickWeddingCoverPhoto, removeWeddingCoverPhoto } from "../files/workspace-files";
@@ -31,7 +30,6 @@ const setupCoverErrorMessage = (error: unknown) =>
 
 export function LocalSetupScreen() {
   const mutation = useCreateWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
   const pendingCoverPhotoRef = useRef<string | undefined>(undefined);
   const submissionInFlightRef = useRef(false);
   const [coverPhotoUri, setCoverPhotoUri] = useState<string>();
@@ -87,7 +85,6 @@ export function LocalSetupScreen() {
       submissionInFlightRef.current = false;
     }
     pendingCoverPhotoRef.current = undefined;
-    showFeedback({ message: "Private workspace created" });
     router.replace("/(app)/(tabs)");
   };
   const save = () => void handleSubmit(saveValues)();

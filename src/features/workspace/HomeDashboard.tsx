@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Alert, Linking, ScrollView, useWindowDimensions, View } from "react-native";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import {
@@ -9,7 +7,6 @@ import {
   CircleCheckBig,
   CheckSquare2,
   ChevronRight,
-  Plus,
   ReceiptIndianRupee,
   UserPlus,
   type LucideIcon,
@@ -36,12 +33,8 @@ import { homeBudgetSummary, selectHomeNextActions, taskProgress } from "./select
 import { TaskCompletionRow } from "./TaskCompletionRow";
 import type { Task } from "./types";
 
-const homeArtworkHeight = 380;
-const homeArtworkFadeHeight = 180;
-const homeArtworkFadeColors = [tokens.gradients.screenTopFade[2], tokens.colors.canvas] as const;
-const homeArtworkSource = require("../../../assets/images/mangalya/home-hearts-glow-v2.jpg");
-
 type HomeAddRoute = "/events/new" | "/expenses/new" | "/more/guests/new" | "/tasks/new";
+const keepsakeBackgroundBlur = Number.parseInt(tokens.spacing.xs, 10);
 
 const homeQuickActions: { icon: LucideIcon; label: string; route: HomeAddRoute }[] = [
   { icon: CheckSquare2, label: "Add task", route: "/tasks/new" },
@@ -59,39 +52,6 @@ const localCoverErrorMessage = (error: unknown) => {
   }
   return toUserMessage(error);
 };
-
-function HomeBackdrop() {
-  return (
-    <View
-      accessibilityElementsHidden
-      className="absolute inset-0"
-      importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-    >
-      <Image
-        accessible={false}
-        contentFit="cover"
-        contentPosition="top"
-        pointerEvents="none"
-        source={homeArtworkSource}
-        style={{ height: homeArtworkHeight, left: 0, position: "absolute", right: 0, top: 0 }}
-        testID="home-hearts-background"
-      />
-      <LinearGradient
-        colors={homeArtworkFadeColors}
-        end={{ x: 0.5, y: 1 }}
-        start={{ x: 0.5, y: 0 }}
-        style={{
-          height: homeArtworkFadeHeight,
-          left: 0,
-          position: "absolute",
-          right: 0,
-          top: homeArtworkHeight - homeArtworkFadeHeight,
-        }}
-      />
-    </View>
-  );
-}
 
 function HomeSectionHeader({
   actionLabel,
@@ -140,11 +100,11 @@ function QuickAction({
       accessibilityLabel={label}
       accessibilityRole="button"
       android_ripple={{ color: tokens.colors.primarySoft }}
-      className="min-h-24 min-w-0 flex-1 items-center justify-center gap-xs rounded-card border border-borderSubtle bg-translucentSurface px-2xs py-sm shadow-card active:bg-primarySoft"
+      className="min-h-20 min-w-0 flex-1 items-center justify-center gap-xs rounded-card bg-surfaceMuted px-2xs py-sm active:bg-primarySoft"
       onPress={onPress}
       pressedScale={0.98}
     >
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-primarySoft">
+      <View className="h-9 w-9 items-center justify-center rounded-control bg-elevatedSurface">
         <Icon color={tokens.colors.primary} size={tokens.iconSize.md} strokeWidth={1.7} />
       </View>
       <AppText className="text-center" numberOfLines={2} variant="caption">
@@ -158,6 +118,7 @@ export function HomeDashboard() {
   const { fontScale } = useWindowDimensions();
   const [today] = useState(() => todayDateOnly());
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
+  const [keepsakeFocused, setKeepsakeFocused] = useState(false);
   const workspace = useWorkspace();
   const taskMutation = useWorkspaceMutation();
   const photoMutation = useWorkspaceMutation();
@@ -276,13 +237,10 @@ export function HomeDashboard() {
 
   return (
     <Screen>
-      <HomeBackdrop />
       <ScrollView
-        contentContainerClassName="gap-lg px-md pt-xs"
-        contentContainerStyle={{
-          paddingBottom: tokens.touchTarget + Number.parseInt(tokens.spacing["4xl"], 10),
-        }}
+        contentContainerClassName="gap-xl px-md pb-2xl pt-xs"
         showsVerticalScrollIndicator={false}
+        style={keepsakeFocused ? { filter: [{ blur: keepsakeBackgroundBlur }] } : undefined}
         testID="home-scroll-view"
       >
         <MangalyaHeader />
@@ -291,7 +249,9 @@ export function HomeDashboard() {
           coverPhotoUri={data.wedding.coverPhotoUri}
           daysUntilWedding={daysUntilDateOnly(data.wedding.date, today)}
           isPhotoPending={isPickingPhoto || photoMutation.isPending}
+          keepsakeMessage={data.wedding.keepsakeMessage}
           name={data.wedding.name}
+          onKeepsakeFocusChange={setKeepsakeFocused}
           onPhotoPress={() => void handleCoverPhotoPress()}
           totalTasks={progress.total}
           weddingDate={data.wedding.date}
@@ -369,22 +329,6 @@ export function HomeDashboard() {
           </View>
         </View>
       </ScrollView>
-      <View className="absolute bottom-lg right-md">
-        <MotionPressable
-          accessibilityHint="Opens the quick expense form"
-          accessibilityLabel="Add expense"
-          accessibilityRole="button"
-          android_ripple={{ color: tokens.colors.primarySoft, radius: 28 }}
-          className="h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-primary bg-primary shadow-elevated active:opacity-90"
-          onPress={() => {
-            void Haptics.selectionAsync();
-            router.navigate("/expenses/new");
-          }}
-          pressedScale={0.96}
-        >
-          <Plus color={tokens.colors.onPrimary} size={tokens.iconSize.lg} strokeWidth={2.2} />
-        </MotionPressable>
-      </View>
     </Screen>
   );
 }

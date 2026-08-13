@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AccessibilityInfo, ActivityIndicator, Pressable, View } from "react-native";
-import Animated, { FadeInDown, FadeOutDown, useReducedMotion } from "react-native-reanimated";
+import Animated, { FadeInUp, FadeOutDown, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppText } from "@/components/ui";
@@ -44,12 +44,12 @@ export function FeedbackHost() {
     >
       <Animated.View
         accessibilityLiveRegion="polite"
-        className="max-w-[420px] flex-row items-center gap-sm rounded-control bg-primary px-md py-xs shadow-floating"
-        entering={reduceMotion ? undefined : FadeInDown.duration(180)}
+        className="max-w-[420px] flex-row items-center gap-sm rounded-control bg-nightSurface px-md py-xs shadow-floating"
+        entering={reduceMotion ? undefined : FadeInUp.duration(180)}
         exiting={reduceMotion ? undefined : FadeOutDown.duration(140)}
       >
         <View accessible accessibilityRole="alert" className="min-w-0 flex-1">
-          <AppText numberOfLines={2} tone="onPrimary" variant="label">
+          <AppText numberOfLines={2} tone="onNight" variant="label">
             {current.message}
           </AppText>
         </View>
@@ -58,7 +58,7 @@ export function FeedbackHost() {
             accessibilityLabel={current.actionLabel}
             accessibilityRole="button"
             accessibilityState={{ busy: actionPending, disabled: actionPending }}
-            className="min-h-12 min-w-12 items-center justify-center rounded-control px-xs active:bg-translucentBorder"
+            className="min-h-12 min-w-12 items-center justify-center rounded-control px-xs active:bg-nightSoft"
             disabled={actionPending}
             onPress={() => {
               setPendingNoticeId(current.id);
@@ -68,9 +68,9 @@ export function FeedbackHost() {
             }}
           >
             {actionPending ? (
-              <ActivityIndicator color={tokens.colors.onPrimary} />
+              <ActivityIndicator color={tokens.colors.onNight} />
             ) : (
-              <AppText tone="onPrimary" variant="label">
+              <AppText tone="nightAccent" variant="label">
                 {current.actionLabel}
               </AppText>
             )}

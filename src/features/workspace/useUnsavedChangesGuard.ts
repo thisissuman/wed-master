@@ -85,5 +85,10 @@ export function useUnsavedChangesGuard({ isDirty, isSubmitting }: UnsavedChanges
     router.replace(href);
   }, []);
 
-  return { exitAfterSave, exitAfterSaveTo, requestExit, requestExitTo };
+  const exitAfterSaveDismissTo = useCallback((href: Href) => {
+    allowNextNavigation.current = true;
+    router.dismissTo(href);
+  }, []);
+
+  return { exitAfterSave, exitAfterSaveDismissTo, exitAfterSaveTo, requestExit, requestExitTo };
 }

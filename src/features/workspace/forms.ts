@@ -9,6 +9,7 @@ import {
   taskPriorities,
   taskStatuses,
 } from "./types";
+import { keepsakeMessageMaxLength } from "./wedding-profile";
 
 const optionalDate = z
   .string()
@@ -130,6 +131,10 @@ export const settingsFormSchema = z.object({
   date: requiredDate,
   location: z.string().trim().min(1, "City or location is required."),
   type: z.string().trim().min(1, "Wedding style or tradition is required."),
+  keepsakeMessage: optionalText.max(
+    keepsakeMessageMaxLength,
+    `Keep the message under ${keepsakeMessageMaxLength} characters.`,
+  ),
 });
 export type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 

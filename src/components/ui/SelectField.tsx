@@ -1,17 +1,18 @@
 import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
-import { Check, ChevronDown, X } from "lucide-react-native";
-import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { Check, ChevronDown, Search } from "lucide-react-native";
+import { type ComponentRef, useEffect, useMemo, useRef, useState } from "react";
+import { AccessibilityInfo, findNodeHandle, Pressable, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { tokens } from "@/theme";
-import { exitTransition, motionTiming, sheetEnteringTransition } from "@/theme/motion";
+import { motionTiming } from "@/theme/motion";
 
+import { AppBottomSheet } from "./AppBottomSheet";
 import { AppText } from "./AppText";
 import { FieldLabel } from "./FieldLabel";
-import { IconButton } from "./IconButton";
 import { MotionPressable } from "./MotionPressable";
+import { TextField } from "./TextField";
 
 type OptionTone = "danger" | "muted" | "primary" | "success" | "warning";
 
@@ -34,6 +35,7 @@ type SelectFieldProps = {
   options: SelectOption[];
   placeholder?: string;
   required?: boolean;
+  searchable?: boolean;
   value: string;
 };
 
@@ -56,19 +58,45 @@ export function SelectField({
   options,
   placeholder = "Select an option",
   required,
+  searchable,
   value,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const triggerRef = useRef<ComponentRef<typeof Pressable>>(null);
   const rotation = useSharedValue(0);
   const selected = options.find((option) => option.value === value);
   const SelectedIcon = selected?.icon ?? Icon;
+  const searchEnabled = searchable ?? options.length > 8;
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const filteredOptions = useMemo(
+    () =>
+      normalizedQuery
+        ? options.filter((option) =>
+            `${option.label} ${option.description ?? ""}`
+              .toLocaleLowerCase()
+              .includes(normalizedQuery),
+          )
+        : options,
+    [normalizedQuery, options],
+  );
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
-  const setSheetOpen = (next: boolean) => {
-    rotation.set(withTiming(next ? 180 : 0, motionTiming.state));
-    setOpen(next);
+  useEffect(() => {
+    rotation.set(withTiming(open ? 180 : 0, motionTiming.state));
+  }, [open, rotation]);
+
+  const restoreTriggerFocus = () => {
+    const reactTag = findNodeHandle(triggerRef.current);
+    if (reactTag) AccessibilityInfo.setAccessibilityFocus(reactTag);
+  };
+
+  const closeSheet = () => {
+    setOpen(false);
+    setQuery("");
+    restoreTriggerFocus();
   };
 
   return (
@@ -79,20 +107,23 @@ export function SelectField({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         android_ripple={{ color: tokens.colors.surfaceMuted }}
-        className={`min-h-12 flex-row items-center rounded-control border bg-elevatedSurface active:opacity-80 ${
+        className={`min-h-14 flex-row items-center overflow-hidden rounded-control border bg-elevatedSurface ${
           error ? "border-danger" : open ? "border-primary bg-primarySoft" : "border-borderStrong"
         }`}
-        onPress={() => setSheetOpen(!open)}
+        onPress={() => setOpen(true)}
+        ref={triggerRef}
       >
         {SelectedIcon ? (
-          <View className="min-w-12 items-center justify-center">
+          <View className="min-h-14 min-w-14 items-center justify-center">
             <SelectedIcon
               color={
                 selected?.tone
                   ? toneColors[selected.tone]
                   : error
                     ? tokens.colors.danger
-                    : tokens.colors.textSecondary
+                    : open
+                      ? tokens.colors.primary
+                      : tokens.colors.textSecondary
               }
               size={tokens.iconSize.md}
             />
@@ -109,7 +140,7 @@ export function SelectField({
           ) : null}
         </View>
         <Animated.View style={chevronStyle}>
-          <View className="min-h-12 min-w-12 items-center justify-center">
+          <View className="min-h-14 min-w-14 items-center justify-center">
             <ChevronDown color={tokens.colors.textSecondary} size={tokens.iconSize.md} />
           </View>
         </Animated.View>
@@ -123,99 +154,89 @@ export function SelectField({
           {error ?? helperText}
         </AppText>
       ) : null}
-      {open ? (
-        <Animated.View
-          entering={sheetEnteringTransition}
-          exiting={exitTransition}
-          className={`${compact ? "max-h-64" : "max-h-80"} overflow-hidden rounded-sheet border border-borderStrong bg-elevatedSurface shadow-elevated`}
+
+      <AppBottomSheet
+        closeLabel={`Close ${label.toLowerCase()} options`}
+        description={compact ? undefined : "Choose one option"}
+        onClose={closeSheet}
+        title={label}
+        visible={open}
+      >
+        {searchEnabled ? (
+          <TextField
+            autoCapitalize="none"
+            autoCorrect={false}
+            icon={Search}
+            label="Search options"
+            onChangeText={setQuery}
+            placeholder={`Search ${label.toLowerCase()}`}
+            value={query}
+          />
+        ) : null}
+        <View
+          accessibilityLabel={`${label} options`}
+          accessibilityRole="radiogroup"
+          className="gap-2xs"
         >
-          {compact ? null : (
-            <View className="flex-row items-center gap-sm border-b border-borderSubtle px-md py-xs">
-              <View className="min-w-0 flex-1">
-                <AppText tone="primary" variant="label">
-                  {label}
-                </AppText>
-                <AppText tone="muted" variant="caption">
-                  Choose one option
-                </AppText>
-              </View>
-              <IconButton
-                accessibilityLabel="Close options"
-                icon={X}
-                onPress={() => setSheetOpen(false)}
-                variant="subtle"
-              />
+          {filteredOptions.length ? (
+            filteredOptions.map((option) => {
+              const optionSelected = option.value === value;
+              const OptionIcon = option.icon;
+              return (
+                <MotionPressable
+                  accessibilityLabel={option.label}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: optionSelected }}
+                  android_ripple={{ color: tokens.colors.primarySoft }}
+                  className={`${compact ? "min-h-12" : "min-h-14"} flex-row items-center gap-sm rounded-control px-md py-xs ${
+                    optionSelected ? "bg-primarySoft" : "bg-elevatedSurface active:bg-surfaceMuted"
+                  }`}
+                  key={option.value}
+                  onPress={() => {
+                    onChange(option.value);
+                    void Haptics.selectionAsync();
+                    closeSheet();
+                  }}
+                  pressedScale={0.985}
+                >
+                  {OptionIcon ? (
+                    <View className="h-10 w-10 items-center justify-center rounded-control bg-surfaceMuted">
+                      <OptionIcon
+                        color={option.tone ? toneColors[option.tone] : tokens.colors.primary}
+                        size={tokens.iconSize.md}
+                      />
+                    </View>
+                  ) : option.tone ? (
+                    <View
+                      className="h-sm w-sm rounded-full"
+                      style={{ backgroundColor: toneColors[option.tone] }}
+                    />
+                  ) : null}
+                  <View className="min-w-0 flex-1 gap-2xs">
+                    <AppText tone={optionSelected ? "primary" : option.tone} variant="label">
+                      {option.label}
+                    </AppText>
+                    {option.description ? (
+                      <AppText tone="muted" variant="caption">
+                        {option.description}
+                      </AppText>
+                    ) : null}
+                  </View>
+                  {optionSelected ? (
+                    <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
+                      <Check color={tokens.colors.onPrimary} size={tokens.iconSize.sm} />
+                    </View>
+                  ) : null}
+                </MotionPressable>
+              );
+            })
+          ) : (
+            <View className="min-h-24 items-center justify-center p-lg">
+              <AppText tone="muted">No matching options.</AppText>
             </View>
           )}
-          <ScrollView
-            accessibilityLabel={`${label} options`}
-            accessibilityRole="radiogroup"
-            contentContainerClassName={compact ? "p-xs" : "gap-2xs p-xs"}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-          >
-            {options.length ? (
-              options.map((option) => {
-                const optionSelected = option.value === value;
-                const OptionIcon = option.icon;
-                return (
-                  <MotionPressable
-                    accessibilityLabel={option.label}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: optionSelected }}
-                    android_ripple={{ color: tokens.colors.primarySoft }}
-                    className={`${compact ? "min-h-12" : "min-h-14"} flex-row items-center gap-sm rounded-control border px-md py-xs ${
-                      optionSelected
-                        ? "border-primary bg-primarySoft"
-                        : "border-transparent bg-elevatedSurface active:bg-surfaceMuted"
-                    }`}
-                    key={option.value}
-                    onPress={() => {
-                      onChange(option.value);
-                      void Haptics.selectionAsync();
-                      setSheetOpen(false);
-                    }}
-                  >
-                    {OptionIcon ? (
-                      <View className="h-10 w-10 items-center justify-center rounded-control bg-surfaceMuted">
-                        <OptionIcon
-                          color={option.tone ? toneColors[option.tone] : tokens.colors.primary}
-                          size={tokens.iconSize.md}
-                        />
-                      </View>
-                    ) : option.tone ? (
-                      <View
-                        className="h-sm w-sm rounded-full"
-                        style={{ backgroundColor: toneColors[option.tone] }}
-                      />
-                    ) : null}
-                    <View className="min-w-0 flex-1 gap-2xs">
-                      <AppText tone={optionSelected ? "primary" : option.tone} variant="label">
-                        {option.label}
-                      </AppText>
-                      {option.description ? (
-                        <AppText tone="muted" variant="caption">
-                          {option.description}
-                        </AppText>
-                      ) : null}
-                    </View>
-                    {optionSelected ? (
-                      <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-                        <Check color={tokens.colors.onPrimary} size={tokens.iconSize.sm} />
-                      </View>
-                    ) : null}
-                  </MotionPressable>
-                );
-              })
-            ) : (
-              <View className="items-center p-xl">
-                <AppText tone="muted">No options available.</AppText>
-              </View>
-            )}
-          </ScrollView>
-        </Animated.View>
-      ) : null}
+        </View>
+      </AppBottomSheet>
     </View>
   );
 }

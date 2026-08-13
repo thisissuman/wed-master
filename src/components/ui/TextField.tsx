@@ -41,13 +41,13 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     <View className="gap-2xs">
       <FieldLabel label={label} optional={optional} required={required} />
       <View
-        className={`${multiline ? "min-h-28 items-start" : "min-h-12 items-center"} flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
+        className={`${multiline ? "min-h-28 items-start" : "min-h-14 items-center"} flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
           error ? "border-danger" : focused ? "border-primary" : "border-borderStrong"
         }`}
-        style={focused && !error ? { boxShadow: tokens.elevation.card } : undefined}
+        style={focused && !error ? { boxShadow: tokens.elevation.focus } : undefined}
       >
         {Icon ? (
-          <View className={`${multiline ? "pt-sm" : ""} min-w-12 items-center justify-center`}>
+          <View className={`${multiline ? "pt-sm" : ""} min-w-14 items-center justify-center`}>
             <Icon
               color={
                 error
@@ -64,7 +64,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           ref={ref}
           accessibilityHint={error ?? helperText}
           accessibilityLabel={label}
-          className={`${multiline ? "min-h-28 py-sm" : "min-h-12"} flex-1 text-body text-textPrimary ${
+          className={`${multiline ? "min-h-28 py-sm" : "min-h-14"} flex-1 text-body text-textPrimary ${
             Icon ? "pr-md" : "px-md"
           } ${className}`}
           multiline={multiline}

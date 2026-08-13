@@ -8,6 +8,7 @@ import {
   AppText,
   Button,
   ConfirmationDialog,
+  CreatedItemPulse,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -18,6 +19,7 @@ import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { tokens } from "@/theme";
 
 import { useWorkspace, useWorkspaceMutation } from "../provider";
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import type { EmergencyContact } from "../types";
 import { openContactLink } from "./contact-links";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
@@ -99,6 +101,8 @@ export function EmergencyContactsDashboard() {
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
   const showFeedback = useFeedbackStore((state) => state.show);
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
   const [deleteContact, setDeleteContact] = useState<EmergencyContact>();
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError)
@@ -139,11 +143,20 @@ export function EmergencyContactsDashboard() {
         }
         ListHeaderComponent={header}
         renderItem={({ item }) => (
-          <ContactCard
-            contact={item}
-            disabled={mutation.isPending}
-            onDelete={() => setDeleteContact(item)}
-          />
+          <CreatedItemPulse
+            active={Boolean(
+              createdHighlight?.kind === "contact" && createdHighlight.ids.includes(item.id),
+            )}
+            onFinished={() => {
+              if (createdHighlight) clearCreatedHighlight(createdHighlight.nonce);
+            }}
+          >
+            <ContactCard
+              contact={item}
+              disabled={mutation.isPending}
+              onDelete={() => setDeleteContact(item)}
+            />
+          </CreatedItemPulse>
         )}
         showsVerticalScrollIndicator={false}
       />

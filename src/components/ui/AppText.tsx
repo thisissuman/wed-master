@@ -17,7 +17,17 @@ type AppTextVariant =
   | "title"
   | "wordmark";
 type AppTextTone =
-  "accent" | "danger" | "muted" | "onPrimary" | "primary" | "secondary" | "success" | "warning";
+  | "accent"
+  | "danger"
+  | "muted"
+  | "nightAccent"
+  | "onNight"
+  | "onNightMuted"
+  | "onPrimary"
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning";
 
 const variantClassNames: Record<AppTextVariant, string> = {
   body: "text-body text-textPrimary",
@@ -39,13 +49,13 @@ const variantFontFamilies: Record<AppTextVariant, string> = {
   caption: tokens.fontFamily.sansRegular,
   countdown: tokens.fontFamily.serifMedium,
   display: tokens.fontFamily.sansBold,
-  formTitle: tokens.fontFamily.serifSemibold,
+  formTitle: tokens.fontFamily.sansBold,
   heading: tokens.fontFamily.sansSemibold,
   hero: tokens.fontFamily.serifSemibold,
   heroCompact: tokens.fontFamily.serifSemibold,
   label: tokens.fontFamily.sansSemibold,
   metadata: tokens.fontFamily.sansMedium,
-  title: tokens.fontFamily.serifSemibold,
+  title: tokens.fontFamily.sansSemibold,
   wordmark: tokens.fontFamily.serifSemibold,
 };
 
@@ -53,6 +63,9 @@ const toneColors: Record<AppTextTone, string> = {
   accent: tokens.colors.accent,
   danger: tokens.colors.danger,
   muted: tokens.colors.textSecondary,
+  nightAccent: tokens.colors.nightAccent,
+  onNight: tokens.colors.onNight,
+  onNightMuted: tokens.colors.onNightMuted,
   onPrimary: tokens.colors.onPrimary,
   primary: tokens.colors.primary,
   secondary: tokens.colors.secondary,

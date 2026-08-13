@@ -9,17 +9,19 @@ type IconButtonProps = Omit<PressableProps, "children" | "style"> & {
   icon: LucideIcon;
   size?: keyof typeof tokens.iconSize;
   style?: StyleProp<ViewStyle>;
-  variant?: "default" | "primary" | "subtle";
+  variant?: "default" | "night" | "primary" | "subtle";
 };
 
 const backgroundClassByVariant = {
   default: "bg-transparent",
+  night: "bg-nightSoft",
   primary: "bg-primary",
   subtle: "bg-surfaceMuted",
 } as const;
 
 const iconColorByVariant = {
   default: tokens.colors.textPrimary,
+  night: tokens.colors.nightAccent,
   primary: tokens.colors.onPrimary,
   subtle: tokens.colors.primary,
 } as const;

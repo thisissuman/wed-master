@@ -8,11 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { AppText, DateField, MotionPressable, Screen, TextField, TimeField } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { tokens } from "@/theme";
 
+import { useCreatedItemHighlight } from "./created-item-highlight";
 import { eventFormSchema, type EventFormValues } from "./forms";
-import { useWorkspaceMutation } from "./provider";
+import { useWorkspace, useWorkspaceMutation } from "./provider";
 import { eventColorKeys, type EventColorKey, type WeddingEvent } from "./types";
 import { FormShell } from "./ui";
 import { useUnsavedChangesGuard } from "./useUnsavedChangesGuard";
@@ -84,8 +84,9 @@ function EventColorField({
 }
 
 export function EventForm({ event }: { event?: WeddingEvent }) {
+  const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const locationInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
   const {
@@ -121,7 +122,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
   });
 
   const saveValues = async (values: EventFormValues) => {
-    await mutation.mutateAsync((repositories) =>
+    const snapshot = await mutation.mutateAsync((repositories) =>
       event
         ? repositories.events.updateEvent({
             ...event,
@@ -142,8 +143,11 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
             requiredItems: [],
           }),
     );
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showFeedback({ message: event ? "Event updated" : "Event created" });
+    if (!event) {
+      const existingIds = new Set(workspace.data?.events.map((item) => item.id) ?? []);
+      const created = snapshot.events.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("event", [created.id]);
+    }
     exitAfterSave();
   };
 
@@ -198,7 +202,6 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
   return (
     <Screen>
       <FormShell
-        description="Shape a celebration around the details your family chooses."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={cancel}
         onSubmit={save}

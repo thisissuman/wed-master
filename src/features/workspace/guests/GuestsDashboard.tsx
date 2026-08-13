@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   AppText,
+  CreatedItemPulse,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -29,6 +30,7 @@ import { shouldStackCompactControls } from "@/lib/responsive";
 import { tokens } from "@/theme";
 
 import { useWorkspace } from "../provider";
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import { filterHouseholds, householdGuestCount, householdSummary } from "../selectors";
 import type { Household, HouseholdSide } from "../types";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
@@ -187,6 +189,8 @@ export function GuestsDashboard() {
   const { fontScale, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const workspace = useWorkspace();
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const stackCompactControls = shouldStackCompactControls(width, fontScale);
@@ -263,7 +267,18 @@ export function GuestsDashboard() {
           />
         }
         ListHeaderComponent={header}
-        renderItem={({ item }) => <HouseholdCard household={item} />}
+        renderItem={({ item }) => (
+          <CreatedItemPulse
+            active={Boolean(
+              createdHighlight?.kind === "household" && createdHighlight.ids.includes(item.id),
+            )}
+            onFinished={() => {
+              if (createdHighlight) clearCreatedHighlight(createdHighlight.nonce);
+            }}
+          >
+            <HouseholdCard household={item} />
+          </CreatedItemPulse>
+        )}
         showsVerticalScrollIndicator={false}
       />
       <View className="absolute right-md" style={{ bottom: insets.bottom + fabInset }}>

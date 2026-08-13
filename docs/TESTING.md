@@ -6,7 +6,7 @@ Test behavior that can cost users time, money, privacy, or trust. Do not optimis
 
 - Money parsing/INR formatting, date-only defaults/countdowns, title-suggestion ranking, newest-expense ordering, target/spent/pending selectors, highest-first category grouping, date-range daily aggregation, bounded trend sampling, and event/task progress.
 - Strict workspace validation; v1/v2/v3-to-v4 migration; starter-event deduplication/date offsets; household RSVP derivation; historical-field preservation; backup envelopes/size limits; serialized writes; persist-first failures; corruption recovery; deletion tombstones; and local file cleanup.
-- Positive paise validation; mandatory seven-category quick capture; duplicate-tap protection; exact created-expense hand-off; optional-details retry/cleanup; hidden legacy-field preservation; dirty-form navigation guards; keyboard metadata; and accessible feedback/undo.
+- Positive paise validation; mandatory seven-category quick capture; duplicate-tap protection; direct created-expense return to Money; date grouping; hidden legacy-field preservation; dirty-form navigation guards; keyboard metadata; and destructive Undo.
 - Tab visibility/selection, duplicate-safe navigation, deep-link fallbacks, loading/error/empty states, filters, and key accessibility semantics.
 - Fresh-install empty-workspace routing, variant identifiers/schemes, Android backup and image-picker permission configuration, one-action empty states, invalid-household recovery, two-line task titles, compact/expanded navigation, and large-text guest/backup layouts.
 - A deterministic schema-valid fixture covers 1,000 guests, 500 tasks, and 500 expenses without becoming production seed data.
@@ -100,6 +100,41 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
   produced until the current test findings are batched, unless a newly found native defect makes
   further testing unsafe or invalid.
 
+### 2026-08-13 redesigned development-client acceptance
+
+- The redesigned source was loaded through Metro in the already-installed
+  `com.suman.mangalya.development` client. No intermediate APK was built. Home, Plan, Money, More,
+  quick expense, and the category selector were inspected at the emulator's 411dp portrait width.
+- The category selector and quick-expense sheet retain labelled close actions, backdrop/Android
+  Back handling, and large touch targets. Non-draggable handles and non-navigational category
+  chevrons were removed after the live visual pass exposed those misleading affordances.
+- At 1.3× and 2.0× text, Home recomposes its hero and quick actions, More rows grow and remain
+  scrollable, and the bottom navigation remains readable without horizontal clipping.
+- At 914dp landscape width, the expanded rail now renders complete icons, labels, and the active
+  marker. UIAutomator measured every root target at 151×168–169 physical pixels on the 420-dpi
+  emulator, approximately 57.5×64dp, above the 48dp minimum. Home and Plan both rendered and rail
+  navigation succeeded after a clean development-client relaunch.
+- One Fabric prop-update assertion occurred while rotation, package switching, and Fast Refresh
+  overlapped. It did not reproduce after restarting only the development process; subsequent clean
+  launches, reloads, navigation, and the final process log contained no fatal Android or unhandled
+  JavaScript error. The final signed APK still needs the same landscape and physical-device pass.
+
+### 2026-08-13 focused interaction refinement
+
+- The second-pass source stayed in the existing development client; no APK was built. TypeScript,
+  Expo lint, formatting/diff checks, all 41 Jest suites/213 tests, semantic night/navigation
+  contrast tests, and the Impeccable changed-screen detector passed.
+- The emulator visually confirmed compact date-grouped Money rows, title-over-category hierarchy,
+  the responsive More tool grid with dark icon wells, the lighter navigation shell, and functional
+  form headers without promotional copy or decorative flourishes.
+- A temporary local ₹1 `CodexFlow` expense was added through the live quick-entry route. It returned
+  directly to Money, appeared first under `13 Aug 2026`, and exposed no toast or intermediate
+  Done/optional-details page. This test record remains only in the development package's local
+  emulator data and is not part of repository seed data or the signed preview app.
+- Newly created expense, task, event, household, gift, and contact rows use one transform/opacity
+  pulse and skip it under Reduce Motion. Passive success snackbars were removed; deletion Undo was
+  retained. A signed preview still requires one final batched build after all source work is done.
+
 Tracked Android journeys live under `.maestro/` and target `com.suman.mangalya.development`:
 
 ```bash
@@ -113,7 +148,8 @@ The suite covers fresh setup, event/task completion, expense capture, invalid ho
 - Fresh setup, existing v4 workspace, v1/v2/v3 migration, malformed storage, recovery-copy export, valid/invalid import, demo reset, and typed full deletion.
 - All four roots plus every create/edit/detail/delete flow; rapid taps; header, gesture, and Android hardware/predictive back.
 - Keyboard focus/next/done behavior, date/time pickers, attachment denial/cancel/oversize/missing-file handling, and share-sheet availability.
-- 360dp Android, a larger phone/tablet, landscape, largest font size, reduced motion/title sparkles, and TalkBack.
+- 360dp Android, a larger phone/tablet, compact-height landscape, 600/840dp expanded widths, largest font size, reduced motion, selective night-surface contrast, and TalkBack.
+- Bottom-sheet selectors: backdrop, close action, Android Back, keyboard resizing, trigger-focus restoration, long-list search, short-list selection, and expanded centred-panel layout.
 - Rapid expense taps, title/category reuse, keyboard amount focus, attachment cancel/failure/retry, Budget category filtering, and Tasks/Events switching under the large-list stress fixture. Preview-build targets are cold start ≤2.5s, task persistence p95 ≤150ms, expense save p95 ≤300ms, and no sustained scrolling below 55 FPS.
 - Upgrade install, background/termination during form entry and save, release signing, and offline launch.
 

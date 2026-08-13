@@ -34,13 +34,6 @@ const spacingXs = Number.parseInt(tokens.spacing.xs, 10);
 const spacingSm = Number.parseInt(tokens.spacing.sm, 10);
 
 const styles = StyleSheet.create({
-  accentRail: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    top: 0,
-    width: spacing2xs,
-  },
   badgeContainer: {
     alignItems: "center",
     flexShrink: 0,
@@ -249,20 +242,13 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
       layout={stateLayoutTransition}
     >
       <View
-        className={`relative flex-row items-stretch overflow-hidden rounded-card border shadow-card ${
+        className={`relative flex-row items-stretch overflow-hidden rounded-card border ${
           variant === "compact"
-            ? "border-translucentBorder bg-translucentSurface"
+            ? "border-transparent bg-surfaceMuted"
             : "border-borderSubtle bg-elevatedSurface"
         }`}
         style={styles.card}
       >
-        <View
-          accessibilityElementsHidden
-          className="bg-primary"
-          importantForAccessibility="no-hide-descendants"
-          pointerEvents="none"
-          style={styles.accentRail}
-        />
         <Pressable
           accessibilityLabel={`${completed ? "Reopen" : "Mark complete"}: ${task.title}`}
           accessibilityRole="checkbox"
@@ -283,7 +269,7 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
               </View>
             </Animated.View>
             <Animated.View style={[{ position: "absolute" }, completedIconStyle]}>
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary shadow-card">
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
                 <Check
                   color={tokens.colors.onPrimary}
                   size={tokens.iconSize.sm}
@@ -299,7 +285,7 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
           pointerEvents="none"
           style={styles.iconColumn}
         >
-          <View className="h-12 w-12 items-center justify-center rounded-control border border-translucentBorder bg-primarySoft shadow-card">
+          <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
             <TaskCategoryIcon task={task} />
           </View>
         </View>

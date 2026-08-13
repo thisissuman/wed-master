@@ -5,17 +5,18 @@ import type { TextInput } from "react-native";
 
 import { Screen, TextField } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import { contactFormSchema, type ContactFormValues } from "../forms";
-import { useWorkspaceMutation } from "../provider";
+import { useWorkspace, useWorkspaceMutation } from "../provider";
 import type { EmergencyContact } from "../types";
 import { FormShell } from "../ui";
 import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
 
 export function ContactForm({ contact }: { contact?: EmergencyContact }) {
+  const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const roleInputRef = useRef<TextInput>(null);
   const phoneInputRef = useRef<TextInput>(null);
   const {
@@ -34,12 +35,16 @@ export function ContactForm({ contact }: { contact?: EmergencyContact }) {
     isSubmitting: isSubmitting || mutation.isPending,
   });
   const save = handleSubmit(async (values) => {
-    await mutation.mutateAsync((repositories) =>
+    const snapshot = await mutation.mutateAsync((repositories) =>
       contact
         ? repositories.emergencyContacts.updateContact({ ...contact, ...values })
         : repositories.emergencyContacts.createContact(values),
     );
-    showFeedback({ message: contact ? "Contact updated" : "Contact added" });
+    if (!contact) {
+      const existingIds = new Set(workspace.data?.emergencyContacts.map((item) => item.id) ?? []);
+      const created = snapshot.emergencyContacts.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("contact", [created.id]);
+    }
     exitAfterSave();
   });
   const field = (name: keyof ContactFormValues, label: string, keyboardType?: "phone-pad") => (
@@ -73,7 +78,6 @@ export function ContactForm({ contact }: { contact?: EmergencyContact }) {
   return (
     <Screen>
       <FormShell
-        description="Store important numbers locally for quick access during the wedding."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={requestExit}
         onSubmit={save}

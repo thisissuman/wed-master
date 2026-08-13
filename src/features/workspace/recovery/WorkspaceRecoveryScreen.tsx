@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Alert, ScrollView, View } from "react-native";
 
 import { AppText, Button, Card, ConfirmationDialog, Screen } from "@/components/ui";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { toUserMessage } from "@/lib/errors";
 import { tokens } from "@/theme";
 
@@ -20,7 +19,6 @@ import { useDeleteWorkspaceMutation, useWorkspaceMutation } from "../provider";
 export function WorkspaceRecoveryScreen({ error }: { error: WorkspaceCorruptionError }) {
   const mutation = useWorkspaceMutation();
   const deleteMutation = useDeleteWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -46,7 +44,6 @@ export function WorkspaceRecoveryScreen({ error }: { error: WorkspaceCorruptionE
         repositories.workspace.replaceSnapshot(snapshot),
       );
       clearWorkspaceLocalFiles();
-      showFeedback({ message: "Backup restored" });
     } catch (importError) {
       Alert.alert("Could not restore backup", toUserMessage(importError));
     } finally {

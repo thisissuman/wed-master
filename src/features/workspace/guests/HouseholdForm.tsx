@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
 import {
   BedDouble,
@@ -26,10 +25,10 @@ import {
   TextField,
 } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import { householdFormSchema, type HouseholdFormValues } from "../forms";
-import { useWorkspaceMutation } from "../provider";
+import { useWorkspace, useWorkspaceMutation } from "../provider";
 import { invitationStatuses, rsvpStatuses, serviceStatuses, type Household } from "../types";
 import { FormShell } from "../ui";
 import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
@@ -57,8 +56,9 @@ const serviceTone = (value: string): SelectOption["tone"] =>
   value === "Booked" ? "success" : value === "Needed" ? "warning" : "muted";
 
 export function HouseholdForm({ household }: { household?: Household }) {
+  const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const {
     control,
     handleSubmit,
@@ -105,13 +105,16 @@ export function HouseholdForm({ household }: { household?: Household }) {
       notes: values.notes || undefined,
       guests: household?.guests ?? [],
     };
-    await mutation.mutateAsync((repositories) =>
+    const snapshot = await mutation.mutateAsync((repositories) =>
       household
         ? repositories.households.updateHousehold({ ...record, id: household.id })
         : repositories.households.createHousehold(record),
     );
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showFeedback({ message: household ? "Household updated" : "Household added" });
+    if (!household) {
+      const existingIds = new Set(workspace.data?.households.map((item) => item.id) ?? []);
+      const created = snapshot.households.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("household", [created.id]);
+    }
     exitAfterSave();
   });
 
@@ -188,7 +191,6 @@ export function HouseholdForm({ household }: { household?: Household }) {
   return (
     <Screen>
       <FormShell
-        description="Invite a household and add only the planning details you need."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={requestExit}
         onSubmit={save}

@@ -1,19 +1,16 @@
-import { ScrollView, useWindowDimensions, View } from "react-native";
-import { Image } from "expo-image";
 import type { LucideIcon } from "lucide-react-native";
-import {
-  ChevronRight,
-  Gift,
-  Phone,
-  Settings,
-  UploadCloud,
-  Users,
-  WalletCards,
-} from "lucide-react-native";
+import { ChevronRight, Gift, Phone, Settings, UploadCloud, Users } from "lucide-react-native";
 import { router } from "expo-router";
+import { ScrollView, useWindowDimensions, View } from "react-native";
 
-import { MangalyaHeader } from "@/components/brand";
-import { AppText, ErrorState, LoadingState, MotionPressable, Screen } from "@/components/ui";
+import {
+  AppText,
+  ErrorState,
+  LoadingState,
+  MotionPressable,
+  PageHeader,
+  Screen,
+} from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
 import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
@@ -24,58 +21,79 @@ export type MoreFeature = {
   description: string;
   icon: LucideIcon;
   route:
-    | "/budget/overview"
-    | "/more/backup"
-    | "/more/emergency-contacts"
-    | "/more/gifts"
-    | "/more/guests"
-    | "/more/settings";
+    "/more/backup" | "/more/emergency-contacts" | "/more/gifts" | "/more/guests" | "/more/settings";
   title: string;
 };
 
 const moreItems: MoreFeature[] = [
   {
-    description: "See your target, spending trends, dates and categories",
-    icon: WalletCards,
-    route: "/budget/overview",
-    title: "Budget & expenses",
-  },
-  {
-    description: "Manage your preferences and app settings",
-    icon: Settings,
-    route: "/more/settings",
-    title: "Settings",
-  },
-  {
-    description: "View, manage and organize your guest list",
+    description: "Manage households, guest counts and RSVPs",
     icon: Users,
     route: "/more/guests",
     title: "Guests",
   },
   {
-    description: "Track gifts, values and follow-ups",
+    description: "Track received gifts and follow-ups",
     icon: Gift,
     route: "/more/gifts",
     title: "Gifts",
   },
   {
-    description: "Back up your data and export important details",
-    icon: UploadCloud,
-    route: "/more/backup",
-    title: "Backup & Export",
-  },
-  {
-    description: "Add and manage important contact details",
+    description: "Keep important family and vendor contacts close",
     icon: Phone,
     route: "/more/emergency-contacts",
-    title: "Emergency Contacts",
+    title: "Emergency contacts",
+  },
+  {
+    description: "Export, import and protect your planning data",
+    icon: UploadCloud,
+    route: "/more/backup",
+    title: "Backup & export",
+  },
+  {
+    description: "Update wedding details and privacy controls",
+    icon: Settings,
+    route: "/more/settings",
+    title: "Settings",
   },
 ];
 
-export function MoreFeatureCard({ item }: { item: MoreFeature }) {
+export function MoreFeatureTile({
+  item,
+  stacked,
+  wide,
+}: {
+  item: MoreFeature;
+  stacked: boolean;
+  wide?: boolean;
+}) {
   const Icon = item.icon;
-  const { fontScale } = useWindowDimensions();
-  const largeText = isLargeText(fontScale);
+
+  if (wide) {
+    return (
+      <MotionPressable
+        accessibilityHint={item.description}
+        accessibilityLabel={`Open ${item.title}`}
+        accessibilityRole="button"
+        android_ripple={{ color: tokens.colors.primarySoft }}
+        className="min-h-24 w-full flex-row items-center gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-raised active:bg-surfaceMuted"
+        onPress={() => router.navigate(item.route)}
+        pressedScale={0.99}
+        testID={`more-feature-row-${item.route}`}
+      >
+        <View className="h-12 w-12 items-center justify-center rounded-control bg-nightElevated">
+          <Icon color={tokens.colors.nightAccent} size={tokens.iconSize.md} strokeWidth={1.8} />
+        </View>
+        <View className="min-w-0 flex-1 gap-2xs">
+          <AppText variant="heading">{item.title}</AppText>
+          <AppText tone="muted" variant="caption">
+            {item.description}
+          </AppText>
+        </View>
+        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+      </MotionPressable>
+    );
+  }
 
   return (
     <MotionPressable
@@ -83,41 +101,26 @@ export function MoreFeatureCard({ item }: { item: MoreFeature }) {
       accessibilityLabel={`Open ${item.title}`}
       accessibilityRole="button"
       android_ripple={{ color: tokens.colors.primarySoft }}
-      className={`flex-1 rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-card active:bg-surfaceMuted ${
-        largeText ? "min-h-20 flex-row items-center gap-sm" : "gap-sm"
-      }`}
+      className="min-h-40 gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-raised active:bg-surfaceMuted"
       onPress={() => router.navigate(item.route)}
-      pressedScale={0.985}
+      pressedScale={0.99}
+      style={stacked ? { width: "100%" } : { flexBasis: "47%", flexGrow: 1 }}
+      testID={`more-feature-row-${item.route}`}
     >
-      {largeText ? (
-        <>
-          <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-            <Icon color={tokens.colors.primary} size={tokens.iconSize.lg} />
-          </View>
-          <View className="min-w-0 flex-1 gap-2xs">
-            <AppText variant="heading">{item.title}</AppText>
-            <AppText tone="muted" variant="caption">
-              {item.description}
-            </AppText>
-          </View>
-          <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-        </>
-      ) : (
-        <>
-          <View className="flex-row items-start justify-between gap-sm">
-            <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-              <Icon color={tokens.colors.primary} size={tokens.iconSize.lg} />
-            </View>
-            <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-          </View>
-          <View className="gap-2xs">
-            <AppText variant="heading">{item.title}</AppText>
-            <AppText tone="muted" variant="caption">
-              {item.description}
-            </AppText>
-          </View>
-        </>
-      )}
+      <View className="flex-row items-start justify-between gap-sm">
+        <View className="h-12 w-12 items-center justify-center rounded-control bg-nightElevated">
+          <Icon color={tokens.colors.nightAccent} size={tokens.iconSize.md} strokeWidth={1.8} />
+        </View>
+        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+      </View>
+      <View className="min-w-0 flex-1 gap-2xs">
+        <AppText numberOfLines={2} variant="heading">
+          {item.title}
+        </AppText>
+        <AppText numberOfLines={stacked ? undefined : 3} tone="muted" variant="caption">
+          {item.description}
+        </AppText>
+      </View>
     </MotionPressable>
   );
 }
@@ -125,7 +128,7 @@ export function MoreFeatureCard({ item }: { item: MoreFeature }) {
 export function MoreDashboard() {
   const workspace = useWorkspace();
   const { fontScale } = useWindowDimensions();
-  const itemsPerRow = isLargeText(fontScale) ? 1 : 2;
+  const stacked = isLargeText(fontScale);
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -148,52 +151,29 @@ export function MoreDashboard() {
 
   return (
     <Screen>
-      <Image
-        accessible={false}
-        accessibilityElementsHidden
-        contentFit="contain"
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        source={require("../../../../assets/images/mangalya-botanical.jpg")}
-        style={{
-          height: tokens.illustrationSize.botanical,
-          opacity: 0.42,
-          position: "absolute",
-          right: 0,
-          top: tokens.touchTarget * 2,
-          width: tokens.illustrationSize.botanical,
-        }}
-      />
       <ScrollView
         contentContainerClassName="gap-xl p-md pb-2xl"
         showsVerticalScrollIndicator={false}
       >
-        <MangalyaHeader />
-        <View className="gap-2xs">
-          <AppText accessibilityRole="header" tone="primary" variant="display">
-            More
-          </AppText>
-        </View>
-        <View className="gap-sm" testID="more-feature-grid">
-          {Array.from({ length: Math.ceil(moreItems.length / itemsPerRow) }, (_, rowIndex) => {
-            const row = moreItems.slice(
-              rowIndex * itemsPerRow,
-              rowIndex * itemsPerRow + itemsPerRow,
-            );
-            return (
-              <View
-                className="flex-row items-stretch gap-sm"
-                key={row[0]?.title}
-                testID={`more-feature-row-${rowIndex}`}
-              >
+        <PageHeader title="More" />
+        {stacked ? (
+          <View className="gap-sm">
+            {moreItems.map((item) => (
+              <MoreFeatureTile item={item} key={item.title} stacked />
+            ))}
+          </View>
+        ) : (
+          <View className="gap-sm">
+            {[moreItems.slice(0, 2), moreItems.slice(2, 4)].map((row) => (
+              <View className="flex-row gap-sm" key={row[0].title}>
                 {row.map((item) => (
-                  <MoreFeatureCard item={item} key={item.title} />
+                  <MoreFeatureTile item={item} key={item.title} stacked={false} />
                 ))}
-                {itemsPerRow > 1 && row.length === 1 ? <View className="flex-1" /> : null}
               </View>
-            );
-          })}
-        </View>
+            ))}
+            <MoreFeatureTile item={moreItems[moreItems.length - 1]} stacked={false} wide />
+          </View>
+        )}
       </ScrollView>
     </Screen>
   );

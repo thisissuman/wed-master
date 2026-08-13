@@ -10,12 +10,13 @@ import {
 } from "lucide-react-native";
 import Animated from "react-native-reanimated";
 
-import { AppText, EmptyState, FilterChip } from "@/components/ui";
+import { AppText, CreatedItemPulse, EmptyState, FilterChip } from "@/components/ui";
 import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
 import { stateLayoutTransition } from "@/theme/motion";
 
 import { type TaskFilterState } from "../selectors";
+import type { CreatedItemHighlight } from "../created-item-highlight";
 import { TaskCompletionRow } from "../TaskCompletionRow";
 import type { Task } from "../types";
 import { PlanHeader, type PlanView } from "./PlanShared";
@@ -163,6 +164,8 @@ type PlanTaskViewProps = {
   summary: TaskSummary;
   tasks: Task[];
   today: string;
+  createdHighlight?: CreatedItemHighlight;
+  onCreatedHighlightFinished: (nonce: number) => void;
 };
 
 export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(function PlanTaskView(
@@ -181,6 +184,8 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
     summary,
     tasks,
     today,
+    createdHighlight,
+    onCreatedHighlightFinished,
   },
   ref,
 ) {
@@ -241,7 +246,7 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
         paddingTop: contentPadding,
       }}
       data={tasks}
-      extraData={`${mutationPending}-${today}`}
+      extraData={`${mutationPending}-${today}-${createdHighlight?.nonce ?? 0}`}
       ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
       keyExtractor={(task) => task.id}
       ListEmptyComponent={
@@ -256,14 +261,21 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
       ListHeaderComponent={header}
       ref={listRef}
       renderItem={({ item }) => (
-        <TaskCompletionRow
-          disabled={mutationPending}
-          eventName={eventNameById(item.eventId)}
-          onPress={() => onTaskPress(item)}
-          onToggle={() => onTaskToggle(item)}
-          task={item}
-          today={today}
-        />
+        <CreatedItemPulse
+          active={Boolean(createdHighlight?.ids.includes(item.id))}
+          onFinished={() => {
+            if (createdHighlight) onCreatedHighlightFinished(createdHighlight.nonce);
+          }}
+        >
+          <TaskCompletionRow
+            disabled={mutationPending}
+            eventName={eventNameById(item.eventId)}
+            onPress={() => onTaskPress(item)}
+            onToggle={() => onTaskToggle(item)}
+            task={item}
+            today={today}
+          />
+        </CreatedItemPulse>
       )}
       showsVerticalScrollIndicator={false}
     />

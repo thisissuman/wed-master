@@ -184,6 +184,32 @@ export function selectRecentExpenses(expenses: Expense[]): Expense[] {
   );
 }
 
+export type ExpenseDateGroup = {
+  date?: Expense["date"];
+  expenses: Expense[];
+};
+
+export function selectExpenseDateGroups(expenses: Expense[]): ExpenseDateGroup[] {
+  const groups = new Map<string, Expense[]>();
+  for (const expense of selectRecentExpenses(expenses)) {
+    const key = expense.date ?? "";
+    const group = groups.get(key) ?? [];
+    group.push(expense);
+    groups.set(key, group);
+  }
+
+  return [...groups.entries()]
+    .sort(([left], [right]) => {
+      if (!left) return 1;
+      if (!right) return -1;
+      return right.localeCompare(left);
+    })
+    .map(([date, groupedExpenses]) => ({
+      date: (date || undefined) as Expense["date"],
+      expenses: groupedExpenses,
+    }));
+}
+
 const normalizeExpenseTitle = (value: string) =>
   value.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-IN");
 

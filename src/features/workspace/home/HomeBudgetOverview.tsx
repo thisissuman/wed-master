@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { ChevronRight, WalletCards } from "lucide-react-native";
 import { useWindowDimensions, View } from "react-native";
 
@@ -22,8 +21,8 @@ function BudgetMetric({
 }) {
   const dividerClass = withDivider
     ? stacked
-      ? "border-t border-primarySoft pt-md"
-      : "border-l border-primarySoft pl-md"
+      ? "border-t border-borderSubtle pt-sm"
+      : "border-l border-borderSubtle pl-md"
     : "";
 
   return (
@@ -31,7 +30,7 @@ function BudgetMetric({
       className={`min-w-0 flex-1 gap-2xs ${dividerClass}`}
       style={stacked ? { width: "100%" } : undefined}
     >
-      <AppText tone="onPrimary" variant="caption">
+      <AppText tone="muted" variant="caption">
         {label}
       </AppText>
       <AppText
@@ -39,7 +38,6 @@ function BudgetMetric({
         minimumFontScale={0.72}
         numberOfLines={1}
         style={{ fontVariant: ["tabular-nums"] }}
-        tone="onPrimary"
         variant="heading"
       >
         {value}
@@ -80,25 +78,19 @@ export function HomeBudgetOverview({
       accessibilityLiveRegion={isOverBudget ? "polite" : "none"}
       accessibilityRole="button"
       android_ripple={{ color: tokens.colors.primarySoft }}
-      className="gap-lg overflow-hidden rounded-card border border-primary bg-primary p-md shadow-elevated active:opacity-90"
+      className="gap-md overflow-hidden rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-raised active:bg-surfaceMuted"
       onPress={onPress}
+      pressedScale={0.985}
     >
-      <LinearGradient
-        colors={[tokens.colors.primary, tokens.gradients.primaryAction[1]]}
-        end={{ x: 1, y: 1 }}
-        pointerEvents="none"
-        start={{ x: 0, y: 0 }}
-        style={{ bottom: 0, left: 0, opacity: 0.72, position: "absolute", right: 0, top: 0 }}
-      />
       <View className="flex-row items-center gap-sm">
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-accentSoft">
+        <View className="h-12 w-12 items-center justify-center rounded-control bg-accentSoft">
           <WalletCards color={tokens.colors.accent} size={tokens.iconSize.md} strokeWidth={1.8} />
         </View>
         <View className="min-w-0 flex-1 gap-2xs">
-          <AppText tone="onPrimary" variant="caption">
+          <AppText tone="muted" variant="caption">
             Wedding budget
           </AppText>
-          <AppText style={{ fontVariant: ["tabular-nums"] }} tone="onPrimary" variant="heading">
+          <AppText style={{ fontVariant: ["tabular-nums"] }} variant="heading">
             {isOverBudget
               ? `Over by ${formatInr(summary.overBudgetPaise)}`
               : hasTarget
@@ -106,35 +98,34 @@ export function HomeBudgetOverview({
                 : "Set your budget target"}
           </AppText>
         </View>
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-translucentSurface">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-surfaceMuted">
           <ChevronRight color={tokens.colors.primary} size={tokens.iconSize.md} />
         </View>
       </View>
 
       {hasTarget ? (
-        <View className="gap-2xs">
+        <View
+          accessibilityLabel="Budget progress"
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            max: 100,
+            min: 0,
+            now: clampedPercentage,
+            text: `${roundedPercentage}% of target spent`,
+          }}
+          className="h-1.5 overflow-hidden rounded-full bg-surfaceMuted"
+        >
           <View
-            accessibilityLabel="Budget progress"
-            accessibilityRole="progressbar"
-            accessibilityValue={{
-              max: 100,
-              min: 0,
-              now: clampedPercentage,
-              text: `${roundedPercentage}% of target spent`,
-            }}
-            className="h-sm overflow-hidden rounded-full bg-primarySoft"
-          >
-            <LinearGradient
-              colors={[tokens.colors.elevatedSurface, tokens.gradients.homeProgress[1]]}
-              end={{ x: 1, y: 0 }}
-              start={{ x: 0, y: 0 }}
-              style={{ height: "100%", width: `${clampedPercentage}%` }}
-            />
-          </View>
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${clampedPercentage}%` }}
+          />
         </View>
       ) : null}
 
-      <View className="gap-md" style={{ flexDirection: stacked ? "column" : "row" }}>
+      <View
+        className="gap-md rounded-control bg-surfaceMuted p-sm"
+        style={{ flexDirection: stacked ? "column" : "row" }}
+      >
         <BudgetMetric
           label="Target"
           stacked={stacked}

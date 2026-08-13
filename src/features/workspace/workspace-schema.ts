@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import { derivePaymentStatus } from "./domain";
 import { migrateBudgetCategories } from "./expense-categories";
+import { keepsakeMessageMaxLength } from "./wedding-profile";
 import {
   budgetCategoryIconKeys,
   eventColorKeys,
@@ -63,6 +64,7 @@ const weddingSchema = z
     location: nonBlankTextSchema,
     currency: z.literal("INR"),
     coverPhotoUri: z.string().min(1).max(4_096).optional(),
+    keepsakeMessage: z.string().trim().min(1).max(keepsakeMessageMaxLength).optional(),
     guestEstimate: z.number().int().nonnegative().optional(),
     budgetTargetPaise: z.number().int().nonnegative().optional(),
   })

@@ -73,9 +73,10 @@ describe("HomeDashboard", () => {
     expect(screen.getByRole("header", { name: "Focus today" })).toBeTruthy();
     expect(screen.getByRole("header", { name: "Budget overview" })).toBeTruthy();
     expect(screen.getByRole("header", { name: "Quick actions" })).toBeTruthy();
+    expect(screen.getByTestId("wedding-hero")).toBeTruthy();
     expect(
-      screen.getByTestId("home-hearts-background", { includeHiddenElements: true }),
-    ).toBeTruthy();
+      screen.queryByTestId("home-hearts-background", { includeHiddenElements: true }),
+    ).toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(2);
     expect(screen.queryByText(demoWorkspace.wedding.location)).toBeNull();
     expect(screen.queryByRole("button", { name: "Add a task, expense, or event" })).toBeNull();
@@ -89,11 +90,31 @@ describe("HomeDashboard", () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith("/budget/overview");
   });
 
-  it("opens all direct quick actions and the expense FAB", async () => {
+  it("blurs Home while the same-size wedding card is centred", async () => {
+    const screen = await render(<HomeDashboard />);
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: `Wedding card for ${demoWorkspace.wedding.name}. Tap the card`,
+      }),
+    );
+
+    expect(screen.getByTestId("home-scroll-view").props.style).toEqual({
+      filter: [{ blur: 8 }],
+    });
+
+    await fireEvent.press(
+      screen.getByTestId("wedding-keepsake-backdrop", { includeHiddenElements: true }),
+    );
+    expect(screen.getByTestId("home-scroll-view").props.style).toBeUndefined();
+  });
+
+  it("opens all direct quick actions without a duplicate expense FAB", async () => {
     const screen = await render(<HomeDashboard />);
 
     for (const [label, route] of [
       ["Add task", "/tasks/new"],
+      ["Add expense", "/expenses/new"],
       ["Add event", "/events/new"],
       ["Add guest", "/more/guests/new"],
     ] as const) {
@@ -101,14 +122,8 @@ describe("HomeDashboard", () => {
       expect(mockRouter.navigate).toHaveBeenLastCalledWith(route);
     }
 
-    const expenseActions = screen.getAllByRole("button", { name: "Add expense" });
-    expect(expenseActions).toHaveLength(2);
-    await fireEvent.press(expenseActions[0]);
-    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
+    expect(screen.getAllByRole("button", { name: "Add expense" })).toHaveLength(1);
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
-    await fireEvent.press(expenseActions[1]);
-    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
-    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
   });
 
   it("reflows quick actions into two stable rows for large system text", async () => {
@@ -123,11 +138,8 @@ describe("HomeDashboard", () => {
 
     expect(screen.getAllByTestId(/home-quick-action-row-/)).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: /Add (task|expense|event|guest)/ })).toHaveLength(
-      5,
+      4,
     );
-    expect(
-      screen.getByTestId("home-scroll-view").props.contentContainerStyle.paddingBottom,
-    ).toBeGreaterThan(48);
   });
 
   it("does not expose unfinished global search", async () => {

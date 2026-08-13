@@ -1,19 +1,25 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import { router } from "expo-router";
 import * as ReactNative from "react-native";
 
 import BudgetScreen from "@/app/(app)/(tabs)/budget";
+import { formatDateOnly } from "@/lib/dates";
 import { formatInr } from "@/lib/money";
+import { motionDurations } from "@/theme";
 
+import { useCreatedItemHighlight } from "./created-item-highlight";
 import { useWorkspace } from "./provider";
 import { demoWorkspace } from "./seed";
 import type { WorkspaceSnapshot } from "./types";
+
+let mockIsFocused = true;
 
 jest.mock("expo-router", () => ({
   router: {
     navigate: jest.fn(),
     push: jest.fn(),
   },
+  useIsFocused: () => mockIsFocused,
 }));
 
 jest.mock("./provider", () => ({
@@ -39,8 +45,34 @@ describe("ExpensesDashboard", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
+    mockIsFocused = true;
+    useCreatedItemHighlight.setState({ current: undefined });
     useWindowDimensionsSpy.mockReturnValue({ fontScale: 1, height: 800, scale: 2, width: 411 });
     useSnapshot();
+  });
+
+  it("waits for Money to regain focus before completing the new-expense breath", async () => {
+    jest.useFakeTimers();
+    const expense = demoWorkspace.expenses[0];
+    useCreatedItemHighlight.getState().mark("expense", [expense.id]);
+    mockIsFocused = false;
+
+    const screen = await render(<BudgetScreen />);
+
+    const completedBreathDuration =
+      motionDurations.fast +
+      (motionDurations.state + motionDurations.press) * 2 +
+      motionDurations.press;
+    await act(async () => jest.advanceTimersByTime(completedBreathDuration));
+    expect(useCreatedItemHighlight.getState().current?.ids).toContain(expense.id);
+
+    mockIsFocused = true;
+    await screen.rerender(<BudgetScreen />);
+    await act(async () => jest.advanceTimersByTime(completedBreathDuration));
+
+    expect(useCreatedItemHighlight.getState().current).toBeUndefined();
+    jest.useRealTimers();
   });
 
   it("keeps Money focused on recent expenses, newest first", async () => {
@@ -48,8 +80,13 @@ describe("ExpensesDashboard", () => {
 
     expect(screen.getByText("Money")).toBeTruthy();
     expect(screen.getByText("Recent expenses")).toBeTruthy();
+    expect(
+      screen.getByRole("header", {
+        name: formatDateOnly(demoWorkspace.expenses[3].date ?? ""),
+      }),
+    ).toBeTruthy();
     expect(screen.queryByText(/Every recorded expense/)).toBeNull();
-    expect(screen.queryByText("Budget position")).toBeNull();
+    expect(screen.getByText("Budget position")).toBeTruthy();
     expect(screen.queryByText("Spending trend")).toBeNull();
     expect(screen.queryByText("All-time insights")).toBeNull();
     expect(screen.queryByText("Where money went")).toBeNull();
@@ -96,7 +133,7 @@ describe("ExpensesDashboard", () => {
 
     expect(screen.getByText("Small ceremony supply")).toBeTruthy();
     expect(screen.getByText("Amount not recorded")).toBeTruthy();
-    expect(screen.getByText("1 expense")).toBeTruthy();
+    expect(screen.getByTestId("money-expense-count")).toHaveTextContent("1 expense");
     expect(screen.queryByText(formatInr(250_000))).toBeNull();
 
     await fireEvent.press(
@@ -132,7 +169,7 @@ describe("ExpensesDashboard", () => {
   it("opens the existing budget overview from the Money header", async () => {
     const screen = await render(<BudgetScreen />);
 
-    await fireEvent.press(screen.getByRole("button", { name: "Budget overview" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Open budget overview" }));
 
     expect(mockRouter.navigate).toHaveBeenCalledWith("/budget/overview");
   });
@@ -155,6 +192,6 @@ describe("ExpensesDashboard", () => {
         .numberOfLines,
     ).toBe(2);
     expect(screen.getByText(formatInr(185_000_000)).props.numberOfLines).toBeUndefined();
-    expect(screen.getByRole("button", { name: "Budget overview" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open budget overview" })).toBeTruthy();
   });
 });

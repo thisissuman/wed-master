@@ -16,6 +16,7 @@ describe("relative demo workspace", () => {
 
     expect(daysUntilDateOnly(snapshot.wedding.date, "2030-01-10")).toBe(150);
     expect(snapshot.wedding.budgetTargetPaise).toBe(2_800_000_000);
+    expect(snapshot.wedding.keepsakeMessage).toBeTruthy();
     expect(
       snapshot.tasks.every(
         (task) =>

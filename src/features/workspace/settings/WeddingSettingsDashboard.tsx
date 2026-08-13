@@ -41,13 +41,13 @@ import {
 import { toUserMessage } from "@/lib/errors";
 import { isLargeText } from "@/lib/responsive";
 import { tokens } from "@/theme";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
 import { clearWorkspaceLocalFiles } from "../files/workspace-files";
 import { settingsFormSchema, type SettingsFormValues } from "../forms";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
 import { useDeleteWorkspaceMutation, useWorkspace, useWorkspaceMutation } from "../provider";
 import type { Wedding } from "../types";
+import { defaultKeepsakeMessage, keepsakeMessageMaxLength } from "../wedding-profile";
 
 type SettingRowProps = {
   destructive?: boolean;
@@ -101,7 +101,6 @@ export function WeddingSettingsDashboard() {
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
   const deleteMutation = useDeleteWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
   const submissionInFlight = useRef(false);
   const [editOpen, setEditOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -122,6 +121,7 @@ export function WeddingSettingsDashboard() {
       date: "",
       location: "",
       type: "",
+      keepsakeMessage: "",
     },
   });
 
@@ -151,6 +151,7 @@ export function WeddingSettingsDashboard() {
       date: wedding.date,
       location: wedding.location,
       type: wedding.type,
+      keepsakeMessage: wedding.keepsakeMessage ?? "",
     });
     setEditOpen(true);
   };
@@ -175,6 +176,7 @@ export function WeddingSettingsDashboard() {
         date: values.date as Wedding["date"],
         location: values.location,
         type: values.type,
+        keepsakeMessage: values.keepsakeMessage || undefined,
       };
       try {
         await mutation.mutateAsync((repositories) => repositories.wedding.updateWedding(next));
@@ -184,7 +186,6 @@ export function WeddingSettingsDashboard() {
         submissionInFlight.current = false;
       }
       setEditOpen(false);
-      showFeedback({ message: "Wedding details updated" });
     })();
 
   const field = (name: "location" | "name" | "type", label: string) => (
@@ -219,7 +220,7 @@ export function WeddingSettingsDashboard() {
             icon={CalendarDays}
             label="Wedding details"
             onPress={openEditor}
-            value="Name, date, city and tradition"
+            value="Name, date, tradition and keepsake message"
           />
         </Card>
         <SectionHeader title="Money" />
@@ -307,6 +308,26 @@ export function WeddingSettingsDashboard() {
               />
               {field("location", "City or location")}
               {field("type", "Wedding style or tradition")}
+              <Controller
+                control={control}
+                name="keepsakeMessage"
+                render={({ field: input }) => (
+                  <TextField
+                    autoCapitalize="sentences"
+                    autoComplete="off"
+                    error={errors.keepsakeMessage?.message}
+                    helperText={`Shown when the Home card flips · ${keepsakeMessageMaxLength} characters maximum`}
+                    label="Keepsake message"
+                    maxLength={keepsakeMessageMaxLength}
+                    multiline
+                    onBlur={input.onBlur}
+                    onChangeText={input.onChange}
+                    optional
+                    placeholder={defaultKeepsakeMessage}
+                    value={input.value}
+                  />
+                )}
+              />
               {mutation.error ? (
                 <AppText accessibilityRole="alert" tone="danger" variant="caption">
                   {toUserMessage(mutation.error)}
@@ -417,7 +438,6 @@ export function WeddingSettingsDashboard() {
               onSuccess: () => {
                 clearWorkspaceLocalFiles();
                 setResetOpen(false);
-                showFeedback({ message: "Demo workspace restored" });
               },
               onError: (error) => {
                 Alert.alert("Could not reset demo data", toUserMessage(error));

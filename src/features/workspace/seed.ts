@@ -6,6 +6,7 @@ import type {
   WeddingEvent,
   WorkspaceSnapshot,
 } from "./types";
+import { defaultKeepsakeMessage } from "./wedding-profile";
 import { toDateOnly } from "@/lib/dates";
 import { createCoreBudgetCategories } from "./expense-categories";
 
@@ -104,6 +105,7 @@ export function createDemoWorkspace(referenceDate = new Date()): WorkspaceSnapsh
       date: date(150),
       location: "Berhampur, Odisha",
       currency: "INR",
+      keepsakeMessage: defaultKeepsakeMessage,
       guestEstimate: 800,
       budgetTargetPaise: 2_800_000_000,
     },
