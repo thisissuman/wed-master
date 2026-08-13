@@ -37,9 +37,10 @@ describe("Expo application variants", () => {
     expect(config.ios?.bundleIdentifier).toBe(packageName);
     expect(config.scheme).toBe(scheme);
     expect(config.android?.allowBackup).toBe(false);
+    expect(config.android?.blockedPermissions).toEqual(["android.permission.SYSTEM_ALERT_WINDOW"]);
     expect(config.android?.predictiveBackGestureEnabled).toBe(true);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
-    expect(config.android?.versionCode).toBe(3);
+    expect(config.android?.versionCode).toBe(4);
     expect(imagePickerOptions(config)).toMatchObject({
       cameraPermission: false,
       microphonePermission: false,

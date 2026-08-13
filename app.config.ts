@@ -48,9 +48,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       allowBackup: false,
+      blockedPermissions: ["android.permission.SYSTEM_ALERT_WINDOW"],
       package: `com.suman.mangalya${variantSuffix}`,
       softwareKeyboardLayoutMode: "resize",
-      versionCode: 3,
+      versionCode: 4,
       adaptiveIcon: {
         backgroundColor: "#FBF7F4",
         backgroundImage: "./assets/images/android-icon-background.png",

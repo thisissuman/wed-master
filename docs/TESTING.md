@@ -61,6 +61,45 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
 - Maestro setup and backup selectors were reconciled with the current UI. The Maestro CLI remains
   unavailable, so the seven journeys are still not recorded as executed or passing.
 
+### 2026-08-12 signed preview artifact
+
+- EAS preview build 3 `74eb2e9f-82d3-4444-8477-9966daea829c` finished successfully from commit
+  `9bc370a`. The 119,139,677-byte APK has SHA-256
+  `b811e96a42c3e716eee9fc3bf194ecfe51e54005cf26b84d860ccdb7a4846729`.
+- Static APK inspection verifies its v2 signature, `com.suman.mangalya.preview` identity,
+  `mangalya-preview` scheme, `0.1.0 (3)` version, API 24–36 range, disabled Android backup, and no
+  camera or microphone permission.
+- Inspection also found `SYSTEM_ALERT_WINDOW`. Because Mangalya has no overlay feature, app config
+  now blocks the permission and advances Android version code to 4; build 3 is not accepted for
+  distribution.
+- A fresh preview prebuild followed by `:app:processReleaseMainManifest` passed. The merged release
+  manifest retains version code 4, `mangalya-preview`, and `allowBackup=false`, while overlay,
+  camera, and microphone permissions are absent.
+- Corrected EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe` finished from commit `accd3cd`.
+  Static inspection verifies its v2 signature, `0.1.0 (4)` identity, release-mode manifest, API
+  24–36 range, disabled backup, and absence of overlay, camera, and microphone permissions. The
+  119,139,681-byte APK has SHA-256
+  `0066a5db2216e70772ba149c2cac055a244ae333428236e62e32c2c0b55d2e58`.
+- No emulator or physical device was connected. Installation, launcher/splash rendering, runtime
+  deep links, device performance/accessibility, and Sentry delivery/source maps are not claimed.
+
+### 2026-08-13 signed preview emulator acceptance
+
+- The inspected build-4 APK was installed side by side on the API 36 emulator as
+  `com.suman.mangalya.preview`; `dumpsys package` reports `0.1.0 (4)` and release flags.
+- Fresh setup, event creation, task creation/completion, ₹12,500 expense capture, a confirmed
+  two-person household, cold-restart persistence, invalid-household recovery, Android hardware
+  Back, JSON backup/share/history, the system photo picker, reduced motion, and 1.3×/2.0× text
+  passed. The process log contained no fatal Android or unhandled JavaScript error.
+- Landscape failed on the 1080×2400, 420-dpi emulator. The left material navigation rail displayed
+  clipped icons and exposed only 12-pixel-wide (about 4.6dp) accessibility bounds for Home, Plan,
+  Money, and More. This is below the required 48dp target and must be fixed and re-tested in the
+  batched release-candidate work.
+- Emulator results do not replace TalkBack testing, launcher/splash review, representative hardware
+  performance, permission-denial coverage, or physical-phone acceptance. No new APK should be
+  produced until the current test findings are batched, unless a newly found native defect makes
+  further testing unsafe or invalid.
+
 Tracked Android journeys live under `.maestro/` and target `com.suman.mangalya.development`:
 
 ```bash

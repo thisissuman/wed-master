@@ -1,6 +1,6 @@
 # Mangalya production readiness
 
-Date: 2026-08-11
+Date: 2026-08-13
 
 ## Executive status
 
@@ -10,7 +10,7 @@ Appearance & Theming 3/4, Platform Conformance 3/4, and Adaptivity 2/4. The post
 repository/emulator audit is provisionally **16/20 (Good)**: Accessibility 3/4, Performance 3/4,
 Appearance & Theming 4/4, Platform Conformance 3/4, and Adaptivity 3/4. There are no known P0
 findings. Remaining P1 items are release-evidence gates, not claims of completion; physical device,
-runtime performance, Maestro, EAS, and Sentry evidence remains tracked in
+runtime performance, Maestro, replacement EAS, and Sentry evidence remains tracked in
 [Next Steps](NEXT_STEPS.md).
 
 The lavender-and-ivory implementation is canonical. Deleted Stitch references and archived
@@ -61,11 +61,35 @@ Emergent prompts are not active visual guidance.
 - On the current emulator, fresh setup created an empty workspace, Home loaded, data survived
   process termination, invalid household recovery landed on Guests, and backup export opened the
   Android chooser with one JSON file. The no-DSN build no longer invokes `Sentry.wrap`.
-- EAS preview build 3 `7fffd92f-37b7-4123-b914-36721db6babb` completed. Its signed artifact has not
-  been installed and inspected in this workspace, and Sentry delivery/source maps remain unverified.
+- EAS preview build 3 `74eb2e9f-82d3-4444-8477-9966daea829c` completed from commit `9bc370a`.
+  Local artifact inspection verifies a 119,139,677-byte, v2-signed APK with SHA-256
+  `b811e96a42c3e716eee9fc3bf194ecfe51e54005cf26b84d860ccdb7a4846729`, package
+  `com.suman.mangalya.preview`, scheme `mangalya-preview`, API 24–36, `allowBackup=false`, and no
+  packaged camera or microphone permission. Inspection also found the unnecessary
+  `SYSTEM_ALERT_WINDOW` permission, so build 3 is not the accepted preview artifact. The config now
+  blocks that permission and advances Android version code to 4. A fresh preview prebuild and
+  `processReleaseMainManifest` verify the merged release manifest contains none of overlay, camera,
+  or microphone permissions. Replacement EAS build 4 `57874f60-9ec5-44c2-9bfe-eef8f54e02fe`
+  finished from commit `accd3cd`. Local inspection verifies its v2 signature, version `0.1.0 (4)`,
+  expected package/scheme, API 24–36, `allowBackup=false`, release-mode manifest, and absence of
+  overlay, camera, and microphone permissions. The 119,139,681-byte APK has SHA-256
+  `0066a5db2216e70772ba149c2cac055a244ae333428236e62e32c2c0b55d2e58`. No physical Android target
+  is connected, so phone-specific launcher/splash rendering and device behavior remain unverified.
+  Sentry delivery/source maps also remain unverified because the preview environment has no Sentry
+  build credentials.
+- The exact build-4 APK was installed on the API 36 emulator as
+  `com.suman.mangalya.preview` without replacing the development or legacy packages. Fresh setup,
+  event creation, task creation/completion, ₹12,500 expense capture, a confirmed two-person
+  household, cold-restart persistence, invalid-household recovery, Android Back, data-backup share
+  and history, the system photo picker, reduced motion, and 1.3×/2.0× text passed. The preview
+  process recorded no fatal Android or unhandled JavaScript error during the session.
+- Landscape did not pass. On the 1080×2400, 420-dpi emulator rotated to landscape, the material
+  navigation rail rendered clipped icons and only 12-pixel-wide (about 4.6dp) accessible bounds for
+  each root destination. This violates the 48dp target and blocks expanded-width acceptance. Keep
+  this finding in the next batched fix; do not create an intermediate APK solely for it.
 
-This debug-client smoke is native identity and behavior evidence. It is not a signed preview APK,
-representative release-performance measurement, TalkBack pass, or physical-device acceptance.
+The emulator debug-client smoke above is native identity and behavior evidence. It is not
+representative release-performance measurement, a TalkBack pass, or physical-device acceptance.
 
 ## Remaining P1 release gates
 
@@ -73,11 +97,11 @@ representative release-performance measurement, TalkBack pass, or physical-devic
    tooling approval.
 2. Profile a preview/release build against cold-start, persistence, expense-save, scrolling, and
    bundle-growth targets in `TESTING.md`.
-3. Complete physical Android QA at 360dp and expanded width, portrait/landscape, largest text,
-   TalkBack, keyboard/IME, reduced motion, file/share pickers, permission denial, process
-   termination, and upgrade install.
-4. Retain and install EAS preview build 3, or produce its replacement; verify
-   `com.suman.mangalya.preview`, deep links, assets, scrubbed Sentry delivery, and source maps.
+3. Fix and re-run the expanded-width navigation rail check, then complete physical Android QA at
+   360dp and expanded width, portrait/landscape, largest text, TalkBack, keyboard/IME, reduced
+   motion, file/share pickers, permission denial, process termination, and upgrade install.
+4. Verify launcher/splash rendering on a physical phone plus scrubbed Sentry delivery and source
+   maps. Runtime preview-scheme deep links already pass on the emulator.
 
 Public release requires zero unresolved P0/P1 findings and evidence for every gate above. A skipped
 or credential-blocked check is recorded as blocked, never as passing.

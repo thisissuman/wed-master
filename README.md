@@ -39,7 +39,7 @@ A brand-new installation opens the minimum wedding setup flow and never silently
 | `preview`     | Mangalya Preview | `com.suman.mangalya.preview`     | `mangalya-preview`     |
 | `production`  | Mangalya         | `com.suman.mangalya`             | `mangalya`             |
 
-`eas.json` defines matching development, preview, and production profiles. Version `0.1.0` currently uses Android version code `3` and iOS build number `1`; increment both deliberately for every store build. Signing credentials stay in EAS or the release environment and are never committed.
+`eas.json` defines matching development, preview, and production profiles. Version `0.1.0` currently uses Android version code `4` and iOS build number `1`; increment each platform counter deliberately for every store build. Signing credentials stay in EAS or the release environment and are never committed.
 
 ## Local data and recovery
 
