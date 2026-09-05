@@ -162,23 +162,121 @@ behavior; a device journey remains a separate release check.
 
 ## Git commit and push
 
-The exact commit and push output will be added here after the tested source is committed.
+```bash
+git add -A
+git diff --cached --check
+git commit -m "feat(app): add inspire board and refine planning flows" \
+  -m "Add the local-first Inspire experience, theme-aware visual redesign, onboarding and workspace refinements, lifecycle and media hardening, expanded tests, optimized image assets, and current release documentation."
+git push origin codex/ux-simplification-visual-redesign
+```
+
+Result:
+
+- The staged whitespace check passed.
+- Local commit `e396a6478eca47da8653a4ea395ce14c2a456350` was created on
+  `codex/ux-simplification-visual-redesign`.
+- The automatic approval reviewer blocked the push because the 238-file source and asset snapshot
+  was being sent to an external remote that it had not independently verified as trusted. The
+  remote configured in Git is `https://github.com/thisissuman/wed-master.git`, and the authenticated
+  Expo/GitHub account name is `thisissuman`. The local branch is therefore ahead of its remote and
+  requires the user's explicit approval before retrying the same push.
 
 ## EAS Preview APK
 
-The build ID, status, artifact URL, checksum, package identity, signature result, and permission
-inspection will be added here after the cloud build completes.
-
-The command used is:
+Expo authentication was checked before using cloud capacity:
 
 ```bash
-npx eas-cli@latest build --platform android --profile preview --wait
+npx eas-cli@latest whoami
+```
+
+Result: the active Expo account is `thisissuman` (`sumanmaharana222888@gmail.com`). The build was
+then started with:
+
+```bash
+npx eas-cli@latest build --platform android --profile preview --wait --non-interactive
 ```
 
 This uploads the source snapshot to Expo's EAS Build service, consumes one Android cloud build from
 the Expo account's applicable usage allowance, waits for the remote build, and returns the build
 page and APK download URL. The `preview` profile in `eas.json` requests an internally distributed
 APK, so it can be downloaded directly to an Android phone.
+
+Result:
+
+- Status: `FINISHED`.
+- Build ID: `867001f8-d608-4f1f-98d5-52c19b6390a2`.
+- Source commit: `e396a6478eca47da8653a4ea395ce14c2a456350`.
+- Build page:
+  <https://expo.dev/accounts/thisissuman/projects/mangalya/builds/867001f8-d608-4f1f-98d5-52c19b6390a2>.
+- Android download:
+  <https://expo.dev/artifacts/eas/Z56IW3aZG34JY4HLfSBGcE-vvXyHi3xxDwTI_q5Wr0c.apk>.
+- Completed: 2026-09-05 21:24:31 IST.
+- EAS metadata lists artifact expiry on 2026-09-19, so keep the build page as the durable record and
+  create a fresh Preview build when a later source snapshot is needed.
+
+The APK was downloaded and inspected with:
+
+```bash
+curl --fail --location \
+  --output /tmp/mangalya-preview-5.apk \
+  https://expo.dev/artifacts/eas/Z56IW3aZG34JY4HLfSBGcE-vvXyHi3xxDwTI_q5Wr0c.apk
+shasum -a 256 /tmp/mangalya-preview-5.apk
+/Users/kira/Library/Android/sdk/build-tools/37.0.0/apksigner \
+  verify --verbose --print-certs /tmp/mangalya-preview-5.apk
+/Users/kira/Library/Android/sdk/build-tools/37.0.0/aapt \
+  dump badging /tmp/mangalya-preview-5.apk
+/Users/kira/Library/Android/sdk/build-tools/37.0.0/aapt \
+  dump permissions /tmp/mangalya-preview-5.apk
+/Users/kira/Library/Android/sdk/cmdline-tools/latest/bin/apkanalyzer \
+  manifest print /tmp/mangalya-preview-5.apk
+```
+
+Inspection result:
+
+- Size: 125,185,382 bytes.
+- SHA-256: `7baf09b9d54932a6e0ab6a3bc3db1595da7d5cfb3f84b44f30e5dadb0ec714b8`.
+- APK Signature Scheme v2 verifies with one RSA 2048-bit signer.
+- Package: `com.suman.mangalya.preview`.
+- Display name: `Mangalya Preview`.
+- Version: `0.1.0 (5)`.
+- Minimum/target/compile SDK: 24/36/36.
+- Deep-link scheme: `mangalya-preview`.
+- Android backup: `android:allowBackup="false"`.
+- Declared uses-permissions: Camera, Internet, Vibrate, network state, and Android's package-scoped
+  non-exported dynamic receiver permission.
+- Microphone, overlay, legacy external storage, broad media access, and biometric permissions are
+  absent.
+
+## Emulator installation and standalone launch
+
+The Pixel 8 emulator was connected as `emulator-5554`. Before installation it contained
+`com.suman.mangalya.development` and the legacy `com.suman.wedmaster`; the Preview package was not
+installed.
+
+```bash
+/Users/kira/Library/Android/sdk/platform-tools/adb \
+  -s emulator-5554 install -r /tmp/mangalya-preview-5.apk
+lsof -nP -iTCP:8081 -sTCP:LISTEN
+/Users/kira/Library/Android/sdk/platform-tools/adb \
+  -s emulator-5554 shell am force-stop com.suman.mangalya.preview
+/Users/kira/Library/Android/sdk/platform-tools/adb \
+  -s emulator-5554 shell am start -W \
+  -n com.suman.mangalya.preview/.MainActivity
+```
+
+Result:
+
+- Installation returned `Success`.
+- Nothing was listening on port 8081.
+- Android reported a successful cold launch of `MainActivity` in 2,195 ms.
+- The first onboarding screen rendered with the current plum design and optimized illustration.
+- `Mangalya Preview` remained the focused foreground activity.
+- The launch log contained no fatal Android exception, unhandled React Native error, missing-script
+  error, or development-server connection error.
+
+This emulator smoke confirms that the signed APK starts without Metro. It does not replace the
+full Maestro journey, TalkBack, physical-device, permission-denial, or representative performance
+matrix.
 
 ## Everyday development versus a Preview APK
 
