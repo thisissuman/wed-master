@@ -33,6 +33,88 @@ For every implementation task:
 8. Run relevant available checks; never claim an unrun check passed.
 9. Update only documentation affected by the decision or contract.
 
+## Repeatable development and release workflow
+
+Run project commands from `/Users/kira/wed-master`. Before changing code, inspect the current
+branch and working tree with `git status --short --branch`; preserve unrelated work and never push
+directly to `main`.
+
+For ordinary JavaScript, TypeScript, styling, copy, or test changes, use the installed development
+client:
+
+```bash
+npm run dev
+```
+
+Start the Android emulator first, then press `a` in the Expo terminal and choose **Mangalya Dev** if
+Android asks which app should open the link. Metro and Fast Refresh deliver ordinary source changes
+to that app. Do not run Expo prebuild, Gradle, or EAS for every source edit.
+
+If Metro reports that port 8081 is already in use, identify the listener before stopping it:
+
+```bash
+lsof -nP -iTCP:8081 -sTCP:LISTEN
+kill <PID>
+npm run dev -- --clear
+```
+
+Kill only the confirmed stale Metro process. If Expo reports that no device or emulator exists,
+start the Pixel emulator in Android Studio and verify it with:
+
+```bash
+/Users/kira/Library/Android/sdk/platform-tools/adb devices -l
+```
+
+Rebuild **Mangalya Dev** only after an Expo SDK change or a change to a native dependency, config
+plugin, permission, app identifier, scheme, icon, or splash. Stop the current Metro process with
+`Ctrl+C`, then run:
+
+```bash
+APP_VARIANT=development npx expo prebuild --clean --platform android
+APP_VARIANT=development ANDROID_HOME=/Users/kira/Library/Android/sdk npx expo run:android
+```
+
+Before committing or creating a distributable build, run the repository gate from
+`docs/TESTING.md`. Use focused tests while iterating and run the complete gate once the source is
+ready. Do not report skipped or interrupted checks as passing, and never use
+`npm audit fix --force` to bypass Expo compatibility.
+
+Create a standalone phone-test APK only after batching changes, passing the gate, and committing
+the exact source on a feature branch:
+
+```bash
+npx eas-cli@latest whoami
+npx eas-cli@latest build --platform android --profile preview --wait --non-interactive
+```
+
+This command uploads a source snapshot to Expo, consumes one applicable Android EAS cloud build,
+and returns a download link for **Mangalya Preview**. The APK includes its JavaScript bundle and
+does not need Metro, port 8081, a QR code, or the Mac after installation. A later source change
+requires another Preview build. Record the source commit, checks, EAS build ID, build page, artifact
+link, and device result in a dated release record such as `docs/PREVIEW_BUILD_2026-09-05.md`.
+
+Use the production EAS profile only for a store release candidate after the full release process in
+`docs/RELEASE.md`:
+
+```bash
+npx eas-cli@latest build --platform android --profile production --wait
+```
+
+The three variants intentionally have separate package IDs and can be installed side by side:
+**Mangalya Dev** is the Metro-connected development client, **Mangalya Preview** is the standalone
+internal-test APK, and **Mangalya** is the production store app.
+
+## Project-memory maintenance
+
+- Treat this `AGENTS.md` and its linked canonical docs as the durable project-specific memory.
+- When a repeated workflow is verified or corrected, update this concise section or the relevant
+  canonical document in the same change. Keep one source of truth and link to detailed dated
+  evidence instead of copying build output here.
+- Keep personal preferences that apply to every repository in Codex Personalization. Keep Mangalya
+  commands, architecture, product rules, and release evidence in this repository.
+- Never store credentials, signing material, access tokens, private environment values, or personal
+  user data in instructions, memory, documentation, commits, or build records.
+
 ## Code quality rules
 
 - Prefer composition, small responsibilities, explicit types, and readable names over clever abstractions.
@@ -50,4 +132,6 @@ For every implementation task:
 - `docs/ENGINEERING_GUIDE.md`: component architecture, code conventions, and Definition of Done.
 - `docs/CODEX_WORKFLOW.md`: AI-assisted development workflow.
 - `docs/TESTING.md`, `docs/RELEASE.md`, and `docs/GIT_WORKFLOW.md`: delivery practices.
+- `docs/PREVIEW_BUILD_2026-09-05.md`: reproducible evidence for the latest signed Android Preview
+  APK.
 - `docs/DECISIONS.md`: costly-to-reverse choices only.

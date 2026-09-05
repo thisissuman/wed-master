@@ -34,7 +34,10 @@ Run `npx expo-doctor` when obtainable. Inspect export size, Hermes bundle size, 
 
 ## Native regeneration and identity gate
 
-- After any config-plugin, permission, native dependency, identifier, scheme, icon, or splash change, run `APP_VARIANT=development npx expo prebuild --clean --platform android` followed by `APP_VARIANT=development npx expo run:android`.
+- After any config-plugin, permission, native dependency, identifier, scheme, icon, or splash change,
+  stop Metro with `Ctrl+C`, run
+  `APP_VARIANT=development npx expo prebuild --clean --platform android`, then run
+  `APP_VARIANT=development ANDROID_HOME=/Users/kira/Library/Android/sdk npx expo run:android`.
 - Confirm the installed package is `com.suman.mangalya.development` and scheme is `mangalya-development`; an older `com.suman.wedmaster` shell is not release evidence even when Metro serves current JavaScript into it.
 - Keep obsolete packages installed until their local data is deliberately backed up or the owner explicitly approves deletion.
 - On 2026-08-01 the clean development rebuild passed and both
