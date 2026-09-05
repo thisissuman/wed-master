@@ -1,9 +1,13 @@
 import {
   eventFormSchema,
+  contactFormSchema,
   expenseDetailsFormSchema,
   expenseFormSchema,
+  giftFormSchema,
   householdFormSchema,
   quickExpenseFormSchema,
+  settingsFormSchema,
+  taskFormSchema,
   toPaise,
 } from "./forms";
 
@@ -96,6 +100,95 @@ describe("expense validation", () => {
       notes: "",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts 999 household guests and rejects 1,000", () => {
+    const values = {
+      name: "Patnaik Family",
+      side: "both" as const,
+      guestCount: "999",
+      rsvpStatus: "Pending" as const,
+      invitationStatus: "Not Sent" as const,
+      accommodationStatus: "Not Needed" as const,
+      transportStatus: "Not Needed" as const,
+      notes: "",
+    };
+    expect(householdFormSchema.safeParse(values).success).toBe(true);
+    expect(householdFormSchema.safeParse({ ...values, guestCount: "1000" }).success).toBe(false);
+  });
+
+  it("enforces the shared exact text and currency limits", () => {
+    const taskValues = {
+      title: "t".repeat(120),
+      notes: "n".repeat(2_000),
+      description: "d".repeat(2_000),
+      category: "c".repeat(120),
+      eventId: "",
+      dueDate: "",
+      priority: "Medium" as const,
+      status: "Not Started" as const,
+      responsiblePerson: "a".repeat(120),
+    };
+    expect(taskFormSchema.safeParse(taskValues).success).toBe(true);
+    expect(taskFormSchema.safeParse({ ...taskValues, title: "t".repeat(121) }).success).toBe(false);
+    expect(taskFormSchema.safeParse({ ...taskValues, notes: "n".repeat(2_001) }).success).toBe(
+      false,
+    );
+
+    expect(
+      quickExpenseFormSchema.safeParse({
+        title: "Expense",
+        categoryId: "venue",
+        amount: `${"9".repeat(13)}.99`,
+      }).success,
+    ).toBe(true);
+    expect(
+      quickExpenseFormSchema.safeParse({
+        title: "Expense",
+        categoryId: "venue",
+        amount: "1".repeat(17),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("enforces contact, gift, and settings field limits", () => {
+    expect(
+      contactFormSchema.safeParse({
+        name: "n".repeat(120),
+        role: "r".repeat(120),
+        phone: `+91${"1".repeat(17)}`,
+      }).success,
+    ).toBe(true);
+    expect(
+      contactFormSchema.safeParse({ name: "Name", role: "Role", phone: "1".repeat(21) }).success,
+    ).toBe(false);
+
+    expect(
+      giftFormSchema.safeParse({
+        personName: "n".repeat(120),
+        relationship: "r".repeat(120),
+        itemName: "g".repeat(240),
+        value: "",
+      }).success,
+    ).toBe(true);
+    expect(
+      giftFormSchema.safeParse({
+        personName: "Name",
+        relationship: "",
+        itemName: "g".repeat(241),
+        value: "",
+      }).success,
+    ).toBe(false);
+
+    expect(
+      settingsFormSchema.safeParse({
+        name: "Wedding",
+        date: "2026-12-14",
+        location: "l".repeat(240),
+        type: "t".repeat(120),
+        keepsakeMessage: "",
+      }).success,
+    ).toBe(true);
   });
 
   it("requires a supported household RSVP status", () => {

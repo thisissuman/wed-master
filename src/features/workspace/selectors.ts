@@ -15,17 +15,11 @@ import type {
 } from "./types";
 
 export type TaskFilterState = {
-  dueWindow: "All" | "This Week";
-  eventId: string;
-  overdueOnly: boolean;
-  priority: TaskPriority | "All" | "Urgent";
+  priority: TaskPriority | "All";
   status: TaskStatus | "All";
 };
 
 export const emptyTaskFilters = (): TaskFilterState => ({
-  dueWindow: "All",
-  eventId: "All",
-  overdueOnly: false,
   priority: "All",
   status: "All",
 });
@@ -108,35 +102,14 @@ export function isDateInCurrentWeek(date: string | undefined, today = todayDateO
   return date >= toDateOnly(start) && date <= toDateOnly(end);
 }
 
-export function filterTasks(tasks: Task[], filters: TaskFilterState, today = todayDateOnly()) {
+export function filterTasks(tasks: Task[], filters: TaskFilterState) {
   return tasks
     .filter((task) => filters.status === "All" || task.status === filters.status)
-    .filter((task) => {
-      if (filters.priority === "All") return true;
-      if (filters.priority === "Urgent") {
-        return task.priority === "High" || task.priority === "Critical";
-      }
-      return task.priority === filters.priority;
-    })
-    .filter((task) => filters.eventId === "All" || (task.eventId ?? "") === filters.eventId)
-    .filter(
-      (task) =>
-        !filters.overdueOnly ||
-        (task.status !== "Completed" &&
-          task.status !== "Cancelled" &&
-          isOverdue(task.dueDate, today)),
-    )
-    .filter((task) => filters.dueWindow === "All" || isDateInCurrentWeek(task.dueDate, today));
+    .filter((task) => filters.priority === "All" || task.priority === filters.priority);
 }
 
 export function taskFilterCount(filters: TaskFilterState) {
-  return [
-    filters.status !== "All",
-    filters.priority !== "All",
-    filters.eventId !== "All",
-    filters.overdueOnly,
-    filters.dueWindow !== "All",
-  ].filter(Boolean).length;
+  return [filters.status !== "All", filters.priority !== "All"].filter(Boolean).length;
 }
 
 export function weddingDateEvent(events: WeddingEvent[], weddingDate: string) {
@@ -384,16 +357,36 @@ export function householdSummary(households: Household[]) {
   );
 }
 
+export type GuestFilterState = {
+  needsSupport: boolean;
+  status: Household["rsvpStatus"] | "All";
+};
+
+export const emptyGuestFilters = (): GuestFilterState => ({
+  needsSupport: false,
+  status: "All",
+});
+
+export function guestFilterCount(filters: GuestFilterState) {
+  return [filters.status !== "All", filters.needsSupport].filter(Boolean).length;
+}
+
 export function filterHouseholds(
   households: Household[],
-  filters: { query: string; side: string; status: string },
+  filters: GuestFilterState & { query: string },
 ) {
   const query = filters.query.trim().toLowerCase();
   return households.filter((household) => {
-    const sideMatches = filters.side === "all" || household.side === filters.side;
-    const statusMatches = filters.status === "all" || household.rsvpStatus === filters.status;
-    const searchMatches = !query || household.name.toLowerCase().includes(query);
-    return sideMatches && statusMatches && searchMatches;
+    const statusMatches = filters.status === "All" || household.rsvpStatus === filters.status;
+    const supportMatches =
+      !filters.needsSupport ||
+      household.accommodationStatus === "Needed" ||
+      household.transportStatus === "Needed";
+    const searchMatches =
+      !query ||
+      household.name.toLowerCase().includes(query) ||
+      household.guests.some((guest) => guest.name.toLowerCase().includes(query));
+    return statusMatches && supportMatches && searchMatches;
   });
 }
 

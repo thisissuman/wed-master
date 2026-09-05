@@ -2,18 +2,17 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import {
-  CalendarDays,
-  ArrowLeft,
-  Camera,
-  Check,
-  ChevronDown,
-  ImagePlus,
-  IndianRupee,
-  LockKeyhole,
-  Pencil,
-  Trash2,
-} from "lucide-react-native";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import ArrowLeft from "lucide-react-native/icons/arrow-left";
+import Camera from "lucide-react-native/icons/camera";
+import Check from "lucide-react-native/icons/check";
+import ChevronDown from "lucide-react-native/icons/chevron-down";
+import ImagePlus from "lucide-react-native/icons/image-plus";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import ListChecks from "lucide-react-native/icons/list-checks";
+import LockKeyhole from "lucide-react-native/icons/lock-keyhole";
+import Pencil from "lucide-react-native/icons/pencil";
+import Trash2 from "lucide-react-native/icons/trash-2";
 import type { LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -21,6 +20,7 @@ import {
   BackHandler,
   FlatList,
   Linking,
+  ScrollView,
   TextInput,
   View,
   useWindowDimensions,
@@ -40,13 +40,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MotionPressable } from "@/components/ui";
 import { formatDateOnly, toDateOnly } from "@/lib/dates";
+import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
+import { useAppTheme } from "@/theme";
 
-import { pickWeddingCoverPhoto, removeWeddingCoverPhoto } from "../files/workspace-files";
+import {
+  coverPhotoErrorMessage,
+  pickWeddingCoverPhoto,
+  removeWeddingCoverPhoto,
+} from "../files/workspace-files";
 import { toPaise } from "../forms";
 import { useCreateWorkspaceMutation } from "../provider";
 import { createEmptyWorkspace, suggestedEventDefinitions } from "../seed";
-import type { ISODate, StarterEventKey } from "../types";
+import { createSuggestedTasks, suggestedTaskDefinitions } from "../task-suggestions";
+import type { ISODate, StarterEventKey, StarterTaskKey } from "../types";
 import {
   BuildingVisual,
   CoverVisual,
@@ -63,11 +72,12 @@ import {
   OnboardingText,
   StepHeading,
 } from "./OnboardingPrimitives";
+import { OnboardingTaskSuggestions } from "./OnboardingTaskSuggestions";
 import { digitsOnly, formatBudgetInput } from "./onboarding-format";
 import { onboardingGradients, onboardingTheme as theme } from "./onboarding-theme";
 
 type OnboardingStage =
-  "intro" | "names" | "milestones" | "cover" | "events" | "review" | "building";
+  "intro" | "names" | "milestones" | "cover" | "events" | "tasks" | "review" | "building";
 
 type IntroSlide = {
   body: string;
@@ -94,17 +104,14 @@ const introSlides: readonly IntroSlide[] = [
 ] as const;
 
 const buildingMessages = [
-  "Adding your selected events",
+  "Adding your selected events and tasks",
   "Preparing your wedding checklist",
   "Connecting dates and budget",
   "Finishing your private workspace",
 ] as const;
 
 const setupCoverErrorMessage = (error: unknown) =>
-  error instanceof Error &&
-  /Cover photos must|Choose an image for the wedding cover/.test(error.message)
-    ? error.message
-    : toUserMessage(error);
+  coverPhotoErrorMessage(error) ?? toUserMessage(error);
 
 const dateFromValue = (value: string) =>
   /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
@@ -117,6 +124,7 @@ function FormTextField({
   error,
   label,
   onChangeText,
+  maxLength,
   optional = false,
   placeholder,
   prefix,
@@ -125,8 +133,9 @@ function FormTextField({
   error?: string;
   label: string;
   onChangeText: (value: string) => void;
+  maxLength?: number;
   optional?: boolean;
-  placeholder: string;
+  placeholder?: string;
   prefix?: string;
   value: string;
 }) {
@@ -171,16 +180,20 @@ function FormTextField({
           autoCapitalize={prefix ? "none" : "words"}
           autoComplete="off"
           keyboardType={prefix ? "number-pad" : "default"}
+          maxLength={maxLength}
           onBlur={() => setFocused(false)}
           onChangeText={onChangeText}
           onFocus={() => setFocused(true)}
           placeholder={placeholder}
           placeholderTextColor={theme.colors.mutedText}
           returnKeyType="done"
+          cursorColor={theme.colors.primary}
+          selectionColor={theme.colors.primarySoft}
+          selectionHandleColor={theme.colors.primary}
           style={{
             color: theme.colors.text,
             flex: 1,
-            fontFamily: theme.fonts.body,
+            fontFamily: theme.fonts.medium,
             fontSize: 16,
             minHeight: theme.layout.controlHeight,
             paddingHorizontal: prefix ? 10 : 16,
@@ -218,8 +231,8 @@ function ReviewSummaryTile({
       pressedScale={0.985}
       style={{
         alignItems: "center",
-        backgroundColor: "rgba(233,223,240,0.16)",
-        borderColor: "rgba(255,248,242,0.18)",
+        backgroundColor: theme.colors.nightSoft,
+        borderColor: theme.colors.translucentBorder,
         borderRadius: theme.radius.control,
         borderWidth: 1,
         flexBasis: fullWidth ? "100%" : "47%",
@@ -234,7 +247,7 @@ function ReviewSummaryTile({
       <View
         style={{
           alignItems: "center",
-          backgroundColor: "rgba(217,170,88,0.18)",
+          backgroundColor: theme.colors.nightSoft,
           borderRadius: 18,
           height: 36,
           justifyContent: "center",
@@ -244,14 +257,14 @@ function ReviewSummaryTile({
         <Icon color={theme.colors.gold} size={18} strokeWidth={1.8} />
       </View>
       <View style={{ flex: 1 }}>
-        <OnboardingText color="rgba(255,248,242,0.68)" size={10}>
+        <OnboardingText color={theme.colors.onNightMuted} size={10}>
           {label}
         </OnboardingText>
-        <OnboardingText color={theme.colors.ivory} family="semibold" size={13} numberOfLines={1}>
+        <OnboardingText color={theme.colors.onNight} family="semibold" size={13} numberOfLines={1}>
           {value}
         </OnboardingText>
       </View>
-      <Pencil color="rgba(255,248,242,0.64)" size={14} />
+      <Pencil color={theme.colors.onNightMuted} size={14} />
     </MotionPressable>
   );
 }
@@ -274,12 +287,6 @@ function IntroScreen({
   useEffect(() => {
     listRef.current?.scrollToIndex({ animated: !reduceMotion, index });
   }, [index, pageWidth, reduceMotion]);
-
-  useEffect(() => {
-    if (reduceMotion || index >= introSlides.length - 1) return;
-    const timer = setTimeout(() => onIndexChange(index + 1), theme.motion.carousel);
-    return () => clearTimeout(timer);
-  }, [index, onIndexChange, reduceMotion]);
 
   const next = () => {
     if (index === introSlides.length - 1) {
@@ -305,7 +312,7 @@ function IntroScreen({
     >
       <StatusBar style="light" />
       <SafeAreaView style={{ alignItems: "center", flex: 1, paddingBottom: 20, paddingTop: 12 }}>
-        <OnboardingText color={theme.colors.ivory} family="wordmark" size={30}>
+        <OnboardingText color={theme.colors.onNight} family="wordmark" size={30}>
           Mangalya
         </OnboardingText>
         <FlatList
@@ -323,34 +330,42 @@ function IntroScreen({
           pagingEnabled
           ref={listRef}
           renderItem={({ item, index: slideIndex }) => (
-            <View
-              accessibilityElementsHidden={slideIndex !== index}
-              importantForAccessibility={slideIndex === index ? "auto" : "no-hide-descendants"}
-              style={{
+            <ScrollView
+              contentContainerStyle={{
                 alignItems: "center",
+                flexGrow: 1,
                 justifyContent: "center",
                 paddingHorizontal: theme.layout.pagePadding,
-                width: pageWidth,
+                paddingVertical: 16,
               }}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              style={{ width: pageWidth }}
             >
-              <IntroVisual index={slideIndex} reduceMotion={reduceMotion} />
-              <OnboardingText
-                accessibilityLiveRegion="polite"
-                color={theme.colors.ivory}
-                family="emotional"
-                size={42}
-                style={{ letterSpacing: -0.6, textAlign: "center" }}
+              <View
+                accessibilityElementsHidden={slideIndex !== index}
+                importantForAccessibility={slideIndex === index ? "auto" : "no-hide-descendants"}
+                style={{ alignItems: "center", width: "100%" }}
               >
-                {item.title}
-              </OnboardingText>
-              <OnboardingText
-                color="rgba(255,248,242,0.84)"
-                size={16}
-                style={{ marginTop: 12, maxWidth: 390, textAlign: "center" }}
-              >
-                {item.body}
-              </OnboardingText>
-            </View>
+                <IntroVisual index={slideIndex} reduceMotion={reduceMotion} />
+                <OnboardingText
+                  accessibilityLiveRegion="polite"
+                  color={theme.colors.onNight}
+                  family="bold"
+                  size={36}
+                  style={{ letterSpacing: -0.6, textAlign: "center" }}
+                >
+                  {item.title}
+                </OnboardingText>
+                <OnboardingText
+                  color={theme.colors.onNightMuted}
+                  size={16}
+                  style={{ marginTop: 12, maxWidth: 390, textAlign: "center" }}
+                >
+                  {item.body}
+                </OnboardingText>
+              </View>
+            </ScrollView>
           )}
           showsHorizontalScrollIndicator={false}
           style={{ flex: 1, maxWidth: pageWidth, width: pageWidth }}
@@ -364,7 +379,7 @@ function IntroScreen({
               key={slide.id}
               testID={`intro-dot-${dotIndex + 1}`}
               style={{
-                backgroundColor: dotIndex === index ? theme.colors.gold : "rgba(255,248,242,0.42)",
+                backgroundColor: dotIndex === index ? theme.colors.gold : theme.colors.nightSoft,
                 borderRadius: 99,
                 height: 8,
                 width: dotIndex === index ? 28 : 8,
@@ -391,10 +406,11 @@ function IntroScreen({
 }
 
 export function LocalSetupScreen() {
+  useAppTheme();
   const mutation = useCreateWorkspaceMutation();
   const reduceMotion = useReducedMotion();
+  const today = useTodayDateOnly() as ISODate;
   const pendingCoverPhotoRef = useRef<string | undefined>(undefined);
-  const submissionInFlightRef = useRef(false);
   const [stage, setStage] = useState<OnboardingStage>("intro");
   const [introIndex, setIntroIndex] = useState(0);
   const [yourName, setYourName] = useState("");
@@ -409,6 +425,9 @@ export function LocalSetupScreen() {
   const [starterEventSelection, setStarterEventSelection] = useState<StarterEventKey[]>([
     "wedding",
   ]);
+  const [starterTaskSelection, setStarterTaskSelection] = useState<StarterTaskKey[]>(() =>
+    suggestedTaskDefinitions.map((task) => task.key),
+  );
   const [nameErrors, setNameErrors] = useState<{ partner?: string; yours?: string }>({});
   const [dateError, setDateError] = useState<string>();
   const [submitError, setSubmitError] = useState<string>();
@@ -436,12 +455,19 @@ export function LocalSetupScreen() {
     else if (stage === "milestones") setStage("names");
     else if (stage === "cover") setStage("milestones");
     else if (stage === "events") setStage("cover");
-    else if (stage === "review") setStage("events");
+    else if (stage === "tasks") setStage("events");
+    else if (stage === "review") setStage("tasks");
   }, [stage]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (stage === "building") return true;
+      if (stage === "building") {
+        if (submitError) {
+          setSubmitError(undefined);
+          setStage("review");
+        }
+        return true;
+      }
       if (stage === "intro") {
         if (introIndex === 0) return false;
         setIntroIndex((value) => Math.max(0, value - 1));
@@ -451,7 +477,7 @@ export function LocalSetupScreen() {
       return true;
     });
     return () => subscription.remove();
-  }, [introIndex, previousStage, stage]);
+  }, [introIndex, previousStage, stage, submitError]);
 
   const continueNames = () => {
     const errors = {
@@ -533,38 +559,41 @@ export function LocalSetupScreen() {
     );
   };
 
-  const buildWorkspace = async () => {
-    if (submissionInFlightRef.current) return;
-    submissionInFlightRef.current = true;
+  const buildWorkspace = useSingleFlightSubmission(async () => {
     setSubmitError(undefined);
     setBuildingMessageIndex(0);
     setStage("building");
     const budgetDigits = digitsOnly(budgetTarget);
+    const submittedCoverPhotoUri = pendingCoverPhotoRef.current;
+    pendingCoverPhotoRef.current = undefined;
     try {
+      const snapshot = createEmptyWorkspace(
+        {
+          name: `${yourName.trim()} & ${partnerName.trim()}`,
+          date: date as ISODate,
+          location: "To be decided",
+          type: "Not specified",
+          budgetTargetPaise: budgetDigits ? toPaise(budgetDigits) : undefined,
+          coverPhotoUri,
+        },
+        starterEventSelection,
+      );
+      const starterTasks = createSuggestedTasks(
+        snapshot.wedding.date,
+        starterTaskSelection,
+        snapshot.tasks,
+        today,
+      );
       await Promise.all([
-        mutation.mutateAsync(
-          createEmptyWorkspace(
-            {
-              name: `${yourName.trim()} & ${partnerName.trim()}`,
-              date: date as ISODate,
-              location: "To be decided",
-              type: "Not specified",
-              budgetTargetPaise: budgetDigits ? toPaise(budgetDigits) : undefined,
-              coverPhotoUri,
-            },
-            starterEventSelection,
-          ),
-        ),
+        mutation.mutateAsync({ ...snapshot, tasks: starterTasks }),
         reduceMotion ? Promise.resolve() : delay(theme.motion.build),
       ]);
-      pendingCoverPhotoRef.current = undefined;
       router.replace("/(app)/(tabs)");
     } catch (error) {
+      pendingCoverPhotoRef.current = submittedCoverPhotoUri;
       setSubmitError(toUserMessage(error));
-    } finally {
-      submissionInFlightRef.current = false;
     }
-  };
+  });
 
   if (stage === "intro") {
     return (
@@ -586,84 +615,89 @@ export function LocalSetupScreen() {
         style={{ flex: 1 }}
       >
         <StatusBar style="light" />
-        <SafeAreaView
-          style={{
-            alignItems: "center",
-            flex: 1,
-            justifyContent: "center",
-            padding: theme.layout.pagePadding,
-          }}
-        >
-          <OnboardingText color={theme.colors.gold} family="wordmark" size={28}>
-            Mangalya
-          </OnboardingText>
-          <OnboardingText
-            color={theme.colors.ivory}
-            family="emotional"
-            size={42}
-            style={{ marginTop: 24, textAlign: "center" }}
+        <SafeAreaView style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={{
+              alignItems: "center",
+              flexGrow: 1,
+              justifyContent: "center",
+              padding: theme.layout.pagePadding,
+            }}
+            showsVerticalScrollIndicator={false}
           >
-            {submitError ? "We couldn’t finish your planner" : "Building your planner…"}
-          </OnboardingText>
-          <BuildingVisual reduceMotion={reduceMotion || Boolean(submitError)} />
-          {submitError ? (
-            <View style={{ gap: 12, maxWidth: 440, width: "100%" }}>
-              <OnboardingText
-                accessibilityRole="alert"
-                color={theme.colors.ivory}
-                style={{ textAlign: "center" }}
-              >
-                {submitError}
+            <View style={{ alignItems: "center", maxWidth: 500, width: "100%" }}>
+              <OnboardingText color={theme.colors.gold} family="wordmark" size={28}>
+                Mangalya
               </OnboardingText>
-              <OnboardingButton
-                label="Try again"
-                onPress={() => void buildWorkspace()}
-                variant="light"
-              />
-              <MotionPressable
-                accessibilityLabel="Back to review"
-                accessibilityRole="button"
-                onPress={() => {
-                  setSubmitError(undefined);
-                  setStage("review");
-                }}
-                style={{ alignItems: "center", minHeight: 48, justifyContent: "center" }}
+              <OnboardingText
+                color={theme.colors.onNight}
+                family="bold"
+                size={36}
+                style={{ marginTop: 24, textAlign: "center" }}
               >
-                <OnboardingText color={theme.colors.ivory} family="semibold">
-                  Back to review
-                </OnboardingText>
-              </MotionPressable>
+                {submitError ? "We couldn’t finish your planner" : "Building your planner…"}
+              </OnboardingText>
+              <BuildingVisual reduceMotion={reduceMotion || Boolean(submitError)} />
+              {submitError ? (
+                <View style={{ gap: 12, maxWidth: 440, width: "100%" }}>
+                  <OnboardingText
+                    accessibilityRole="alert"
+                    color={theme.colors.onNight}
+                    style={{ textAlign: "center" }}
+                  >
+                    {submitError}
+                  </OnboardingText>
+                  <OnboardingButton
+                    label="Try again"
+                    onPress={() => void buildWorkspace()}
+                    variant="light"
+                  />
+                  <MotionPressable
+                    accessibilityLabel="Back to review"
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setSubmitError(undefined);
+                      setStage("review");
+                    }}
+                    style={{ alignItems: "center", minHeight: 48, justifyContent: "center" }}
+                  >
+                    <OnboardingText color={theme.colors.onNight} family="semibold">
+                      Back to review
+                    </OnboardingText>
+                  </MotionPressable>
+                </View>
+              ) : (
+                <View style={{ gap: 12, maxWidth: 440, width: "100%" }}>
+                  <View
+                    accessibilityLabel="Building planner"
+                    accessibilityRole="progressbar"
+                    style={{
+                      backgroundColor: theme.colors.nightSoft,
+                      borderRadius: 99,
+                      height: 8,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <BuildProgress reduceMotion={reduceMotion} />
+                  </View>
+                  <OnboardingText
+                    color={theme.colors.onNight}
+                    family="semibold"
+                    style={{ textAlign: "center" }}
+                  >
+                    {buildingMessages[buildingMessageIndex]}
+                  </OnboardingText>
+                  <OnboardingText
+                    color={theme.colors.onNightMuted}
+                    size={13}
+                    style={{ textAlign: "center" }}
+                  >
+                    This will only take a moment.
+                  </OnboardingText>
+                </View>
+              )}
             </View>
-          ) : (
-            <View style={{ gap: 12, maxWidth: 440, width: "100%" }}>
-              <View
-                accessibilityLabel="Building planner"
-                accessibilityRole="progressbar"
-                style={{
-                  backgroundColor: "rgba(255,248,242,0.24)",
-                  borderRadius: 99,
-                  height: 8,
-                  overflow: "hidden",
-                }}
-              >
-                <BuildProgress reduceMotion={reduceMotion} />
-              </View>
-              <OnboardingText
-                color={theme.colors.ivory}
-                family="semibold"
-                style={{ textAlign: "center" }}
-              >
-                {buildingMessages[buildingMessageIndex]}
-              </OnboardingText>
-              <OnboardingText
-                color="rgba(255,248,242,0.76)"
-                size={13}
-                style={{ textAlign: "center" }}
-              >
-                This will only take a moment.
-              </OnboardingText>
-            </View>
-          )}
+          </ScrollView>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -685,21 +719,21 @@ export function LocalSetupScreen() {
           <FormTextField
             error={nameErrors.yours}
             label="Your name"
+            maxLength={uiFieldLimits.shortText}
             onChangeText={(value) => {
               setYourName(value);
               if (value.trim()) setNameErrors((errors) => ({ ...errors, yours: undefined }));
             }}
-            placeholder="e.g. Aanya"
             value={yourName}
           />
           <FormTextField
             error={nameErrors.partner}
             label="Partner’s name"
+            maxLength={uiFieldLimits.shortText}
             onChangeText={(value) => {
               setPartnerName(value);
               if (value.trim()) setNameErrors((errors) => ({ ...errors, partner: undefined }));
             }}
-            placeholder="e.g. Rohan"
             value={partnerName}
           />
         </OnboardingCard>
@@ -766,12 +800,12 @@ export function LocalSetupScreen() {
           <FormTextField
             error={budgetError}
             label="Target budget"
+            maxLength={uiFieldLimits.currency}
             onChangeText={(value) => {
               setBudgetTarget(formatBudgetInput(value));
               setBudgetError(undefined);
             }}
             optional
-            placeholder="12,00,000"
             prefix="₹"
             value={budgetTarget}
           />
@@ -797,7 +831,13 @@ export function LocalSetupScreen() {
   if (stage === "cover") {
     return (
       <OnboardingStep
-        footer={<OnboardingButton label="Next" onPress={() => setStage("events")} />}
+        footer={
+          <OnboardingButton
+            disabled={isPickingPhoto}
+            label="Next"
+            onPress={() => setStage("events")}
+          />
+        }
         onBack={previousStage}
         progress={3}
         title="Make it yours"
@@ -817,7 +857,7 @@ export function LocalSetupScreen() {
             <View
               style={{
                 alignItems: "center",
-                backgroundColor: "rgba(255,253,252,0.9)",
+                backgroundColor: theme.colors.translucentSurface,
                 borderColor: theme.colors.gold,
                 borderRadius: 14,
                 borderWidth: 1,
@@ -840,7 +880,7 @@ export function LocalSetupScreen() {
         <View
           style={{
             alignItems: "center",
-            backgroundColor: "rgba(233,223,240,0.62)",
+            backgroundColor: theme.colors.primarySoft,
             borderRadius: theme.radius.control,
             flexDirection: "row",
             gap: 10,
@@ -877,7 +917,7 @@ export function LocalSetupScreen() {
   if (stage === "events") {
     return (
       <OnboardingStep
-        footer={<OnboardingButton label="Review my planner" onPress={() => setStage("review")} />}
+        footer={<OnboardingButton label="Next" onPress={() => setStage("tasks")} />}
         onBack={previousStage}
         progress={4}
         title="Events"
@@ -947,6 +987,28 @@ export function LocalSetupScreen() {
     );
   }
 
+  if (stage === "tasks") {
+    return (
+      <OnboardingStep
+        footer={<OnboardingButton label="Review my planner" onPress={() => setStage("review")} />}
+        onBack={previousStage}
+        progress={5}
+        title="Tasks"
+      >
+        <StepHeading description="Choose what helps. You can edit every task and due date later.">
+          Start with a useful checklist
+        </StepHeading>
+        <OnboardingTaskSuggestions
+          onChange={setStarterTaskSelection}
+          reduceMotion={reduceMotion}
+          selectedKeys={starterTaskSelection}
+          today={today}
+          weddingDate={date as ISODate}
+        />
+      </OnboardingStep>
+    );
+  }
+
   const reviewRows = [
     {
       icon: Pencil,
@@ -978,6 +1040,12 @@ export function LocalSetupScreen() {
       value: `${starterEventSelection.length} selected`,
       stage: "events" as const,
     },
+    {
+      icon: ListChecks,
+      label: "Starter tasks",
+      value: `${starterTaskSelection.length} selected`,
+      stage: "tasks" as const,
+    },
   ];
 
   return (
@@ -1002,13 +1070,13 @@ export function LocalSetupScreen() {
           <View style={{ gap: 12, maxWidth: theme.layout.maxWidth, width: "100%" }}>
             <View style={{ alignItems: "center", flexDirection: "row", minHeight: 48 }}>
               <MotionPressable
-                accessibilityLabel="Back to events"
+                accessibilityLabel="Back to tasks"
                 accessibilityRole="button"
                 onPress={previousStage}
                 pressedScale={0.94}
                 style={{ alignItems: "center", height: 48, justifyContent: "center", width: 48 }}
               >
-                <ArrowLeft color={theme.colors.ivory} size={22} />
+                <ArrowLeft color={theme.colors.onNight} size={22} />
               </MotionPressable>
               <OnboardingText
                 color={theme.colors.gold}
@@ -1029,17 +1097,17 @@ export function LocalSetupScreen() {
               reduceMotion={reduceMotion}
             />
             <OnboardingText
-              color={theme.colors.ivory}
-              family="emotional"
-              size={30}
+              color={theme.colors.onNight}
+              family="bold"
+              size={28}
               style={{ letterSpacing: -0.3, textAlign: "center" }}
             >
               Everything looks lovely
             </OnboardingText>
             <View
               style={{
-                backgroundColor: "rgba(40,16,47,0.56)",
-                borderColor: "rgba(217,170,88,0.32)",
+                backgroundColor: theme.colors.overlay,
+                borderColor: theme.colors.translucentBorder,
                 borderRadius: theme.radius.card,
                 borderWidth: 1,
                 flexDirection: "row",
@@ -1051,7 +1119,7 @@ export function LocalSetupScreen() {
             >
               {reviewRows.map(({ icon: Icon, label, stage: editStage, value }) => (
                 <ReviewSummaryTile
-                  fullWidth={label === "Names"}
+                  fullWidth={label === "Names" || label === "Starter tasks"}
                   icon={Icon}
                   key={label}
                   onPress={() => setStage(editStage)}
@@ -1065,8 +1133,8 @@ export function LocalSetupScreen() {
         <View
           style={{
             alignItems: "center",
-            backgroundColor: "rgba(40,16,47,0.97)",
-            borderTopColor: "rgba(217,170,88,0.38)",
+            backgroundColor: theme.colors.nightSurface,
+            borderTopColor: theme.colors.translucentBorder,
             borderTopWidth: 1,
             bottom: 0,
             left: 0,

@@ -5,6 +5,8 @@ import type { TextInput } from "react-native";
 
 import { Screen, TextField } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 
 import { useCreatedItemHighlight } from "../created-item-highlight";
 import { contactFormSchema, type ContactFormValues } from "../forms";
@@ -34,7 +36,7 @@ export function ContactForm({ contact }: { contact?: EmergencyContact }) {
     isDirty,
     isSubmitting: isSubmitting || mutation.isPending,
   });
-  const save = handleSubmit(async (values) => {
+  const saveValues = useSingleFlightSubmission(async (values: ContactFormValues) => {
     const snapshot = await mutation.mutateAsync((repositories) =>
       contact
         ? repositories.emergencyContacts.updateContact({ ...contact, ...values })
@@ -47,6 +49,7 @@ export function ContactForm({ contact }: { contact?: EmergencyContact }) {
     }
     exitAfterSave();
   });
+  const save = handleSubmit(saveValues);
   const field = (name: keyof ContactFormValues, label: string, keyboardType?: "phone-pad") => (
     <Controller
       control={control}
@@ -59,6 +62,7 @@ export function ContactForm({ contact }: { contact?: EmergencyContact }) {
           error={errors[name]?.message}
           keyboardType={keyboardType}
           label={label}
+          maxLength={name === "phone" ? uiFieldLimits.phone : uiFieldLimits.shortText}
           onBlur={input.onBlur}
           onChangeText={input.onChange}
           onSubmitEditing={
@@ -67,6 +71,13 @@ export function ContactForm({ contact }: { contact?: EmergencyContact }) {
               : name === "role"
                 ? () => phoneInputRef.current?.focus()
                 : undefined
+          }
+          placeholder={
+            name === "name"
+              ? "Family coordinator"
+              : name === "role"
+                ? "Driver, doctor…"
+                : "Phone number"
           }
           ref={name === "role" ? roleInputRef : name === "phone" ? phoneInputRef : undefined}
           returnKeyType={name === "phone" ? "done" : "next"}

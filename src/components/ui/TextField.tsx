@@ -2,12 +2,15 @@ import type { LucideIcon } from "lucide-react-native";
 import { forwardRef, useState } from "react";
 import { TextInput, View, type TextInputProps } from "react-native";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { AppText } from "./AppText";
 import { FieldLabel } from "./FieldLabel";
 
-type TextFieldProps = Omit<TextInputProps, "className"> & {
+type TextFieldProps = Omit<
+  TextInputProps,
+  "className" | "cursorColor" | "placeholderTextColor" | "selectionColor" | "selectionHandleColor"
+> & {
   className?: string;
   error?: string;
   helperText?: string;
@@ -34,6 +37,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   },
   ref,
 ) {
+  const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
   const message = error ?? helperText;
 
@@ -44,17 +48,17 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         className={`${multiline ? "min-h-28 items-start" : "min-h-14 items-center"} flex-row overflow-hidden rounded-control border bg-elevatedSurface ${
           error ? "border-danger" : focused ? "border-primary" : "border-borderStrong"
         }`}
-        style={focused && !error ? { boxShadow: tokens.elevation.focus } : undefined}
+        style={focused && !error ? { boxShadow: theme.elevation.focus } : undefined}
       >
         {Icon ? (
           <View className={`${multiline ? "pt-sm" : ""} min-w-14 items-center justify-center`}>
             <Icon
               color={
                 error
-                  ? tokens.colors.danger
+                  ? theme.colors.danger
                   : focused
-                    ? tokens.colors.primary
-                    : tokens.colors.textSecondary
+                    ? theme.colors.primary
+                    : theme.colors.textSecondary
               }
               size={tokens.iconSize.md}
             />
@@ -68,6 +72,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
             Icon ? "pr-md" : "px-md"
           } ${className}`}
           multiline={multiline}
+          cursorColor={theme.colors.primary}
           onBlur={(event) => {
             setFocused(false);
             onBlur?.(event);
@@ -76,8 +81,10 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
             setFocused(true);
             onFocus?.(event);
           }}
-          placeholderTextColor={tokens.colors.textMuted}
-          style={[{ fontFamily: tokens.fontFamily.sansRegular }, style]}
+          placeholderTextColor={theme.colors.textMuted}
+          selectionColor={theme.colors.primarySoft}
+          selectionHandleColor={theme.colors.primary}
+          style={[{ fontFamily: tokens.fontFamily.sansMedium }, style]}
           textAlignVertical={multiline ? "top" : "center"}
           {...props}
         />

@@ -43,6 +43,7 @@ const mockUseWorkspace = jest.mocked(useWorkspace);
 const mockUseWorkspaceMutation = jest.mocked(useWorkspaceMutation);
 const mockRouter = jest.mocked(router);
 const mockMutate = jest.fn();
+const mockMutateAsync = jest.fn();
 
 describe("PlanScreen", () => {
   beforeEach(() => {
@@ -59,7 +60,9 @@ describe("PlanScreen", () => {
     mockUseWorkspaceMutation.mockReturnValue({
       isPending: false,
       mutate: mockMutate,
+      mutateAsync: mockMutateAsync,
     } as unknown as ReturnType<typeof useWorkspaceMutation>);
+    mockMutateAsync.mockResolvedValue(demoWorkspace);
   });
 
   it("waits for Plan to regain focus before completing the new-task breath", async () => {
@@ -109,6 +112,30 @@ describe("PlanScreen", () => {
     expect(mockRouter.setParams).not.toHaveBeenCalled();
   });
 
+  it("keeps the segmented indicator mounted while switching views", async () => {
+    const screen = await render(<PlanScreen />);
+    const control = screen.getByLabelText("Plan view");
+    const indicator = screen.getByTestId("segmented-control-indicator", {
+      includeHiddenElements: true,
+    });
+
+    await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
+
+    expect(screen.getByLabelText("Plan view")).toBe(control);
+    expect(screen.getByTestId("segmented-control-indicator", { includeHiddenElements: true })).toBe(
+      indicator,
+    );
+  });
+
+  it("keeps event and task suggestions out of the live Plan workspace", async () => {
+    const screen = await render(<PlanScreen />);
+
+    expect(screen.queryByRole("button", { name: "Suggestions" })).toBeNull();
+    await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
+    expect(screen.queryByRole("button", { name: "Suggestions" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Add task" })).toBeTruthy();
+  });
+
   it("syncs external view parameters without haptic feedback", async () => {
     const screen = await render(<PlanScreen />);
 
@@ -121,7 +148,7 @@ describe("PlanScreen", () => {
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
   });
 
-  it("keeps every task filter behind one compact control", async () => {
+  it("keeps only status and priority in one anchored filter popover", async () => {
     mockSearchParams = { view: "tasks" };
     const screen = await render(<PlanScreen />);
 
@@ -131,18 +158,10 @@ describe("PlanScreen", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
     expect(screen.getByRole("radio", { name: "All statuses" })).toBeTruthy();
     expect(screen.getByRole("radio", { name: "All priorities" })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: "All events" })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: "Any due date" })).toBeTruthy();
-
-    await fireEvent.press(screen.getByRole("radio", { name: "Wedding" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
-
-    expect(screen.getByText("Confirm catering menu")).toBeTruthy();
-    expect(
-      screen.getByText("Confirm the final family transport and accommodation pickup schedule"),
-    ).toBeTruthy();
-    expect(screen.queryByText("Collect invitation proof")).toBeNull();
-    expect(screen.getByRole("button", { name: "Filters, 1 active" })).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "All events" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Any due date" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show results" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
   });
 
   it("keeps one creation affordance when the task list is empty", async () => {
@@ -171,12 +190,13 @@ describe("PlanScreen", () => {
       expect(screen.queryByText("Confirm catering menu")).toBeNull();
     });
 
-    await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
     const activeFilters = screen.getByRole("button", { name: "Filters, 1 active" });
     expect(activeFilters.props.accessibilityState.selected).toBe(true);
 
     await fireEvent.press(activeFilters);
-    await fireEvent.press(screen.getByRole("button", { name: "Clear filters" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Reset filters" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
 
     await waitFor(() => {
       expect(screen.getByText("Confirm catering menu")).toBeTruthy();
@@ -190,7 +210,7 @@ describe("PlanScreen", () => {
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
     await fireEvent.press(screen.getByRole("radio", { name: "Cancelled" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
 
     expect(await screen.findByText("No matching tasks")).toBeTruthy();
     expect(screen.getAllByRole("button", { name: "Add task" })).toHaveLength(1);
@@ -206,16 +226,8 @@ describe("PlanScreen", () => {
       screen.getByRole("checkbox", { name: "Mark complete: Confirm catering menu" }),
     );
 
-    expect(mockMutate).toHaveBeenCalledTimes(1);
-    expect(Haptics.impactAsync).not.toHaveBeenCalled();
-
-    const [, mutationOptions] = mockMutate.mock.calls[0] as unknown as [
-      unknown,
-      { onSuccess: () => void },
-    ];
-    mutationOptions.onSuccess();
-
-    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
+    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it("keeps task metadata available to assistive technology", async () => {
@@ -251,9 +263,7 @@ describe("PlanScreen", () => {
 
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.getByText("Task update failed")).toBeTruthy();
-    expect(
-      screen.getByText("We could not reach the service. Check your connection and try again."),
-    ).toBeTruthy();
+    expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
   });
 
   it("opens task detail and creation routes", async () => {

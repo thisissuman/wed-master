@@ -11,4 +11,4 @@ appId: com.suman.mangalya.development
 - inputText: "DELETE"
 - hideKeyboard
 - tapOn: "Delete data"
-- assertVisible: "Set up Mangalya"
+- assertVisible: "Mangalya introduction|Next"

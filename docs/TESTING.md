@@ -5,10 +5,11 @@ Test behavior that can cost users time, money, privacy, or trust. Do not optimis
 ## Automated coverage
 
 - Money parsing/INR formatting, date-only defaults/countdowns, title-suggestion ranking, newest-expense ordering, target/spent/pending selectors, highest-first category grouping, date-range daily aggregation, bounded trend sampling, and event/task progress.
-- Strict workspace validation; v1/v2/v3-to-v4 migration; starter-event deduplication/date offsets; household RSVP derivation; historical-field preservation; backup envelopes/size limits; serialized writes; persist-first failures; corruption recovery; deletion tombstones; and local file cleanup.
+- Strict workspace validation; v1/v2/v3/v4-to-v5 migration; starter-event/task exact-alias deduplication and date offsets/clamping; household RSVP derivation; historical-field preservation; backup envelopes/size limits; serialized writes; persist-first failures; corruption recovery; deletion tombstones; and local file cleanup.
 - Positive paise validation; mandatory seven-category quick capture; duplicate-tap protection; direct created-expense return to Money; date grouping; hidden legacy-field preservation; dirty-form navigation guards; keyboard metadata; and destructive Undo.
-- Tab visibility/selection, duplicate-safe navigation, deep-link fallbacks, loading/error/empty states, filters, and key accessibility semantics.
+- Tab visibility/selection, persistent Plan segmented-control state, onboarding event/task selection and atomic workspace creation, Home expense-FAB accessibility, duplicate-safe navigation, deep-link fallbacks, loading/error/empty states, filters, and key accessibility semantics.
 - Fresh-install empty-workspace routing, variant identifiers/schemes, Android backup and image-picker permission configuration, one-action empty states, invalid-household recovery, two-line task titles, compact/expanded navigation, and large-text guest/backup layouts.
+- Inspire schema strictness, separate-store serialization/concurrency, stable cursor pages, category/favourite/search/event-name filtering, event unlinking, delete/Undo, explicit full cleanup, corruption recovery, orphan repair, and backup exclusion. Media tests cover HEIC/JPEG/PNG sources, portrait/landscape/panorama/long-image dimensions, WebP derivative limits, partial-write rollback, collisions, permissions/cancellation, managed-file cleanup, and broken-image fallbacks.
 - A deterministic schema-valid fixture covers 1,000 guests, 500 tasks, and 500 expenses without becoming production seed data.
 
 Run the complete local gate:
@@ -135,6 +136,27 @@ Run `npx expo-doctor` when available, then export the production Android bundle 
   pulse and skip it under Reduce Motion. Passive success snackbars were removed; deletion Undo was
   retained. A signed preview still requires one final batched build after all source work is done.
 
+### 2026-08-24 Inspire Phase 1 verification
+
+- TypeScript, Expo lint, Prettier, `git diff --check`, Expo's bundled local SDK dependency check,
+  and all 55 Jest suites/292 tests passed. Network version validation was unavailable, so the Expo
+  dependency result used SDK 57's installed native-module map. The one-time Impeccable pass over
+  the changed Inspire, navigation, and shared-component surfaces reported no findings.
+- A static production web export completed all 93 routes, including `/inspire`, its detail route,
+  and the create/edit modals. Royal Plum and Lavender Pearl were inspected at the 360dp minimum;
+  the five compact labels fit without shrinking, theme switching preserved hierarchy, and the
+  600dp layout moved to the expanded rail.
+- The Android development client was rebuilt after adding `expo-image-manipulator`, installed on
+  the Pixel 8 emulator, and loaded without a missing-native-module or unhandled JavaScript error.
+  Home exposed Home · Plan · Inspire · Money · More in UIAutomator order. Inspire rendered its
+  native empty state, the Add sheet exposed labelled Gallery and Camera choices, and Android Back
+  dismissed the sheet without leaving the root board.
+- This smoke pass did not select Gallery or Camera, mutate the emulator's workspace through demo
+  reset, run the 200-item memory profile, enable TalkBack, or replace physical-device acceptance.
+  Permission-denial/permanent-denial, capture processing, seeded-board performance, large text,
+  reduced motion, rotation, and the full detail/edit/share/delete journey remain in the manual
+  release matrix below.
+
 Tracked Android journeys live under `.maestro/` and target `com.suman.mangalya.development`:
 
 ```bash
@@ -143,13 +165,64 @@ maestro test .maestro
 
 The suite covers fresh setup, event/task completion, expense capture, invalid household links, backup/share opening, restart persistence, and typed local deletion. The backup flow still requires physical-device share-picker confirmation.
 
+### 2026-08-29 self-test release-candidate source gate
+
+- TypeScript, Expo lint, 65 Jest suites/397 tests, Prettier verification, and `git diff --check`
+  pass after lifecycle, onboarding, status-action, accessibility-timeout, direct-icon import, and
+  managed-media security hardening. A final `--detectOpenHandles` Jest rerun also passed all 397
+  tests without console warnings or open handles. All three final read-only review tracks were
+  requested; the
+  UX/architecture tracks found no P0 and their P1 findings were fixed. The security track found
+  five P1 findings (media traversal, ambiguous cleanup markers, lifecycle races, Android platform
+  detection, and SecureStore backup-rule configuration); all five are fixed and covered by focused
+  tests or native regeneration evidence.
+- `npx expo install --check` reports dependencies up to date against the SDK 57 local map; a prior
+  remote validation passed before this source-only batch, while the current rerun was offline.
+  `npx expo-doctor` previously passed all 21 checks. The production-only audit has no app-runtime
+  High/Critical package; the
+  remaining High `image-size` and Moderate `uuid` advisories are documented Expo/Metro build-tool
+  exceptions in `docs/RELEASE.md` because the only forced remedy would downgrade the SDK. The
+  current `npm audit --omit=dev` and `npm audit` reruns were blocked by the offline registry
+  (`ENOTFOUND registry.npmjs.org`), so they are not counted as fresh passing evidence.
+- A clean production Android export completed with 2,795 modules, 57 assets, and a 7,655,635-byte
+  Hermes bundle (82.22% of the 9,311,031-byte ceiling; 14.16% below the previous 8,918,452-byte
+  bundle). Referenced onboarding/Home raster payload is 1,875,094 bytes versus 18,851,932 bytes
+  before conversion (90.05% reduction).
+- Preview native regeneration completed for `com.suman.mangalya.preview`, scheme
+  `mangalya-preview`, version `0.1.0 (5)`, `allowBackup=false`, no SecureStore backup-rule
+  references, intentional camera support, and removal directives for microphone, overlay,
+  legacy-storage, and broad-media permissions. The final release APK build is still a
+  native-environment gate: Gradle execution was rejected by the host usage limit/socket/cache
+  restriction, so no APK or device result is claimed here.
+
+### 2026-09-05 preview candidate gate
+
+- The repository-defined local gate passed after updating stale Home tests to the already-recorded
+  single-expense-FAB and wedding-card behavior: TypeScript, Expo lint, 65 Jest suites/397 tests,
+  Prettier, `git diff --check`, and Expo's online SDK dependency validation all passed.
+- `npx expo-doctor` initially found 12 compatible Expo patch updates. After the Expo dependency
+  repair and registering the `expo-sharing` config plugin, all 21 Doctor checks passed and Expo
+  reported dependencies up to date.
+- The nonbreaking production-dependency audit repair reduced npm's report from 23 advisories (18
+  moderate, 5 high) to 21 (17 moderate, 4 high). The remaining Expo Router, Metro, Xcode, and
+  config-plugin dependency paths require incompatible forced changes, so they remain documented
+  toolchain exceptions rather than being hidden by `--force`.
+- A clean production Android export completed with 2,793 modules, 57 assets, 59 total files, and a
+  7,650,724-byte Hermes bundle. Preview prebuild completed for `com.suman.mangalya.preview`,
+  `mangalya-preview`, and version `0.1.0 (5)`.
+- The local Gradle manifest diagnostic completed release bundling and reached
+  `:app:processReleaseMainManifest` but did not return a final status; it was interrupted and is not
+  claimed as passing. Maestro is not installed, so no tracked device flow is claimed. Signed APK
+  results are recorded in [PREVIEW_BUILD_2026-09-05.md](./PREVIEW_BUILD_2026-09-05.md).
+
 ## Manual release matrix
 
-- Fresh setup, existing v4 workspace, v1/v2/v3 migration, malformed storage, recovery-copy export, valid/invalid import, demo reset, and typed full deletion.
-- All four roots plus every create/edit/detail/delete flow; rapid taps; header, gesture, and Android hardware/predictive back.
-- Keyboard focus/next/done behavior, date/time pickers, attachment denial/cancel/oversize/missing-file handling, and share-sheet availability.
+- Fresh setup, existing v5 workspace, v4 upgrade-key migration, v1/v2/v3 migration, malformed storage, recovery-copy export, valid/invalid import, demo reset, and typed full deletion.
+- All five roots plus every create/edit/detail/delete flow; rapid taps; header, gesture, and Android hardware/predictive back. Verify `/inspire` tab visibility, hidden navigation on pushed Inspire routes, direct deep-link fallback, route-backed modal motion, and Reduce Motion.
+- Keyboard focus/next/done behavior for the first and final field of every form, onboarding step, editable sheet, and dialog; include multiline fields, large text, date/time pickers, attachment denial/cancel/oversize/missing-file handling, and share-sheet availability. On an emulator with a hardware keyboard, enable the soft IME with `adb shell settings put secure show_ime_with_hard_keyboard 1`, then repeat the focused-field pass on a physical phone with gesture and three-button navigation.
 - 360dp Android, a larger phone/tablet, compact-height landscape, 600/840dp expanded widths, largest font size, reduced motion, selective night-surface contrast, and TalkBack.
-- Bottom-sheet selectors: backdrop, close action, Android Back, keyboard resizing, trigger-focus restoration, long-list search, short-list selection, and expanded centred-panel layout.
+- Inspire with 0, 1, 3, 20, and 200+ records at 360dp/411dp and 600dp/840dp+, font scales 1.0/1.3/2.0, cutouts, keyboard open, both themes, hot theme switching, TalkBack chronological order, long screenshots/panoramas, missing files, permission denial/cancel/retry, and mid-range Android scrolling/memory.
+- Adaptive selectors and anchored filters: all-corner dialog/sheet geometry, translucent Android navigation-bar space, backdrop, close action, Android Back, keyboard-settled opening, trigger-focus restoration, long-list search, the four-option dialog threshold, immediate Status/Priority and RSVP/Needs-support filtering, and Reset.
 - Rapid expense taps, title/category reuse, keyboard amount focus, attachment cancel/failure/retry, Budget category filtering, and Tasks/Events switching under the large-list stress fixture. Preview-build targets are cold start ≤2.5s, task persistence p95 ≤150ms, expense save p95 ≤300ms, and no sustained scrolling below 55 FPS.
 - Upgrade install, background/termination during form entry and save, release signing, and offline launch.
 

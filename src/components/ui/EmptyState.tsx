@@ -1,9 +1,11 @@
 import type { LucideIcon } from "lucide-react-native";
-import { ChevronRight, CircleDashed, Plus } from "lucide-react-native";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import CircleDashed from "lucide-react-native/icons/circle-dashed";
+import Plus from "lucide-react-native/icons/plus";
 import { useWindowDimensions, View } from "react-native";
 
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { AppText } from "./AppText";
 import { MotionPressable } from "./MotionPressable";
@@ -25,6 +27,7 @@ export function EmptyState({
   onAction,
   title,
 }: EmptyStateProps) {
+  const theme = useAppTheme();
   const { fontScale } = useWindowDimensions();
   const largeText = isLargeText(fontScale);
 
@@ -34,13 +37,13 @@ export function EmptyState({
         accessibilityHint={[title, description].filter(Boolean).join(". ")}
         accessibilityLabel={actionLabel}
         accessibilityRole="button"
-        android_ripple={{ color: tokens.colors.primarySoft }}
+        android_ripple={{ color: theme.colors.primarySoft }}
         className="min-h-16 flex-row items-center gap-sm overflow-hidden rounded-control border border-borderSubtle bg-elevatedSurface px-md py-sm active:bg-primarySoft"
         onPress={onAction}
         pressedScale={0.985}
       >
         <View className="h-10 w-10 items-center justify-center rounded-full bg-primarySoft">
-          <ActionIcon color={tokens.colors.primary} size={tokens.iconSize.md} />
+          <ActionIcon color={theme.colors.primary} size={tokens.iconSize.md} />
         </View>
         <View className="min-w-0 flex-1 gap-2xs">
           <AppText numberOfLines={largeText ? undefined : 2} variant="label">
@@ -51,7 +54,7 @@ export function EmptyState({
               <AppText tone="primary" variant="label">
                 {actionLabel}
               </AppText>
-              <ChevronRight color={tokens.colors.primary} size={tokens.iconSize.sm} />
+              <ChevronRight color={theme.colors.primary} size={tokens.iconSize.sm} />
             </View>
           ) : null}
         </View>
@@ -60,7 +63,7 @@ export function EmptyState({
             <AppText tone="primary" variant="label">
               {actionLabel}
             </AppText>
-            <ChevronRight color={tokens.colors.primary} size={tokens.iconSize.sm} />
+            <ChevronRight color={theme.colors.primary} size={tokens.iconSize.sm} />
           </>
         )}
       </MotionPressable>
@@ -75,7 +78,7 @@ export function EmptyState({
       className="min-h-16 flex-row items-center gap-sm rounded-control bg-surfaceMuted px-md py-sm"
     >
       <View className="h-9 w-9 items-center justify-center rounded-full bg-elevatedSurface">
-        <Icon color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+        <Icon color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText variant="label">{title}</AppText>

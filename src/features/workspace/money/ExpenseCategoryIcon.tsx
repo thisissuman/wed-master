@@ -1,16 +1,14 @@
-import {
-  CalendarHeart,
-  Car,
-  Gift,
-  HandCoins,
-  ListChecks,
-  Shapes,
-  ShoppingBag,
-  type LucideIcon,
-} from "lucide-react-native";
+import CalendarHeart from "lucide-react-native/icons/calendar-heart";
+import Car from "lucide-react-native/icons/car";
+import Gift from "lucide-react-native/icons/gift";
+import HandCoins from "lucide-react-native/icons/hand-coins";
+import ListChecks from "lucide-react-native/icons/list-checks";
+import Shapes from "lucide-react-native/icons/shapes";
+import ShoppingBag from "lucide-react-native/icons/shopping-bag";
+import type { LucideIcon } from "lucide-react-native";
 import { View } from "react-native";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme, type AppThemeColorRole } from "@/theme";
 
 import type { BudgetCategoryIconKey } from "../types";
 
@@ -21,50 +19,77 @@ type CategoryPresentation = {
   softColor: string;
 };
 
-export const expenseCategoryPresentation: Record<BudgetCategoryIconKey, CategoryPresentation> = {
+type CategoryPresentationDefinition = Omit<CategoryPresentation, "color" | "softColor"> & {
+  colorRole: AppThemeColorRole;
+  softColorRole: AppThemeColorRole;
+};
+
+const expenseCategoryPresentationDefinitions: Record<
+  BudgetCategoryIconKey,
+  CategoryPresentationDefinition
+> = {
   event: {
-    color: tokens.colors.eventBotanical,
+    colorRole: "eventBotanical",
     icon: CalendarHeart,
     label: "Event",
-    softColor: tokens.colors.primarySoft,
+    softColorRole: "primarySoft",
   },
   task: {
-    color: tokens.colors.primary,
+    colorRole: "primary",
     icon: ListChecks,
     label: "Task",
-    softColor: tokens.colors.primarySoft,
+    softColorRole: "primarySoft",
   },
   shopping: {
-    color: tokens.colors.eventTerracotta,
+    colorRole: "eventTerracotta",
     icon: ShoppingBag,
     label: "Shopping",
-    softColor: tokens.colors.dangerSoft,
+    softColorRole: "dangerSoft",
   },
   commute: {
-    color: tokens.colors.eventSage,
+    colorRole: "eventSage",
     icon: Car,
     label: "Commute",
-    softColor: tokens.colors.successSoft,
+    softColorRole: "successSoft",
   },
   gift: {
-    color: tokens.colors.eventGold,
+    colorRole: "eventGold",
     icon: Gift,
     label: "Gift",
-    softColor: tokens.colors.accentSoft,
+    softColorRole: "accentSoft",
   },
   advance: {
-    color: tokens.colors.accent,
+    colorRole: "accent",
     icon: HandCoins,
     label: "Advance",
-    softColor: tokens.colors.warningSoft,
+    softColorRole: "warningSoft",
   },
   other: {
-    color: tokens.colors.textSecondary,
+    colorRole: "textSecondary",
     icon: Shapes,
     label: "Other",
-    softColor: tokens.colors.surfaceMuted,
+    softColorRole: "surfaceMuted",
   },
 };
+
+export function useExpenseCategoryPresentation(): Record<
+  BudgetCategoryIconKey,
+  CategoryPresentation
+> {
+  const theme = useAppTheme();
+
+  return Object.fromEntries(
+    Object.entries(expenseCategoryPresentationDefinitions).map(([key, presentation]) => [
+      key,
+      {
+        color: theme.colors[presentation.colorRole],
+        icon: presentation.icon,
+        label: presentation.label,
+        softColor: theme.colors[presentation.softColorRole],
+      },
+    ]),
+  ) as Record<BudgetCategoryIconKey, CategoryPresentation>;
+}
 
 export function ExpenseCategoryIcon({
   iconKey,
@@ -73,6 +98,7 @@ export function ExpenseCategoryIcon({
   iconKey: BudgetCategoryIconKey;
   size?: "md" | "sm";
 }) {
+  const expenseCategoryPresentation = useExpenseCategoryPresentation();
   const presentation = expenseCategoryPresentation[iconKey];
   const Icon = presentation.icon;
   const boxSize = size === "sm" ? 40 : 48;

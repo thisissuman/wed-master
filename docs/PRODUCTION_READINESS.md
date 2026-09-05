@@ -1,6 +1,6 @@
 # Mangalya production readiness
 
-Date: 2026-08-13
+Date: 2026-08-29
 
 ## Executive status
 
@@ -100,6 +100,26 @@ The emulator debug-client smoke above is native identity and behavior evidence. 
 representative release-performance measurement, a TalkBack pass, or physical-device acceptance.
 
 ## Remaining P1 release gates
+
+### 2026-08-29 self-test source checkpoint
+
+- The current source passes TypeScript, Expo lint, Prettier, `git diff --check`, and 65 Jest
+  suites/397 tests. Expo Doctor previously passed 21/21 checks; the current rerun was blocked by
+  the host's offline npm registry and is not counted as new evidence.
+- The clean production export contains 2,795 modules, 57 assets, and a 7,655,635-byte Hermes
+  bundle (82.22% of the 9,311,031-byte ceiling). Referenced onboarding/Home raster bytes are down
+  90.05% to 1,875,094 bytes.
+- Preview native regeneration confirms `com.suman.mangalya.preview`, `mangalya-preview`, version
+  `0.1.0 (5)`, `allowBackup=false`, no SecureStore backup-rule references, intentional camera
+  support, and blocked microphone/overlay/legacy-storage/broad-media permissions. Gradle execution
+  was rejected by the host usage limit/socket/cache restriction; a signed final APK is therefore
+  not claimed.
+- All three final read-only review tracks were requested. UX and architecture found no P0 and their
+  P1 findings were fixed; security found five P1 findings covering managed-media traversal,
+  ambiguous cleanup markers, lifecycle races, runtime Android picker detection, and SecureStore
+  backup-rule configuration. Those fixes are now in the source and covered by focused tests or
+  native regeneration. Physical-device, release-signing, performance, TalkBack, and Maestro
+  evidence remain unverified.
 
 1. Run all tracked Maestro flows. The CLI is not installed locally and must not be added without
    tooling approval.

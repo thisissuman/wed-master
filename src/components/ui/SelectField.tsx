@@ -1,18 +1,22 @@
 import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
-import { Check, ChevronDown, Search } from "lucide-react-native";
+import Check from "lucide-react-native/icons/check";
+import ChevronDown from "lucide-react-native/icons/chevron-down";
+import Search from "lucide-react-native/icons/search";
 import { type ComponentRef, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo, findNodeHandle, Pressable, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme, type AppThemeColorRole } from "@/theme";
 import { motionTiming } from "@/theme/motion";
+import { runNonCriticalNativeEffect } from "@/lib/native-effects";
 
 import { AppBottomSheet } from "./AppBottomSheet";
 import { AppText } from "./AppText";
 import { FieldLabel } from "./FieldLabel";
 import { MotionPressable } from "./MotionPressable";
 import { TextField } from "./TextField";
+import { useKeyboardSettledAction } from "./useKeyboardSettledAction";
 
 type OptionTone = "danger" | "muted" | "primary" | "success" | "warning";
 
@@ -34,17 +38,18 @@ type SelectFieldProps = {
   optional?: boolean;
   options: SelectOption[];
   placeholder?: string;
+  presentation?: "auto" | "dialog" | "sheet";
   required?: boolean;
   searchable?: boolean;
   value: string;
 };
 
-const toneColors: Record<OptionTone, string> = {
-  danger: tokens.colors.danger,
-  muted: tokens.colors.textMuted,
-  primary: tokens.colors.primary,
-  success: tokens.colors.success,
-  warning: tokens.colors.warning,
+const toneColorRoles: Record<OptionTone, AppThemeColorRole> = {
+  danger: "danger",
+  muted: "textMuted",
+  primary: "primary",
+  success: "success",
+  warning: "warning",
 };
 
 export function SelectField({
@@ -57,10 +62,12 @@ export function SelectField({
   optional,
   options,
   placeholder = "Select an option",
+  presentation = "auto",
   required,
   searchable,
   value,
 }: SelectFieldProps) {
+  const theme = useAppTheme();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const triggerRef = useRef<ComponentRef<typeof Pressable>>(null);
@@ -68,6 +75,15 @@ export function SelectField({
   const selected = options.find((option) => option.value === value);
   const SelectedIcon = selected?.icon ?? Icon;
   const searchEnabled = searchable ?? options.length > 8;
+  const resolvedPresentation =
+    presentation === "auto"
+      ? options.length <= 4 && !searchEnabled
+        ? "dialog"
+        : "sheet"
+      : presentation;
+  const toneColors = Object.fromEntries(
+    Object.entries(toneColorRoles).map(([tone, role]) => [tone, theme.colors[role]]),
+  ) as Record<OptionTone, string>;
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredOptions = useMemo(
     () =>
@@ -96,8 +112,8 @@ export function SelectField({
   const closeSheet = () => {
     setOpen(false);
     setQuery("");
-    restoreTriggerFocus();
   };
+  const openAfterKeyboard = useKeyboardSettledAction(() => setOpen(true));
 
   return (
     <View className="gap-2xs">
@@ -106,11 +122,11 @@ export function SelectField({
         accessibilityLabel={`${label}: ${selected?.label ?? placeholder}`}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        android_ripple={{ color: tokens.colors.surfaceMuted }}
+        android_ripple={{ color: theme.colors.surfaceMuted }}
         className={`min-h-14 flex-row items-center overflow-hidden rounded-control border bg-elevatedSurface ${
           error ? "border-danger" : open ? "border-primary bg-primarySoft" : "border-borderStrong"
         }`}
-        onPress={() => setOpen(true)}
+        onPress={openAfterKeyboard.run}
         ref={triggerRef}
       >
         {SelectedIcon ? (
@@ -120,10 +136,10 @@ export function SelectField({
                 selected?.tone
                   ? toneColors[selected.tone]
                   : error
-                    ? tokens.colors.danger
+                    ? theme.colors.danger
                     : open
-                      ? tokens.colors.primary
-                      : tokens.colors.textSecondary
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
               }
               size={tokens.iconSize.md}
             />
@@ -141,7 +157,7 @@ export function SelectField({
         </View>
         <Animated.View style={chevronStyle}>
           <View className="min-h-14 min-w-14 items-center justify-center">
-            <ChevronDown color={tokens.colors.textSecondary} size={tokens.iconSize.md} />
+            <ChevronDown color={theme.colors.textSecondary} size={tokens.iconSize.md} />
           </View>
         </Animated.View>
       </MotionPressable>
@@ -158,7 +174,9 @@ export function SelectField({
       <AppBottomSheet
         closeLabel={`Close ${label.toLowerCase()} options`}
         description={compact ? undefined : "Choose one option"}
+        onAfterClose={restoreTriggerFocus}
         onClose={closeSheet}
+        presentation={resolvedPresentation}
         title={label}
         visible={open}
       >
@@ -187,14 +205,14 @@ export function SelectField({
                   accessibilityLabel={option.label}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: optionSelected }}
-                  android_ripple={{ color: tokens.colors.primarySoft }}
+                  android_ripple={{ color: theme.colors.primarySoft }}
                   className={`${compact ? "min-h-12" : "min-h-14"} flex-row items-center gap-sm rounded-control px-md py-xs ${
                     optionSelected ? "bg-primarySoft" : "bg-elevatedSurface active:bg-surfaceMuted"
                   }`}
                   key={option.value}
                   onPress={() => {
                     onChange(option.value);
-                    void Haptics.selectionAsync();
+                    runNonCriticalNativeEffect(() => Haptics.selectionAsync());
                     closeSheet();
                   }}
                   pressedScale={0.985}
@@ -202,7 +220,7 @@ export function SelectField({
                   {OptionIcon ? (
                     <View className="h-10 w-10 items-center justify-center rounded-control bg-surfaceMuted">
                       <OptionIcon
-                        color={option.tone ? toneColors[option.tone] : tokens.colors.primary}
+                        color={option.tone ? toneColors[option.tone] : theme.colors.primary}
                         size={tokens.iconSize.md}
                       />
                     </View>
@@ -224,7 +242,7 @@ export function SelectField({
                   </View>
                   {optionSelected ? (
                     <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
-                      <Check color={tokens.colors.onPrimary} size={tokens.iconSize.sm} />
+                      <Check color={theme.colors.onPrimary} size={tokens.iconSize.sm} />
                     </View>
                   ) : null}
                 </MotionPressable>

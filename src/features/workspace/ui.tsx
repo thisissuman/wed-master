@@ -1,13 +1,15 @@
-import { type ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
-import { ChevronLeft, MapPin } from "lucide-react-native";
+import { type ReactNode, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
+import ChevronLeft from "lucide-react-native/icons/chevron-left";
+import MapPin from "lucide-react-native/icons/map-pin";
 import type { Href } from "expo-router";
+import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppText, Button, IconButton, ListRow } from "@/components/ui";
 import { formatDateOnly } from "@/lib/dates";
 import { formatInr } from "@/lib/money";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 import { goBackOr } from "@/lib/navigation";
 
 import type { Expense, WeddingEvent } from "./types";
@@ -17,12 +19,10 @@ export const formatDate = formatDateOnly;
 export function PageHeader({ eyebrow, title }: { eyebrow?: string; title: string }) {
   return (
     <View className="gap-2xs">
-      {eyebrow ? (
-        <AppText tone="primary" variant="label">
-          {eyebrow}
-        </AppText>
-      ) : null}
-      <AppText variant="title">{title}</AppText>
+      {eyebrow ? <AppText variant="label">{eyebrow}</AppText> : null}
+      <AppText tone="brand" variant="title">
+        {title}
+      </AppText>
     </View>
   );
 }
@@ -45,7 +45,9 @@ export function DetailHeader({
       />
       <View className="flex-1 gap-2xs pt-xs">
         {eyebrow ? <AppText variant="caption">{eyebrow}</AppText> : null}
-        <AppText variant="title">{title}</AppText>
+        <AppText tone="brand" variant="title">
+          {title}
+        </AppText>
       </View>
     </View>
   );
@@ -60,6 +62,7 @@ export function EventTimelineRow({
   onPress: () => void;
   taskProgress: { completed: number; total: number };
 }) {
+  const theme = useAppTheme();
   const progressLabel =
     taskProgress.total === 0
       ? "No tasks linked"
@@ -73,7 +76,7 @@ export function EventTimelineRow({
       <Pressable
         accessibilityLabel={`Open event: ${event.name}`}
         accessibilityRole="button"
-        android_ripple={{ color: tokens.colors.surfaceMuted }}
+        android_ripple={{ color: theme.colors.surfaceMuted }}
         className="flex-1 border-b border-borderSubtle py-md active:bg-surfaceMuted"
         onPress={onPress}
       >
@@ -137,57 +140,90 @@ export function FormShell({
   submissionError,
   title,
 }: FormShellProps) {
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1"
-    >
-      <ScrollView
-        contentContainerClassName="gap-lg p-md pb-2xl"
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="mb-xs flex-row items-center gap-xs pr-xl">
-          <IconButton accessibilityLabel="Go back" icon={ChevronLeft} onPress={onCancel} />
-          <View className="min-w-0 flex-1">
-            <AppText accessibilityRole="header" tone="primary" variant="formTitle">
-              {title}
-            </AppText>
-          </View>
+  const [footerHeight, setFooterHeight] = useState(0);
+  const keyboardOffset = footerHeight + Number.parseInt(tokens.spacing.sm, 10);
+  const keyboardContentPadding = keyboardOffset + Number.parseInt(tokens.spacing["2xl"], 10);
+  const formContent = (
+    <>
+      <View className="mb-xs flex-row items-center gap-xs pr-xl">
+        <IconButton accessibilityLabel="Go back" icon={ChevronLeft} onPress={onCancel} />
+        <View className="min-w-0 flex-1">
+          <AppText accessibilityRole="header" tone="brand" variant="formTitle">
+            {title}
+          </AppText>
         </View>
-        {submissionError ? (
-          <View accessibilityRole="alert" className="rounded-control bg-dangerSoft p-md">
-            <AppText tone="danger" variant="caption">
-              {submissionError}
-            </AppText>
-          </View>
-        ) : null}
-        {children}
-      </ScrollView>
-      <SafeAreaView
-        edges={["bottom"]}
-        className="gap-xs border-t border-translucentBorder bg-translucentSurface px-md pb-xs pt-sm shadow-floating"
-      >
-        {footer ?? (
-          <Button
-            disabled={isSubmitting}
-            label={submitLabel}
-            loading={isSubmitting}
-            onPress={onSubmit}
-          />
-        )}
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+      </View>
+      {submissionError ? (
+        <View accessibilityRole="alert" className="rounded-control bg-dangerSoft p-md">
+          <AppText tone="danger" variant="caption">
+            {submissionError}
+          </AppText>
+        </View>
+      ) : null}
+      {children}
+    </>
+  );
+  const formFooter = (
+    <SafeAreaView
+      edges={["bottom"]}
+      className="gap-xs border-t border-translucentBorder bg-translucentSurface px-md pb-xs pt-sm shadow-floating"
+      onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+    >
+      {footer ?? (
+        <Button
+          disabled={isSubmitting}
+          label={submitLabel}
+          loading={isSubmitting}
+          onPress={onSubmit}
+        />
+      )}
+    </SafeAreaView>
+  );
+
+  return (
+    <View className="flex-1">
+      {process.env.EXPO_OS === "web" ? (
+        <ScrollView
+          contentContainerClassName="gap-lg p-md pb-2xl"
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {formContent}
+        </ScrollView>
+      ) : (
+        <KeyboardAwareScrollView
+          bottomOffset={keyboardOffset}
+          contentContainerClassName="gap-lg p-md pb-2xl"
+          contentContainerStyle={{ paddingBottom: keyboardContentPadding }}
+          contentInsetAdjustmentBehavior="automatic"
+          disableScrollOnKeyboardHide
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          mode="insets"
+          showsVerticalScrollIndicator={false}
+          testID="keyboard-aware-form-scroll"
+        >
+          {formContent}
+        </KeyboardAwareScrollView>
+      )}
+      {process.env.EXPO_OS === "web" ? (
+        formFooter
+      ) : (
+        <KeyboardStickyView testID="keyboard-sticky-form-footer">{formFooter}</KeyboardStickyView>
+      )}
+    </View>
   );
 }
 
 export function LocationLine({ location }: { location?: string }) {
+  const theme = useAppTheme();
   if (!location) return null;
 
   return (
     <View className="flex-row items-center gap-2xs">
-      <MapPin color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+      <MapPin color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
       <AppText variant="body">{location}</AppText>
     </View>
   );

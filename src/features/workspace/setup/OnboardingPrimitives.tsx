@@ -1,8 +1,10 @@
 import { LinearGradient } from "expo-linear-gradient";
 import type { LucideIcon } from "lucide-react-native";
-import { ArrowLeft, ChevronRight } from "lucide-react-native";
-import type { PropsWithChildren, ReactNode } from "react";
-import { KeyboardAvoidingView, ScrollView, Text, View, type TextProps } from "react-native";
+import ArrowLeft from "lucide-react-native/icons/arrow-left";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import { type PropsWithChildren, type ReactNode, useState } from "react";
+import { ScrollView, Text, View, type TextProps } from "react-native";
+import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated, { FadeIn, FadeOut, ReduceMotion } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -13,14 +15,14 @@ import { onboardingGradients, onboardingTheme as theme } from "./onboarding-them
 export function OnboardingText({
   children,
   color = theme.colors.text,
-  family = "body",
+  family = "medium",
   size = 16,
   style,
   ...props
 }: TextProps &
   PropsWithChildren<{
     color?: string;
-    family?: "body" | "emotional" | "medium" | "semibold" | "bold" | "wordmark";
+    family?: "body" | "medium" | "semibold" | "bold" | "wordmark";
     size?: number;
   }>) {
   return (
@@ -60,10 +62,10 @@ export function OnboardingButton({
   const primary = variant === "primary";
   const light = variant === "light";
   const foreground = primary
-    ? theme.colors.white
+    ? theme.colors.onPrimary
     : light
-      ? theme.colors.deepPlum
-      : theme.colors.plum;
+      ? theme.colors.nightSurface
+      : theme.colors.primary;
   const content = (
     <View
       style={{
@@ -91,7 +93,7 @@ export function OnboardingButton({
       onPress={onPress}
       pressedScale={0.975}
       style={{
-        borderColor: primary ? "rgba(255,255,255,0.18)" : theme.colors.border,
+        borderColor: primary ? theme.colors.translucentBorder : theme.colors.border,
         borderRadius: theme.radius.control,
         borderWidth: 1,
         opacity: disabled ? 0.5 : 1,
@@ -107,7 +109,11 @@ export function OnboardingButton({
           {content}
         </LinearGradient>
       ) : (
-        <View style={{ backgroundColor: light ? theme.colors.ivory : theme.colors.elevatedIvory }}>
+        <View
+          style={{
+            backgroundColor: light ? theme.colors.onNight : theme.colors.elevatedSurface,
+          }}
+        >
           {content}
         </View>
       )}
@@ -120,127 +126,154 @@ export function OnboardingStep({
   footer,
   onBack,
   progress,
+  totalSteps = 5,
   title,
 }: PropsWithChildren<{
   footer: ReactNode;
   onBack: () => void;
   progress: number;
+  totalSteps?: number;
   title: string;
 }>) {
+  const [footerHeight, setFooterHeight] = useState(0);
+  const bottomOffset = footerHeight + 16;
+  const scrollContent = <>{children}</>;
+  const footerContent = (
+    <View
+      onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+      style={{
+        backgroundColor: theme.colors.translucentSurface,
+        borderTopColor: theme.colors.translucentBorder,
+        borderTopWidth: 1,
+        padding: theme.layout.pagePadding,
+        paddingBottom: 16,
+      }}
+    >
+      {footer}
+    </View>
+  );
+
   return (
-    <SafeAreaView style={{ backgroundColor: theme.colors.ivory, flex: 1 }}>
-      <KeyboardAvoidingView
-        behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}
+    <SafeAreaView style={{ backgroundColor: theme.colors.canvas, flex: 1 }}>
+      <LinearGradient
+        colors={onboardingGradients.light}
+        end={{ x: 1, y: 1 }}
+        start={{ x: 0, y: 0 }}
         style={{ flex: 1 }}
       >
-        <LinearGradient
-          colors={onboardingGradients.light}
-          end={{ x: 1, y: 1 }}
-          start={{ x: 0, y: 0 }}
+        <Animated.View
+          entering={FadeIn.duration(theme.motion.entrance).reduceMotion(ReduceMotion.System)}
+          exiting={FadeOut.duration(theme.motion.exit).reduceMotion(ReduceMotion.System)}
           style={{ flex: 1 }}
         >
-          <Animated.View
-            entering={FadeIn.duration(theme.motion.entrance).reduceMotion(ReduceMotion.System)}
-            exiting={FadeOut.duration(theme.motion.exit).reduceMotion(ReduceMotion.System)}
-            style={{ flex: 1 }}
+          <View
+            style={{
+              alignSelf: "center",
+              flex: 1,
+              maxWidth: theme.layout.maxWidth,
+              width: "100%",
+            }}
           >
             <View
               style={{
-                alignSelf: "center",
-                flex: 1,
-                maxWidth: theme.layout.maxWidth,
-                width: "100%",
+                alignItems: "center",
+                flexDirection: "row",
+                minHeight: 64,
+                paddingHorizontal: theme.layout.pagePadding,
               }}
             >
-              <View
+              <MotionPressable
+                accessibilityLabel="Back"
+                accessibilityRole="button"
+                onPress={onBack}
+                pressedScale={0.94}
                 style={{
                   alignItems: "center",
-                  flexDirection: "row",
-                  minHeight: 64,
-                  paddingHorizontal: theme.layout.pagePadding,
+                  height: 48,
+                  justifyContent: "center",
+                  width: 48,
                 }}
               >
-                <MotionPressable
-                  accessibilityLabel="Back"
-                  accessibilityRole="button"
-                  onPress={onBack}
-                  pressedScale={0.94}
-                  style={{ alignItems: "center", height: 48, justifyContent: "center", width: 48 }}
-                >
-                  <ArrowLeft color={theme.colors.plum} size={24} />
-                </MotionPressable>
-                <OnboardingText
-                  family="semibold"
-                  size={15}
-                  style={{ flex: 1, textAlign: "center" }}
-                >
-                  {title}
-                </OnboardingText>
-                <OnboardingText
-                  accessibilityLabel={`Step ${progress} of 4`}
-                  color={theme.colors.mutedText}
-                  family="semibold"
-                  size={13}
-                  style={{ textAlign: "right", width: 48 }}
-                >
-                  {progress}/4
-                </OnboardingText>
-              </View>
-              <View
-                accessibilityLabel={`Setup progress, step ${progress} of 4`}
-                accessibilityRole="progressbar"
-                accessibilityValue={{ max: 4, min: 1, now: progress }}
-                style={{
-                  flexDirection: "row",
-                  gap: 6,
-                  paddingHorizontal: theme.layout.pagePadding,
-                }}
+                <ArrowLeft color={theme.colors.primary} size={24} />
+              </MotionPressable>
+              <OnboardingText family="semibold" size={15} style={{ flex: 1, textAlign: "center" }}>
+                {title}
+              </OnboardingText>
+              <OnboardingText
+                accessibilityLabel={`Step ${progress} of ${totalSteps}`}
+                color={theme.colors.mutedText}
+                family="semibold"
+                size={13}
+                style={{ textAlign: "right", width: 48 }}
               >
-                {[1, 2, 3, 4].map((item) => (
-                  <View
-                    key={item}
-                    style={{
-                      backgroundColor:
-                        item <= progress ? theme.colors.bridalRed : theme.colors.border,
-                      borderRadius: 99,
-                      flex: 1,
-                      height: 4,
-                    }}
-                  />
-                ))}
-              </View>
+                {progress}/{totalSteps}
+              </OnboardingText>
+            </View>
+            <View
+              accessibilityLabel={`Setup progress, step ${progress} of ${totalSteps}`}
+              accessibilityRole="progressbar"
+              accessibilityValue={{ max: totalSteps, min: 1, now: progress }}
+              style={{
+                flexDirection: "row",
+                gap: 6,
+                paddingHorizontal: theme.layout.pagePadding,
+              }}
+            >
+              {Array.from({ length: totalSteps }, (_, index) => index + 1).map((item) => (
+                <View
+                  key={item}
+                  style={{
+                    backgroundColor: item <= progress ? theme.colors.primary : theme.colors.border,
+                    borderRadius: 99,
+                    flex: 1,
+                    height: 4,
+                  }}
+                />
+              ))}
+            </View>
+            {process.env.EXPO_OS === "web" ? (
               <ScrollView
                 contentContainerStyle={{
                   gap: 20,
                   padding: theme.layout.pagePadding,
-                  paddingBottom: 140,
                 }}
                 contentInsetAdjustmentBehavior="automatic"
                 keyboardDismissMode="on-drag"
                 keyboardShouldPersistTaps="handled"
                 style={{ flex: 1 }}
               >
-                {children}
+                {scrollContent}
               </ScrollView>
-              <View
-                style={{
-                  backgroundColor: "rgba(255,248,242,0.96)",
-                  borderTopColor: "rgba(75,23,77,0.08)",
-                  borderTopWidth: 1,
-                  bottom: 0,
-                  left: 0,
+            ) : (
+              <KeyboardAwareScrollView
+                bottomOffset={bottomOffset}
+                contentContainerStyle={{
+                  gap: 20,
                   padding: theme.layout.pagePadding,
-                  paddingBottom: 16,
-                  position: "absolute",
-                  right: 0,
+                  paddingBottom: bottomOffset + theme.layout.pagePadding,
                 }}
+                contentInsetAdjustmentBehavior="automatic"
+                disableScrollOnKeyboardHide
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps="handled"
+                mode="insets"
+                showsVerticalScrollIndicator={false}
+                style={{ flex: 1 }}
+                testID="onboarding-keyboard-aware-scroll"
               >
-                {footer}
-              </View>
-            </View>
-          </Animated.View>
-        </LinearGradient>
-      </KeyboardAvoidingView>
+                {scrollContent}
+              </KeyboardAwareScrollView>
+            )}
+            {process.env.EXPO_OS === "web" ? (
+              footerContent
+            ) : (
+              <KeyboardStickyView testID="onboarding-keyboard-sticky-footer">
+                {footerContent}
+              </KeyboardStickyView>
+            )}
+          </View>
+        </Animated.View>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -248,7 +281,7 @@ export function OnboardingStep({
 export function StepHeading({ children, description }: PropsWithChildren<{ description: string }>) {
   return (
     <View style={{ gap: 8 }}>
-      <OnboardingText family="emotional" size={36} style={{ letterSpacing: -0.4 }}>
+      <OnboardingText family="bold" size={30} style={{ letterSpacing: -0.3 }}>
         {children}
       </OnboardingText>
       <OnboardingText color={theme.colors.mutedText}>{description}</OnboardingText>
@@ -260,7 +293,7 @@ export function OnboardingCard({ children }: PropsWithChildren) {
   return (
     <View
       style={{
-        backgroundColor: theme.colors.elevatedIvory,
+        backgroundColor: theme.colors.elevatedSurface,
         borderColor: theme.colors.border,
         borderRadius: theme.radius.card,
         borderWidth: 1,

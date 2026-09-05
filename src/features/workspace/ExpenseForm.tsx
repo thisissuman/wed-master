@@ -1,7 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Haptics from "expo-haptics";
 import { FlashList } from "@shopify/flash-list";
-import { ArrowLeft, Check, ChevronRight, IndianRupee, X } from "lucide-react-native";
+import ArrowLeft from "lucide-react-native/icons/arrow-left";
+import Check from "lucide-react-native/icons/check";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import X from "lucide-react-native/icons/x";
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import {
@@ -32,7 +36,10 @@ import {
 } from "@/components/ui";
 import { formatShortDateOnly, todayDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
-import { tokens } from "@/theme";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
+import { runNonCriticalNativeEffect } from "@/lib/native-effects";
+import { tokens, useAppTheme } from "@/theme";
 import { sheetEnteringTransition } from "@/theme/motion";
 
 import { selectableBudgetCategories } from "./expense-categories";
@@ -213,6 +220,7 @@ function CategoryPickerPanel({
   selectedId,
   tasks,
 }: CategoryPickerProps) {
+  const theme = useAppTheme();
   const [activeView, setActiveView] = useState<CategoryPickerView>("categories");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("en-IN"));
@@ -305,7 +313,7 @@ function CategoryPickerPanel({
                 }
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                android_ripple={{ color: tokens.colors.primarySoft }}
+                android_ripple={{ color: theme.colors.primarySoft }}
                 className={`min-h-14 flex-row items-center gap-sm rounded-control border px-sm py-xs active:opacity-80 ${
                   selected ? "border-primary bg-primarySoft" : "border-borderSubtle bg-canvas"
                 }`}
@@ -327,9 +335,9 @@ function CategoryPickerPanel({
                   {category.name}
                 </AppText>
                 {opensItems ? (
-                  <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+                  <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
                 ) : selected ? (
-                  <Check color={tokens.colors.primary} size={tokens.iconSize.sm} />
+                  <Check color={theme.colors.primary} size={tokens.iconSize.sm} />
                 ) : null}
               </MotionPressable>
             );
@@ -341,7 +349,7 @@ function CategoryPickerPanel({
             autoCapitalize="none"
             label="Search events"
             onChangeText={setQuery}
-            placeholder="Type an event name"
+            placeholder="Event name"
             value={query}
           />
           {filteredEvents.length && eventCategory ? (
@@ -355,7 +363,7 @@ function CategoryPickerPanel({
                 <MotionPressable
                   accessibilityLabel={`Event: ${event.name}`}
                   accessibilityRole="button"
-                  android_ripple={{ color: tokens.colors.primarySoft }}
+                  android_ripple={{ color: theme.colors.primarySoft }}
                   className="min-h-16 flex-row items-center gap-sm rounded-control border border-borderSubtle bg-canvas px-sm py-xs active:bg-primarySoft"
                   key={event.id}
                   onPress={() =>
@@ -377,7 +385,7 @@ function CategoryPickerPanel({
                       {event.location ? ` · ${event.location}` : ""}
                     </AppText>
                   </View>
-                  <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+                  <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
                 </MotionPressable>
               )}
               showsVerticalScrollIndicator={false}
@@ -394,7 +402,7 @@ function CategoryPickerPanel({
             autoCapitalize="none"
             label="Search tasks"
             onChangeText={setQuery}
-            placeholder="Type a task title"
+            placeholder="Task title"
             value={query}
           />
           {filteredTasks.length && taskCategory ? (
@@ -410,7 +418,7 @@ function CategoryPickerPanel({
                   <MotionPressable
                     accessibilityLabel={`Task: ${task.title}`}
                     accessibilityRole="button"
-                    android_ripple={{ color: tokens.colors.primarySoft }}
+                    android_ripple={{ color: theme.colors.primarySoft }}
                     className="min-h-16 flex-row items-center gap-sm rounded-control border border-borderSubtle bg-canvas px-sm py-xs active:bg-primarySoft"
                     key={task.id}
                     onPress={() =>
@@ -432,7 +440,7 @@ function CategoryPickerPanel({
                         {linkedEvent ? ` · ${linkedEvent.name}` : ""}
                       </AppText>
                     </View>
-                    <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+                    <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
                   </MotionPressable>
                 );
               }}
@@ -501,6 +509,7 @@ function CategoryField({
   onPress: () => void;
   relatedLabel?: string;
 }) {
+  const theme = useAppTheme();
   return (
     <View className="gap-2xs">
       <View className="flex-row items-center gap-2xs">
@@ -516,7 +525,7 @@ function CategoryField({
             : "Select category, required"
         }
         accessibilityRole="button"
-        android_ripple={{ color: tokens.colors.primarySoft }}
+        android_ripple={{ color: theme.colors.primarySoft }}
         className={`min-h-14 flex-row items-center gap-sm rounded-control border bg-elevatedSurface px-sm active:bg-primarySoft ${
           error ? "border-danger" : "border-borderStrong"
         }`}
@@ -533,7 +542,7 @@ function CategoryField({
             ? `${category.name}${relatedLabel ? ` · ${relatedLabel}` : ""}`
             : "Select category"}
         </AppText>
-        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.md} />
+        <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.md} />
       </MotionPressable>
       {error ? (
         <AppText accessibilityRole="alert" tone="danger" variant="caption">
@@ -555,6 +564,7 @@ function ExpenseTitleSuggestions({
   onSelect: (title: string, categoryId: string) => void;
   query: string;
 }) {
+  const theme = useAppTheme();
   const suggestions = useMemo(
     () => selectExpenseTitleSuggestions(expenses, query),
     [expenses, query],
@@ -580,7 +590,7 @@ function ExpenseTitleSuggestions({
             accessibilityHint="Reuses its category and moves to amount"
             accessibilityLabel={`Use expense title: ${suggestion.title}`}
             accessibilityRole="button"
-            android_ripple={{ color: tokens.colors.primarySoft }}
+            android_ripple={{ color: theme.colors.primarySoft }}
             className="min-h-14 flex-row items-center gap-sm border-b border-borderSubtle px-md py-xs last:border-b-0 active:bg-primarySoft"
             key={`${suggestion.categoryId}-${suggestion.title}`}
             onPress={() => onSelect(suggestion.title, suggestion.categoryId)}
@@ -594,7 +604,7 @@ function ExpenseTitleSuggestions({
                 {category?.name ?? "Saved category"}
               </AppText>
             </View>
-            <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+            <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
           </Pressable>
         );
       })}
@@ -623,7 +633,6 @@ function CreateExpenseForm() {
   >(undefined);
   const titleFocusFrameRef = useRef<number | undefined>(undefined);
   const titleFocusInnerFrameRef = useRef<number | undefined>(undefined);
-  const submissionInFlight = useRef(false);
   const {
     control,
     getValues,
@@ -717,7 +726,7 @@ function CreateExpenseForm() {
     setRelatedSelection(relatedLabel ? { eventId, label: relatedLabel } : undefined);
     setCategoryPickerOpen(false);
     setSuggestionsOpen(false);
-    void Haptics.selectionAsync();
+    runNonCriticalNativeEffect(() => Haptics.selectionAsync());
     focusAmount();
   };
   const selectSuggestion = (nextTitle: string, nextCategoryId: string) => {
@@ -725,32 +734,28 @@ function CreateExpenseForm() {
     setValue("categoryId", nextCategoryId, { shouldDirty: true, shouldValidate: true });
     setRelatedSelection(undefined);
     setSuggestionsOpen(false);
-    void Haptics.selectionAsync();
+    runNonCriticalNativeEffect(() => Haptics.selectionAsync());
     focusAmount();
   };
-  const save = () =>
-    handleSubmit(async (values) => {
-      if (submissionInFlight.current) return;
-      submissionInFlight.current = true;
-      setSuggestionsOpen(false);
-      let createdExpense: Expense;
-      try {
-        const result = await createMutation.mutateAsync({
-          actualPaise: toPaise(values.amount),
-          categoryId: values.categoryId,
-          date: todayDateOnly() as Expense["date"],
-          ...(relatedSelection?.eventId ? { eventId: relatedSelection.eventId } : {}),
-          title: values.title,
-        });
-        createdExpense = result.expense;
-      } catch {
-        return;
-      } finally {
-        submissionInFlight.current = false;
-      }
-      markCreatedItem("expense", [createdExpense.id]);
-      exitAfterSaveDismissTo("/budget");
-    })();
+  const submitValues = useSingleFlightSubmission(async (values: QuickExpenseFormValues) => {
+    setSuggestionsOpen(false);
+    let createdExpense: Expense;
+    try {
+      const result = await createMutation.mutateAsync({
+        actualPaise: toPaise(values.amount),
+        categoryId: values.categoryId,
+        date: todayDateOnly() as Expense["date"],
+        ...(relatedSelection?.eventId ? { eventId: relatedSelection.eventId } : {}),
+        title: values.title,
+      });
+      createdExpense = result.expense;
+    } catch {
+      return;
+    }
+    markCreatedItem("expense", [createdExpense.id]);
+    exitAfterSaveDismissTo("/budget");
+  });
+  const save = () => void handleSubmit(submitValues)();
 
   const footer = (
     <Button disabled={!isValid || busy} label="Add expense" loading={busy} onPress={save} />
@@ -777,6 +782,7 @@ function CreateExpenseForm() {
                 autoComplete="off"
                 error={errors.title?.message}
                 label="Expense title"
+                maxLength={uiFieldLimits.shortText}
                 onBlur={field.onBlur}
                 onChangeText={(value) => {
                   field.onChange(value);
@@ -788,7 +794,7 @@ function CreateExpenseForm() {
                   if (getValues("categoryId")) focusAmount();
                   else openCategoryPicker();
                 }}
-                placeholder="e.g. Venue advance"
+                placeholder="Venue advance"
                 ref={titleInputRef}
                 required
                 returnKeyType="next"
@@ -821,6 +827,7 @@ function CreateExpenseForm() {
                   icon={IndianRupee}
                   keyboardType="decimal-pad"
                   label="Amount"
+                  maxLength={uiFieldLimits.currency}
                   onBlur={field.onBlur}
                   onChangeText={field.onChange}
                   placeholder="0.00"
@@ -857,7 +864,6 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
   const [pendingReceipt, setPendingReceipt] = useState<PendingReceipt>();
   const [attachmentError, setAttachmentError] = useState<string>();
   const [pickingAttachment, setPickingAttachment] = useState(false);
-  const submissionInFlight = useRef(false);
   const {
     control,
     handleSubmit,
@@ -915,33 +921,29 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
     }
   };
 
-  const save = () =>
-    handleSubmit(async (values) => {
-      if (submissionInFlight.current) return;
-      submissionInFlight.current = true;
-      try {
-        await mutation.mutateAsync((repositories) =>
-          repositories.expenses.updateExpense({
-            ...expense,
-            actualPaise: toPaise(values.amount),
-            categoryId: values.categoryId,
-            date: values.date as Expense["date"],
-            notes: values.notes || undefined,
-            receipt,
-            title: values.title,
-          }),
-        );
-      } catch {
-        return;
-      } finally {
-        submissionInFlight.current = false;
-      }
-      pendingReceipt?.preserve();
-      if (expense.receipt && expense.receipt.id !== receipt?.id) {
-        removeWorkspaceAttachment(expense.receipt);
-      }
-      exitAfterSave();
-    })();
+  const submitValues = useSingleFlightSubmission(async (values: ExpenseFormValues) => {
+    try {
+      await mutation.mutateAsync((repositories) =>
+        repositories.expenses.updateExpense({
+          ...expense,
+          actualPaise: toPaise(values.amount),
+          categoryId: values.categoryId,
+          date: values.date as Expense["date"],
+          notes: values.notes || undefined,
+          receipt,
+          title: values.title,
+        }),
+      );
+    } catch {
+      return;
+    }
+    pendingReceipt?.preserve();
+    if (expense.receipt && expense.receipt.id !== receipt?.id) {
+      removeWorkspaceAttachment(expense.receipt);
+    }
+    exitAfterSave();
+  });
+  const save = () => void handleSubmit(submitValues)();
 
   return (
     <Screen>
@@ -962,6 +964,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
               autoFocus
               error={errors.title?.message}
               label="Expense title"
+              maxLength={uiFieldLimits.shortText}
               onBlur={field.onBlur}
               onChangeText={field.onChange}
               required
@@ -986,6 +989,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
               icon={IndianRupee}
               keyboardType="decimal-pad"
               label="Amount"
+              maxLength={uiFieldLimits.currency}
               onBlur={field.onBlur}
               onChangeText={field.onChange}
               required
@@ -1012,6 +1016,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
             <TextField
               error={errors.notes?.message}
               label="Note"
+              maxLength={uiFieldLimits.longText}
               multiline
               onBlur={field.onBlur}
               onChangeText={field.onChange}
@@ -1038,7 +1043,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
           onSelect={({ category }) => {
             setValue("categoryId", category.id, { shouldDirty: true, shouldValidate: true });
             setCategoryPickerOpen(false);
-            void Haptics.selectionAsync();
+            runNonCriticalNativeEffect(() => Haptics.selectionAsync());
           }}
           selectedId={categoryId}
           visible={categoryPickerOpen}

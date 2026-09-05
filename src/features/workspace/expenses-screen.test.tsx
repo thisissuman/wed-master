@@ -110,9 +110,8 @@ describe("ExpensesDashboard", () => {
     expect(count.props.accessibilityLiveRegion).toBe("polite");
     expect(count).toHaveTextContent("4 expenses");
 
-    const footer = screen.getByTestId("money-action-footer");
-    expect(footer.props.className).toContain("bg-elevatedSurface");
-    expect(footer.props.className).toContain("shadow-floating");
+    expect(screen.getByTestId("money-add-expense-fab")).toBeTruthy();
+    expect(screen.queryByTestId("money-action-footer")).toBeNull();
   });
 
   it("never presents a legacy estimate as spending when actual amount is zero", async () => {
@@ -152,18 +151,17 @@ describe("ExpensesDashboard", () => {
     expect(screen.getByText("No expenses yet")).toBeTruthy();
     expect(screen.queryByText("Record the first wedding cost when you are ready.")).toBeNull();
     expect(screen.getAllByRole("button", { name: "Add expense" })).toHaveLength(1);
+    await fireEvent.press(screen.getByRole("button", { name: "Add expense" }));
+    expect(mockRouter.navigate).toHaveBeenCalledWith("/expenses/new");
   });
 
-  it("opens expense detail and quick creation routes", async () => {
+  it("opens an expense detail route", async () => {
     const screen = await render(<BudgetScreen />);
 
     await fireEvent.press(
       screen.getByRole("button", { name: /Open expense: Wedding venue advance/ }),
     );
     expect(mockRouter.navigate).toHaveBeenCalledWith("/expenses/expense-1");
-
-    await fireEvent.press(screen.getByRole("button", { name: "Add expense" }));
-    expect(mockRouter.navigate).toHaveBeenCalledWith("/expenses/new");
   });
 
   it("opens the existing budget overview from the Money header", async () => {

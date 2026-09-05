@@ -1,24 +1,53 @@
+import { getAppTheme, tokens, useAppThemeStore } from "@/theme";
+
+const activeTheme = () => getAppTheme(useAppThemeStore.getState().themeId);
+
+const onboardingColors = () => {
+  const theme = activeTheme();
+  const light = theme.id === "lavenderPearl";
+
+  return {
+    accent: theme.colors.accent,
+    artworkInk: "#3B173F",
+    artworkMutedInk: "#735C75",
+    border: theme.colors.borderStrong,
+    bridalRed: theme.colors.primary,
+    canvas: theme.colors.canvas,
+    danger: theme.colors.danger,
+    darkBridalRed: theme.gradients.primaryAction[1],
+    deepPlum: theme.colors.nightSurface,
+    elevatedIvory: theme.colors.elevatedSurface,
+    elevatedSurface: theme.colors.elevatedSurface,
+    gold: theme.colors.nightAccent,
+    ivory: theme.colors.canvas,
+    lavender: light ? tokens.brand.lavender : theme.colors.secondary,
+    mutedText: theme.colors.textSecondary,
+    nightSoft: theme.colors.nightSoft,
+    nightSurface: theme.colors.nightSurface,
+    onNight: theme.colors.onNight,
+    onNightMuted: theme.colors.onNightMuted,
+    onPrimary: theme.colors.onPrimary,
+    overlay: theme.colors.overlay,
+    plum: light ? tokens.brand.plum : theme.colors.primary,
+    primary: theme.colors.primary,
+    primarySoft: theme.colors.primarySoft,
+    softLavender: theme.colors.primarySoft,
+    surface: theme.colors.surface,
+    surfaceMuted: theme.colors.surfaceMuted,
+    text: theme.colors.textPrimary,
+    translucentBorder: theme.colors.translucentBorder,
+    translucentSurface: theme.colors.translucentSurface,
+    white: theme.colors.onPrimary,
+  } as const;
+};
+
 export const onboardingTheme = {
-  colors: {
-    lavender: "#A783C4",
-    softLavender: "#E9DFF0",
-    plum: "#4B174D",
-    deepPlum: "#28102F",
-    bridalRed: "#C5163A",
-    darkBridalRed: "#9E1230",
-    ivory: "#FFF8F2",
-    elevatedIvory: "#FFFDFC",
-    gold: "#D9AA58",
-    text: "#2B1835",
-    mutedText: "#665B6D",
-    border: "#D8C9DA",
-    danger: "#A13D32",
-    white: "#FFFFFF",
+  get colors() {
+    return onboardingColors();
   },
   fonts: {
-    emotional: "EBGaramond_600SemiBold",
-    keepsake: "EBGaramond_700Bold_Italic",
     wordmark: "EBGaramond_600SemiBold",
+    signature: "EBGaramond_500Medium_Italic",
     body: "Manrope_400Regular",
     medium: "Manrope_500Medium",
     semibold: "Manrope_600SemiBold",
@@ -46,15 +75,13 @@ export const onboardingTheme = {
 } as const;
 
 export const onboardingGradients = {
-  celebration: [
-    onboardingTheme.colors.lavender,
-    onboardingTheme.colors.plum,
-    onboardingTheme.colors.bridalRed,
-  ] as const,
-  action: [onboardingTheme.colors.bridalRed, onboardingTheme.colors.darkBridalRed] as const,
-  light: [
-    onboardingTheme.colors.ivory,
-    onboardingTheme.colors.elevatedIvory,
-    onboardingTheme.colors.softLavender,
-  ] as const,
+  get celebration() {
+    return activeTheme().gradients.celebration;
+  },
+  get action() {
+    return activeTheme().gradients.primaryAction;
+  },
+  get light() {
+    return activeTheme().gradients.formCanvas;
+  },
 } as const;

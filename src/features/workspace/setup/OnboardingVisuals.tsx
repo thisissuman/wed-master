@@ -1,6 +1,10 @@
 import { Image } from "expo-image";
 import type { LucideIcon } from "lucide-react-native";
-import { CalendarDays, CheckSquare2, IndianRupee, Sparkles, UsersRound } from "lucide-react-native";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import CheckSquare2 from "lucide-react-native/icons/square-check";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import Sparkles from "lucide-react-native/icons/sparkles";
+import UsersRound from "lucide-react-native/icons/users-round";
 import type { PropsWithChildren, ReactNode } from "react";
 import { useEffect } from "react";
 import { View } from "react-native";
@@ -19,16 +23,16 @@ const easeOut = Easing.bezier(0.23, 1, 0.32, 1);
 
 const onboardingArtwork = {
   intro: [
-    require("../../../../assets/images/mangalya/onboarding/intro-together.png"),
-    require("../../../../assets/images/mangalya/onboarding/intro-calm.png"),
-    require("../../../../assets/images/mangalya/onboarding/intro-family.png"),
+    require("../../../../assets/images/mangalya/onboarding/intro-together.webp"),
+    require("../../../../assets/images/mangalya/onboarding/intro-calm.webp"),
+    require("../../../../assets/images/mangalya/onboarding/intro-family.webp"),
   ],
-  names: require("../../../../assets/images/mangalya/onboarding/names.png"),
-  milestones: require("../../../../assets/images/mangalya/onboarding/date-budget.png"),
-  cover: require("../../../../assets/images/mangalya/onboarding/cover-photo.png"),
-  events: require("../../../../assets/images/mangalya/onboarding/events.png"),
-  review: require("../../../../assets/images/mangalya/onboarding/review.png"),
-  building: require("../../../../assets/images/mangalya/onboarding/building.png"),
+  names: require("../../../../assets/images/mangalya/onboarding/names.webp"),
+  milestones: require("../../../../assets/images/mangalya/onboarding/date-budget.webp"),
+  cover: require("../../../../assets/images/mangalya/onboarding/cover-photo.webp"),
+  events: require("../../../../assets/images/mangalya/onboarding/events.webp"),
+  review: require("../../../../assets/images/mangalya/onboarding/review.webp"),
+  building: require("../../../../assets/images/mangalya/onboarding/building.webp"),
 } as const;
 
 function ArtworkFrame({
@@ -46,8 +50,8 @@ function ArtworkFrame({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={{
-        backgroundColor: dark ? theme.colors.deepPlum : theme.colors.softLavender,
-        borderColor: dark ? "rgba(255,248,242,0.24)" : "rgba(75,23,77,0.12)",
+        backgroundColor: dark ? theme.colors.nightSurface : theme.colors.primarySoft,
+        borderColor: theme.colors.translucentBorder,
         borderRadius: theme.radius.card,
         borderWidth: 1,
         aspectRatio,
@@ -68,19 +72,21 @@ function ArtworkFrame({
 
 function LiveValue({
   align = "center",
-  color = theme.colors.deepPlum,
-  family = "emotional",
-  placeholder,
+  color = theme.colors.artworkInk,
+  family = "semibold",
+  placeholder = "",
   reduceMotion,
   size = 22,
+  testID,
   value,
 }: {
   align?: "center" | "left" | "right";
   color?: string;
-  family?: "body" | "emotional" | "medium" | "semibold";
-  placeholder: string;
+  family?: "body" | "medium" | "semibold" | "signature";
+  placeholder?: string;
   reduceMotion: boolean;
   size?: number;
+  testID?: string;
   value: string;
 }) {
   const visibleValue = value.trim() || placeholder;
@@ -93,12 +99,13 @@ function LiveValue({
       adjustsFontSizeToFit
       minimumFontScale={0.68}
       style={{
-        color: value.trim() ? color : "rgba(102,91,109,0.72)",
+        color: value.trim() ? color : theme.colors.artworkMutedInk,
         fontFamily: theme.fonts[family],
         fontSize: size,
         lineHeight: Math.round(size * 1.1),
         textAlign: align,
       }}
+      testID={testID}
     >
       {visibleValue}
     </Animated.Text>
@@ -212,9 +219,10 @@ export function NamesVisual({
       >
         <PaperSlot height="22%" left="5%" testID="names-artwork-your-name" top="61%" width="37%">
           <LiveValue
-            placeholder="Your name"
+            family="signature"
             reduceMotion={reduceMotion}
-            size={yourName.trim() ? 23 : 19}
+            size={23}
+            testID="names-artwork-your-name-value"
             value={yourName}
           />
         </PaperSlot>
@@ -226,9 +234,10 @@ export function NamesVisual({
           width="37%"
         >
           <LiveValue
-            placeholder="Partner’s name"
+            family="signature"
             reduceMotion={reduceMotion}
-            size={partnerName.trim() ? 23 : 19}
+            size={23}
+            testID="names-artwork-partner-name-value"
             value={partnerName}
           />
         </PaperSlot>
@@ -266,9 +275,9 @@ export function DateBudgetVisual({
       >
         <PaperSlot height="31%" left="9%" testID="milestones-artwork-date" top="28%" width="39%">
           <LiveValue
-            placeholder="Wedding date"
             reduceMotion={reduceMotion}
-            size={date ? 21 : 17}
+            size={21}
+            testID="milestones-artwork-date-value"
             value={date}
           />
         </PaperSlot>
@@ -278,9 +287,9 @@ export function DateBudgetVisual({
       >
         <PaperSlot height="38%" left="60%" testID="milestones-artwork-budget" top="28%" width="32%">
           <LiveValue
-            placeholder="Target budget"
             reduceMotion={reduceMotion}
-            size={budget ? 22 : 17}
+            size={22}
+            testID="milestones-artwork-budget-value"
             value={budget ? `₹${budget}` : ""}
           />
         </PaperSlot>
@@ -367,7 +376,6 @@ export function EventsVisual({
           >
             <PaperSlot {...slot} testID={`events-artwork-event-${index + 1}`}>
               <LiveValue
-                placeholder={index === 0 ? "Your events" : ""}
                 reduceMotion={reduceMotion}
                 size={eventName ? (eventName.length > 11 ? 13 : 15) : 13}
                 value={eventName}
@@ -381,17 +389,19 @@ export function EventsVisual({
 }
 
 function ReviewPaperValue({
+  family = "semibold",
   reduceMotion,
   size,
   testID,
   value,
 }: {
+  family?: "semibold" | "signature";
   reduceMotion: boolean;
   size: number;
   testID: string;
   value: string;
 }) {
-  const visibleValue = value.trim() || "—";
+  const visibleValue = value.trim();
 
   return (
     <Animated.Text
@@ -402,8 +412,8 @@ function ReviewPaperValue({
       minimumFontScale={0.66}
       numberOfLines={1}
       style={{
-        color: value.trim() ? theme.colors.deepPlum : "rgba(102,91,109,0.72)",
-        fontFamily: theme.fonts.keepsake,
+        color: value.trim() ? theme.colors.artworkInk : theme.colors.artworkMutedInk,
+        fontFamily: theme.fonts[family],
         fontSize: size,
         letterSpacing: -0.2,
         lineHeight: Math.round(size * 1.08),
@@ -443,15 +453,30 @@ export function ReviewVisual({
   return (
     <Animated.View style={[{ width: "100%" }, style]}>
       <ArtworkFrame dark source={onboardingArtwork.review}>
-        <PaperSlot height="17%" left="17%" rotate="-2deg" top="35%" width="31%">
+        <PaperSlot
+          height="17%"
+          left="17%"
+          rotate="-3deg"
+          testID="review-artwork-names-slot"
+          top="35%"
+          width="31%"
+        >
           <ReviewPaperValue
+            family="signature"
             reduceMotion={reduceMotion}
             size={18}
             testID="review-artwork-names"
             value={names}
           />
         </PaperSlot>
-        <PaperSlot height="16%" left="20%" rotate="-1.5deg" top="51%" width="30%">
+        <PaperSlot
+          height="16%"
+          left="20%"
+          rotate="-3deg"
+          testID="review-artwork-date-slot"
+          top="51%"
+          width="30%"
+        >
           <ReviewPaperValue
             reduceMotion={reduceMotion}
             size={17}
@@ -459,7 +484,14 @@ export function ReviewVisual({
             value={date}
           />
         </PaperSlot>
-        <PaperSlot height="16%" left="50%" rotate="1.5deg" top="33%" width="33%">
+        <PaperSlot
+          height="16%"
+          left="50%"
+          rotate="-3deg"
+          testID="review-artwork-budget-slot"
+          top="33%"
+          width="33%"
+        >
           <ReviewPaperValue
             reduceMotion={reduceMotion}
             size={18}
@@ -467,7 +499,14 @@ export function ReviewVisual({
             value={budget}
           />
         </PaperSlot>
-        <PaperSlot height="16%" left="53%" rotate="2deg" top="49%" width="30%">
+        <PaperSlot
+          height="16%"
+          left="53%"
+          rotate="-3deg"
+          testID="review-artwork-events-slot"
+          top="49%"
+          width="30%"
+        >
           <ReviewPaperValue
             reduceMotion={reduceMotion}
             size={17}
@@ -529,7 +568,7 @@ export function BuildingVisual({ reduceMotion }: { reduceMotion: boolean }) {
           <View
             style={{
               alignItems: "center",
-              backgroundColor: "rgba(255,248,242,0.94)",
+              backgroundColor: theme.colors.elevatedSurface,
               borderColor: theme.colors.gold,
               borderRadius: 24,
               borderWidth: 1,
@@ -538,7 +577,7 @@ export function BuildingVisual({ reduceMotion }: { reduceMotion: boolean }) {
               width: 94,
             }}
           >
-            <Sparkles color={theme.colors.bridalRed} size={36} strokeWidth={1.7} />
+            <Sparkles color={theme.colors.primary} size={36} strokeWidth={1.7} />
           </View>
           {buildModules.map((module, index) => (
             <BuildModule
@@ -587,8 +626,8 @@ function BuildModule({
       style={[
         {
           alignItems: "center",
-          backgroundColor: "rgba(255,253,252,0.95)",
-          borderColor: "rgba(217,170,88,0.72)",
+          backgroundColor: theme.colors.translucentSurface,
+          borderColor: theme.colors.translucentBorder,
           borderRadius: 14,
           borderWidth: 1,
           gap: 3,
@@ -601,7 +640,7 @@ function BuildModule({
         style,
       ]}
     >
-      <Icon color={theme.colors.plum} size={20} strokeWidth={1.8} />
+      <Icon color={theme.colors.primary} size={20} strokeWidth={1.8} />
       <Animated.Text
         style={{ color: theme.colors.text, fontFamily: theme.fonts.semibold, fontSize: 11 }}
       >

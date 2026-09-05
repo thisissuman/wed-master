@@ -22,7 +22,9 @@ describe("navigation contracts", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("shows the tab bar only on exact root destinations", () => {
-    expect(["/", "/plan", "/budget", "/more"].every(isRootTabPath)).toBe(true);
+    expect(["/", "/plan", "/inspire", "/budget", "/more"].every(isRootTabPath)).toBe(true);
+    expect(isRootTabPath("/inspire/inspiration-1")).toBe(false);
+    expect(isRootTabPath("/inspire/new")).toBe(false);
     expect(isRootTabPath("/budget/overview")).toBe(false);
     expect(isRootTabPath("/more/settings")).toBe(false);
     expect(isRootTabPath("/tasks/task-1")).toBe(false);

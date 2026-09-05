@@ -97,7 +97,7 @@ export function createDemoWorkspace(referenceDate = new Date()): WorkspaceSnapsh
   const date = (days: number) => dateWithOffset(referenceDate, days);
 
   return {
-    version: 4,
+    version: 5,
     wedding: {
       id: "wedding-1",
       name: "Suman & Sumita",
@@ -408,7 +408,7 @@ export function createEmptyWorkspace(
 ): WorkspaceSnapshot {
   const events = createSuggestedEvents(wedding.date, starterEventSelection);
   return {
-    version: 4,
+    version: 5,
     wedding: {
       ...wedding,
       id: `wedding-${Date.now()}`,

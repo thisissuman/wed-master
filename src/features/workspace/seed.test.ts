@@ -38,10 +38,10 @@ describe("relative demo workspace", () => {
     expect(first.wedding.date).toBe("2030-06-09");
   });
 
-  it("creates a v4 workspace with exactly the seven selectable core categories", () => {
+  it("creates a v5 workspace with exactly the seven selectable core categories", () => {
     const snapshot = createDemoWorkspace(new Date(2030, 0, 10, 12));
 
-    expect(snapshot.version).toBe(4);
+    expect(snapshot.version).toBe(5);
     expect(snapshot.categories).toEqual(
       coreBudgetCategories.map((category, sortOrder) => ({
         ...category,

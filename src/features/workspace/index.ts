@@ -1,5 +1,6 @@
 export * from "./provider";
 export * from "./selectors";
+export * from "./task-suggestions";
 export * from "./types";
 export * from "./HomeDashboard";
 export * from "./TaskCompletionRow";

@@ -79,7 +79,7 @@ describe("TaskCompletionRow", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps long titles and metadata visible in the shared aligned card", async () => {
+  it("uses one full remaining-row target for long-title task navigation", async () => {
     const title = "Confirm the final family transport and accommodation pickup schedule";
     const onPress = jest.fn();
     const screen = await render(
@@ -92,17 +92,15 @@ describe("TaskCompletionRow", () => {
       />,
     );
 
-    const titleButton = screen.getByTestId("task-title-button-task");
-    expect(screen.getByText(title).props.numberOfLines).toBe(2);
+    const openButton = screen.getByTestId("task-open-button-task");
+    expect(screen.getByText(title)).toBeTruthy();
     expect(screen.getByText("Wedding")).toBeTruthy();
     expect(screen.getByText("Today")).toBeTruthy();
     expect(screen.getByText("High")).toBeTruthy();
 
-    await fireEvent.press(titleButton);
+    await fireEvent.press(openButton);
     expect(onPress).toHaveBeenCalledTimes(1);
-
-    await fireEvent.press(screen.getByRole("button", { name: `Open task: ${title}` }));
-    expect(onPress).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByRole("button", { name: `Open task: ${title}` })).toHaveLength(1);
   });
 
   it("stacks task metadata and the status action at large text sizes", async () => {

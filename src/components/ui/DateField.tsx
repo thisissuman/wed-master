@@ -1,15 +1,18 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import type { LucideIcon } from "lucide-react-native";
-import { CalendarDays, ChevronDown, X } from "lucide-react-native";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import ChevronDown from "lucide-react-native/icons/chevron-down";
+import X from "lucide-react-native/icons/x";
 import { useState } from "react";
 import { View } from "react-native";
 
 import { formatDateOnly, toDateOnly } from "@/lib/dates";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { AppText } from "./AppText";
 import { FieldLabel } from "./FieldLabel";
 import { MotionPressable } from "./MotionPressable";
+import { useKeyboardSettledAction } from "./useKeyboardSettledAction";
 
 type DateFieldProps = {
   error?: string;
@@ -35,7 +38,9 @@ export function DateField({
   required,
   value,
 }: DateFieldProps) {
+  const theme = useAppTheme();
   const [open, setOpen] = useState(false);
+  const openPicker = useKeyboardSettledAction(() => setOpen(true));
   const formattedValue = value ? formatDateOnly(value) : "Select date";
   return (
     <View className="gap-2xs">
@@ -48,13 +53,13 @@ export function DateField({
         <MotionPressable
           accessibilityLabel={`${label}: ${formattedValue}`}
           accessibilityRole="button"
-          android_ripple={{ color: tokens.colors.surfaceMuted }}
+          android_ripple={{ color: theme.colors.surfaceMuted }}
           className="min-h-14 min-w-0 flex-1 flex-row items-center active:opacity-80"
-          onPress={() => setOpen(true)}
+          onPress={openPicker.run}
         >
           <View className="min-w-14 items-center justify-center">
             <Icon
-              color={error ? tokens.colors.danger : tokens.colors.textSecondary}
+              color={error ? theme.colors.danger : theme.colors.textSecondary}
               size={tokens.iconSize.md}
             />
           </View>
@@ -63,7 +68,7 @@ export function DateField({
           </AppText>
           {!optional || !value ? (
             <View className="min-h-14 min-w-14 items-center justify-center">
-              <ChevronDown color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+              <ChevronDown color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
             </View>
           ) : null}
         </MotionPressable>
@@ -75,7 +80,7 @@ export function DateField({
             onPress={() => onChange("")}
             pressedScale={0.94}
           >
-            <X color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+            <X color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
           </MotionPressable>
         ) : null}
       </View>

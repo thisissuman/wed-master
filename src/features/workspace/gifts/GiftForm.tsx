@@ -6,6 +6,8 @@ import type { TextInput } from "react-native";
 import { Button, ConfirmationDialog, Disclosure, Screen, TextField } from "@/components/ui";
 import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { toUserMessage } from "@/lib/errors";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 
 import { useCreatedItemHighlight } from "../created-item-highlight";
 import { fromPaise, giftFormSchema, toPaise, type GiftFormValues } from "../forms";
@@ -42,7 +44,7 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
     isSubmitting: isSubmitting || mutation.isPending,
   });
 
-  const save = handleSubmit(async (values) => {
+  const saveValues = useSingleFlightSubmission(async (values: GiftFormValues) => {
     const record = {
       ...(gift ?? {}),
       personName: values.personName,
@@ -62,6 +64,7 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
     }
     exitAfterSave();
   });
+  const save = handleSubmit(saveValues);
 
   const text = (
     name: "itemName" | "personName" | "relationship" | "value",
@@ -79,6 +82,13 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
           error={errors[name]?.message}
           keyboardType={options?.keyboardType}
           label={label}
+          maxLength={
+            name === "value"
+              ? uiFieldLimits.currency
+              : name === "itemName"
+                ? uiFieldLimits.giftDescription
+                : uiFieldLimits.shortText
+          }
           onBlur={field.onBlur}
           onChangeText={field.onChange}
           onSubmitEditing={
@@ -125,11 +135,11 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
         >
           {text("relationship", "Relationship", {
             optional: true,
-            placeholder: "e.g. Cousin or family friend",
+            placeholder: "Cousin or friend",
           })}
           {text("itemName", "Gift description", {
             optional: true,
-            placeholder: "e.g. Silver dinner set",
+            placeholder: "Silver dinner set",
           })}
         </Disclosure>
         {gift ? (

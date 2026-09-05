@@ -18,6 +18,13 @@ function imagePickerOptions(config: ExpoConfig) {
   return Array.isArray(plugin) ? plugin[1] : undefined;
 }
 
+function navigationBarOptions(config: ExpoConfig) {
+  const plugin = config.plugins?.find(
+    (candidate) => Array.isArray(candidate) && candidate[0] === "expo-navigation-bar",
+  );
+  return Array.isArray(plugin) ? plugin[1] : undefined;
+}
+
 describe("Expo application variants", () => {
   afterAll(() => {
     if (originalVariant) process.env.APP_VARIANT = originalVariant;
@@ -37,13 +44,38 @@ describe("Expo application variants", () => {
     expect(config.ios?.bundleIdentifier).toBe(packageName);
     expect(config.scheme).toBe(scheme);
     expect(config.android?.allowBackup).toBe(false);
-    expect(config.android?.blockedPermissions).toEqual(["android.permission.SYSTEM_ALERT_WINDOW"]);
+    expect(config.android?.permissions).toEqual(["android.permission.CAMERA"]);
+    expect(config.android?.blockedPermissions).toEqual([
+      "android.permission.ACCESS_MEDIA_LOCATION",
+      "android.permission.MANAGE_EXTERNAL_STORAGE",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_MEDIA_AUDIO",
+      "android.permission.READ_MEDIA_IMAGES",
+      "android.permission.READ_MEDIA_VIDEO",
+      "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.USE_BIOMETRIC",
+      "android.permission.USE_FINGERPRINT",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ]);
     expect(config.android?.predictiveBackGestureEnabled).toBe(true);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
-    expect(config.android?.versionCode).toBe(4);
+    expect(config.android?.versionCode).toBe(5);
+    expect(config.userInterfaceStyle).toBe("automatic");
+    expect(config.android?.adaptiveIcon?.backgroundColor).toBe("#1D0B23");
+    expect(config.plugins).toContainEqual([
+      "expo-splash-screen",
+      expect.objectContaining({ backgroundColor: "#1D0B23" }),
+    ]);
+    expect(config.plugins).toContain("expo-asset");
+    expect(config.plugins).toContainEqual(["expo-secure-store", { configureAndroidBackup: false }]);
+    expect(navigationBarOptions(config)).toEqual({ enforceContrast: false, style: "light" });
     expect(imagePickerOptions(config)).toMatchObject({
-      cameraPermission: false,
+      cameraPermission: "Allow Mangalya to take photos for your private wedding inspiration board.",
       microphonePermission: false,
+      photosPermission:
+        "Allow Mangalya to choose wedding photos and inspiration images from your library.",
     });
   });
 });

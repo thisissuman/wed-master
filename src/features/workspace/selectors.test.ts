@@ -1,10 +1,12 @@
 import {
   categorySpending,
+  emptyGuestFilters,
   emptyTaskFilters,
   expenseTotals,
   filterTasks,
   filterHouseholds,
   giftSummary,
+  guestFilterCount,
   homeBudgetSummary,
   householdSummary,
   isDateInCurrentWeek,
@@ -16,6 +18,7 @@ import {
   selectExpenseDateGroups,
   selectSpendingTrend,
   taskProgress,
+  taskFilterCount,
   taskSummary,
   weddingDateEvent,
 } from "./selectors";
@@ -343,7 +346,7 @@ describe("workspace selectors", () => {
     expect(points.at(-1)?.endDate).toBe("2026-07-12");
   });
 
-  it("computes household metrics and combines side, RSVP, and search filters", () => {
+  it("computes household metrics and combines RSVP, support, and search filters", () => {
     const households = [
       {
         id: "one",
@@ -381,11 +384,12 @@ describe("workspace selectors", () => {
     });
     expect(
       filterHouseholds(households, {
+        needsSupport: true,
         query: "patnaik",
-        side: "partnerOne",
         status: "Confirmed",
       }).map((household) => household.id),
     ).toEqual(["one"]);
+    expect(guestFilterCount({ ...emptyGuestFilters(), needsSupport: true })).toBe(1);
   });
 
   it("summarizes optional gift values and follow-up states", () => {
@@ -494,7 +498,7 @@ describe("workspace selectors", () => {
     });
   });
 
-  it("matches High and Critical tasks in the urgent priority preset", () => {
+  it("filters tasks by one exact priority and counts active task filters", () => {
     const tasks: Task[] = [
       {
         id: "high",
@@ -523,10 +527,9 @@ describe("workspace selectors", () => {
     ];
 
     expect(
-      filterTasks(tasks, { ...emptyTaskFilters(), priority: "Urgent" }, "2026-07-15").map(
-        (task) => task.id,
-      ),
-    ).toEqual(["high", "critical"]);
+      filterTasks(tasks, { ...emptyTaskFilters(), priority: "Critical" }).map((task) => task.id),
+    ).toEqual(["critical"]);
+    expect(taskFilterCount({ priority: "Critical", status: "Not Started" })).toBe(2);
   });
 
   it("selects the first ordered event on the editable wedding date", () => {
@@ -545,7 +548,7 @@ describe("workspace selectors", () => {
     expect(weddingDateEvent(events, "2026-12-14")?.id).toBe("anchor");
   });
 
-  it("combines status, event, due-window, and urgent-priority filters", () => {
+  it("combines immediate status and priority filters", () => {
     const tasks: Task[] = [
       {
         id: "match",
@@ -558,12 +561,12 @@ describe("workspace selectors", () => {
         attachments: [],
       },
       {
-        id: "wrong-event",
-        title: "Wrong event",
+        id: "wrong-status",
+        title: "Wrong status",
         eventId: "event-haldi",
         dueDate: "2026-07-16",
         priority: "Critical",
-        status: "In Progress",
+        status: "Not Started",
         checklist: [],
         attachments: [],
       },
@@ -580,17 +583,7 @@ describe("workspace selectors", () => {
     ];
 
     expect(
-      filterTasks(
-        tasks,
-        {
-          dueWindow: "This Week",
-          eventId: "event-wedding",
-          overdueOnly: false,
-          priority: "Urgent",
-          status: "In Progress",
-        },
-        "2026-07-15",
-      ).map((task) => task.id),
+      filterTasks(tasks, { priority: "Critical", status: "In Progress" }).map((task) => task.id),
     ).toEqual(["match"]);
   });
 });

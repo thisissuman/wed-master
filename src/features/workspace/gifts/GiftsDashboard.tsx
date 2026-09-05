@@ -1,6 +1,10 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { ArrowDownUp, Gift, IndianRupee, Plus, Users } from "lucide-react-native";
+import ArrowDownUp from "lucide-react-native/icons/arrow-down-up";
+import Gift from "lucide-react-native/icons/gift";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import Plus from "lucide-react-native/icons/plus";
+import Users from "lucide-react-native/icons/users";
 import { useMemo, useState } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
 
@@ -20,7 +24,7 @@ import {
 import { toUserMessage } from "@/lib/errors";
 import { formatInr, formatInrCompact } from "@/lib/money";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { useWorkspace } from "../provider";
 import { useCreatedItemHighlight } from "../created-item-highlight";
@@ -44,6 +48,8 @@ function Metric({
   stacked: boolean;
   value: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View
       accessible
@@ -57,7 +63,7 @@ function Metric({
       }`}
     >
       <View className="flex-row items-center gap-2xs">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.sm} />
+        <Icon color={theme.colors.primary} size={tokens.iconSize.sm} />
         <AppText tone="muted" variant="caption">
           {label}
         </AppText>
@@ -77,6 +83,8 @@ function Metric({
 }
 
 function GiftCard({ gift }: { gift: GiftRecord }) {
+  const theme = useAppTheme();
+
   return (
     <Pressable
       accessibilityLabel={`Edit gift from ${gift.personName}`}
@@ -85,7 +93,7 @@ function GiftCard({ gift }: { gift: GiftRecord }) {
       onPress={() => router.navigate({ pathname: "/more/gifts/edit", params: { id: gift.id } })}
     >
       <View className="h-12 w-12 items-center justify-center rounded-control bg-elevatedSurface">
-        <Gift color={tokens.colors.accent} size={tokens.iconSize.md} />
+        <Gift color={theme.colors.accent} size={tokens.iconSize.md} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText numberOfLines={2} variant="heading">

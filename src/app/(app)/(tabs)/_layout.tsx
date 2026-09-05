@@ -1,9 +1,12 @@
-import { useEffect } from "react";
-import { useWindowDimensions, View, type ColorValue } from "react-native";
-import { Grid2X2, House, IndianRupee, NotebookTabs, type LucideIcon } from "lucide-react-native";
+import { type ComponentProps, useEffect } from "react";
+import { Pressable, useWindowDimensions, View, type ColorValue } from "react-native";
+import Grid2X2 from "lucide-react-native/icons/grid-2x2";
+import House from "lucide-react-native/icons/house";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import NotebookTabs from "lucide-react-native/icons/notebook-tabs";
+import Sparkles from "lucide-react-native/icons/sparkles";
+import type { LucideIcon } from "lucide-react-native";
 import { Tabs, usePathname } from "expo-router";
-import { PlatformPressable } from "expo-router/build/react-navigation/elements";
-import type { BottomTabBarButtonProps } from "expo-router/build/react-navigation/bottom-tabs";
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -11,7 +14,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { motionDurations, tokens } from "@/theme";
+import { motionDurations, tokens, useAppTheme } from "@/theme";
 import { motionEasing } from "@/theme/motion";
 import { isRootTabPath, moreTabResetOptions } from "@/lib/navigation";
 import { adaptiveTabBarConfig, adaptiveTabBarItemStyle } from "@/lib/responsive";
@@ -21,10 +24,28 @@ const tabInset = Number.parseInt(tokens.spacing.sm, 10);
 const tabOuterGap = Number.parseInt(tokens.spacing.xs, 10);
 const tabInnerGap = Number.parseInt(tokens.spacing["2xs"], 10);
 
-function AdaptiveTabBarButton({ style, ...props }: BottomTabBarButtonProps) {
+type TabsScreenOptions = Exclude<
+  ComponentProps<typeof Tabs>["screenOptions"],
+  ((...args: never[]) => unknown) | undefined
+>;
+type AdaptiveTabBarButtonProps = Parameters<NonNullable<TabsScreenOptions["tabBarButton"]>>[0];
+
+function AdaptiveTabBarButton({
+  children,
+  href: _href,
+  hoverEffect: _hoverEffect,
+  onLongPress,
+  onPress,
+  pressOpacity: _pressOpacity,
+  ref: _ref,
+  style,
+  ...props
+}: AdaptiveTabBarButtonProps) {
   return (
-    <PlatformPressable
+    <Pressable
       {...props}
+      onLongPress={onLongPress}
+      onPress={onPress}
       style={[
         style,
         {
@@ -36,7 +57,9 @@ function AdaptiveTabBarButton({ style, ...props }: BottomTabBarButtonProps) {
           width: "100%",
         },
       ]}
-    />
+    >
+      {children}
+    </Pressable>
   );
 }
 
@@ -82,6 +105,7 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
@@ -95,15 +119,13 @@ export default function TabLayout() {
       screenOptions={{
         animation: reduceMotion ? "none" : "fade",
         headerShown: false,
-        sceneStyle: { backgroundColor: tokens.colors.canvas },
+        sceneStyle: { backgroundColor: theme.colors.canvas },
         tabBarActiveBackgroundColor: "transparent",
-        tabBarActiveTintColor: expanded ? tokens.colors.nightAccent : tokens.colors.primary,
+        tabBarActiveTintColor: expanded ? theme.colors.nightAccent : theme.colors.primary,
         tabBarButton: AdaptiveTabBarButton,
         tabBarHideOnKeyboard: true,
         tabBarInactiveBackgroundColor: "transparent",
-        tabBarInactiveTintColor: expanded
-          ? tokens.colors.onNightMuted
-          : tokens.colors.textSecondary,
+        tabBarInactiveTintColor: expanded ? theme.colors.onNightMuted : theme.colors.textSecondary,
         tabBarLabelPosition: "below-icon",
         tabBarItemStyle: {
           borderRadius: Number.parseInt(tokens.radius.control, 10),
@@ -113,19 +135,19 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontFamily: tokens.fontFamily.sansMedium,
-          fontSize: 11,
-          lineHeight: 14,
+          fontSize: 12,
+          lineHeight: 16,
         },
         tabBarPosition: tabBar.position,
         tabBarStyle: !showTabBar
           ? { display: "none" }
           : expanded
             ? {
-                backgroundColor: tokens.colors.navigationSurface,
-                borderColor: tokens.colors.nightBorder,
+                backgroundColor: theme.colors.navigationSurface,
+                borderColor: theme.colors.nightBorder,
                 borderRadius: Number.parseInt(tokens.radius.tab, 10),
                 borderWidth: 1,
-                boxShadow: tokens.elevation.elevated,
+                boxShadow: theme.elevation.elevated,
                 marginBottom: tabInset,
                 marginLeft: tabOuterGap,
                 marginTop: tabInset,
@@ -134,12 +156,12 @@ export default function TabLayout() {
                 width: tokens.navigation.railWidth,
               }
             : {
-                backgroundColor: tokens.colors.surface,
-                borderColor: tokens.colors.borderSubtle,
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderSubtle,
                 borderRadius: Number.parseInt(tokens.radius.tab, 10),
-                borderTopColor: tokens.colors.borderSubtle,
+                borderTopColor: theme.colors.borderSubtle,
                 borderWidth: 1,
-                boxShadow: tokens.elevation.floating,
+                boxShadow: theme.elevation.floating,
                 height: tokens.navigation.tabBarHeight,
                 marginBottom: tabOuterGap,
                 marginHorizontal: tabInset,
@@ -172,6 +194,16 @@ export default function TabLayout() {
             <TabIcon color={color} expanded={expanded} focused={focused} icon={NotebookTabs} />
           ),
           title: "Plan",
+        }}
+      />
+      <Tabs.Screen
+        name="inspire"
+        options={{
+          tabBarAccessibilityLabel: "Inspire",
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon color={color} expanded={expanded} focused={focused} icon={Sparkles} />
+          ),
+          title: "Inspire",
         }}
       />
       <Tabs.Screen

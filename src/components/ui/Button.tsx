@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme, type AppThemeColorRole } from "@/theme";
 import { AppText } from "./AppText";
 import { MotionPressable } from "./MotionPressable";
 
@@ -22,12 +22,12 @@ const variantClassNames: Record<ButtonVariant, string> = {
   secondary: "border border-borderStrong bg-elevatedSurface",
 };
 
-const iconColorByVariant: Record<ButtonVariant, string> = {
-  dangerGhost: tokens.colors.danger,
-  destructive: tokens.colors.onPrimary,
-  ghost: tokens.colors.primary,
-  primary: tokens.colors.onPrimary,
-  secondary: tokens.colors.textPrimary,
+const iconColorRoleByVariant: Record<ButtonVariant, AppThemeColorRole> = {
+  dangerGhost: "danger",
+  destructive: "onPrimary",
+  ghost: "primary",
+  primary: "onPrimary",
+  secondary: "textPrimary",
 };
 
 type ButtonProps = Omit<PressableProps, "children" | "style"> & {
@@ -37,11 +37,6 @@ type ButtonProps = Omit<PressableProps, "children" | "style"> & {
   style?: StyleProp<ViewStyle>;
   variant?: ButtonVariant;
 };
-
-const primaryActionGradient = [
-  tokens.gradients.primaryAction[0],
-  tokens.gradients.primaryAction[1],
-] as const;
 
 export function Button({
   accessibilityLabel,
@@ -54,15 +49,15 @@ export function Button({
   variant = "primary",
   ...props
 }: ButtonProps) {
+  const theme = useAppTheme();
   const isDisabled = disabled || loading;
+  const iconColor = theme.colors[iconColorRoleByVariant[variant]];
 
   const content = (
     <View className="min-h-12 flex-row items-center justify-center gap-xs px-lg">
-      {loading ? <ActivityIndicator color={iconColorByVariant[variant]} /> : null}
-      {Icon && !loading ? (
-        <Icon color={iconColorByVariant[variant]} size={tokens.iconSize.sm} />
-      ) : null}
-      <AppText style={{ color: iconColorByVariant[variant] }} variant="label">
+      {loading ? <ActivityIndicator color={iconColor} /> : null}
+      {Icon && !loading ? <Icon color={iconColor} size={tokens.iconSize.sm} /> : null}
+      <AppText style={{ color: iconColor }} variant="label">
         {loading ? "Loading…" : label}
       </AppText>
     </View>
@@ -74,7 +69,7 @@ export function Button({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
       accessibilityState={{ ...accessibilityState, busy: loading, disabled: isDisabled }}
-      android_ripple={{ color: tokens.colors.surfaceMuted }}
+      android_ripple={{ color: theme.colors.surfaceMuted }}
       disabled={isDisabled}
       className={`min-h-12 overflow-hidden rounded-control ${variantClassNames[variant]} ${
         isDisabled ? "opacity-50" : "active:opacity-80"
@@ -83,7 +78,7 @@ export function Button({
     >
       {variant === "primary" ? (
         <LinearGradient
-          colors={primaryActionGradient}
+          colors={theme.gradients.primaryAction}
           end={{ x: 1, y: 1 }}
           start={{ x: 0, y: 0 }}
           style={{ alignSelf: "stretch" }}

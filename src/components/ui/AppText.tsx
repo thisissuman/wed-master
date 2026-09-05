@@ -1,9 +1,9 @@
 import { type PropsWithChildren } from "react";
 import { Text, type TextProps } from "react-native";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme, type AppThemeColorRole } from "@/theme";
 
-type AppTextVariant =
+export type AppTextVariant =
   | "body"
   | "caption"
   | "countdown"
@@ -16,8 +16,9 @@ type AppTextVariant =
   | "metadata"
   | "title"
   | "wordmark";
-type AppTextTone =
+export type AppTextTone =
   | "accent"
+  | "brand"
   | "danger"
   | "muted"
   | "nightAccent"
@@ -45,8 +46,8 @@ const variantClassNames: Record<AppTextVariant, string> = {
 };
 
 const variantFontFamilies: Record<AppTextVariant, string> = {
-  body: tokens.fontFamily.sansRegular,
-  caption: tokens.fontFamily.sansRegular,
+  body: tokens.fontFamily.sansMedium,
+  caption: tokens.fontFamily.sansMedium,
   countdown: tokens.fontFamily.serifMedium,
   display: tokens.fontFamily.sansBold,
   formTitle: tokens.fontFamily.sansBold,
@@ -55,22 +56,23 @@ const variantFontFamilies: Record<AppTextVariant, string> = {
   heroCompact: tokens.fontFamily.serifSemibold,
   label: tokens.fontFamily.sansSemibold,
   metadata: tokens.fontFamily.sansMedium,
-  title: tokens.fontFamily.sansSemibold,
+  title: tokens.fontFamily.sansBold,
   wordmark: tokens.fontFamily.serifSemibold,
 };
 
-const toneColors: Record<AppTextTone, string> = {
-  accent: tokens.colors.accent,
-  danger: tokens.colors.danger,
-  muted: tokens.colors.textSecondary,
-  nightAccent: tokens.colors.nightAccent,
-  onNight: tokens.colors.onNight,
-  onNightMuted: tokens.colors.onNightMuted,
-  onPrimary: tokens.colors.onPrimary,
-  primary: tokens.colors.primary,
-  secondary: tokens.colors.secondary,
-  success: tokens.colors.success,
-  warning: tokens.colors.warning,
+const toneColorRoles: Record<AppTextTone, AppThemeColorRole> = {
+  accent: "accent",
+  brand: "headingAccent",
+  danger: "danger",
+  muted: "textSecondary",
+  nightAccent: "nightAccent",
+  onNight: "onNight",
+  onNightMuted: "onNightMuted",
+  onPrimary: "onPrimary",
+  primary: "textPrimary",
+  secondary: "secondary",
+  success: "success",
+  warning: "warning",
 };
 
 type AppTextProps = PropsWithChildren<
@@ -89,13 +91,15 @@ export function AppText({
   variant = "body",
   ...props
 }: AppTextProps) {
+  const theme = useAppTheme();
+
   return (
     <Text
       allowFontScaling
       className={`${variantClassNames[variant]} ${className}`}
       style={[
         { fontFamily: variantFontFamilies[variant] },
-        tone ? { color: toneColors[tone] } : undefined,
+        tone ? { color: theme.colors[toneColorRoles[tone]] } : undefined,
         style,
       ]}
       {...props}

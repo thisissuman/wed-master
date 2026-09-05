@@ -1,20 +1,18 @@
 import { router } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
-import {
-  AlignLeft,
-  Ban,
-  CalendarDays,
-  CalendarHeart,
-  CheckCircle2,
-  CircleDashed,
-  ClipboardList,
-  Flag,
-  ListTodo,
-  LoaderCircle,
-  StickyNote,
-  Tag,
-  UserRound,
-} from "lucide-react-native";
+import AlignLeft from "lucide-react-native/icons/text-align-start";
+import Ban from "lucide-react-native/icons/ban";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import CalendarHeart from "lucide-react-native/icons/calendar-heart";
+import CheckCircle2 from "lucide-react-native/icons/circle-check";
+import CircleDashed from "lucide-react-native/icons/circle-dashed";
+import ClipboardList from "lucide-react-native/icons/clipboard-list";
+import Flag from "lucide-react-native/icons/flag";
+import ListTodo from "lucide-react-native/icons/list-todo";
+import LoaderCircle from "lucide-react-native/icons/loader-circle";
+import StickyNote from "lucide-react-native/icons/sticky-note";
+import Tag from "lucide-react-native/icons/tag";
+import UserRound from "lucide-react-native/icons/user-round";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -31,6 +29,8 @@ import {
 } from "@/components/ui";
 import { formatDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 import {
   feedbackActionDurationMilliseconds,
   useFeedbackStore,
@@ -130,7 +130,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
     isSubmitting: isSubmitting || mutation.isPending,
   });
 
-  const save = handleSubmit(async (values) => {
+  const saveValues = useSingleFlightSubmission(async (values: TaskFormValues) => {
     const linkedEvent = data?.events.find((event) => event.id === values.eventId);
     if (values.dueDate && linkedEvent && values.dueDate > linkedEvent.date) {
       setError("dueDate", {
@@ -170,6 +170,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
     }
     exitAfterSave();
   });
+  const save = handleSubmit(saveValues);
 
   const text = (
     name: "category" | "description" | "notes" | "responsiblePerson" | "title",
@@ -188,6 +189,11 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
           error={errors[name]?.message}
           icon={icon}
           label={label}
+          maxLength={
+            name === "description" || name === "notes"
+              ? uiFieldLimits.longText
+              : uiFieldLimits.shortText
+          }
           multiline={options?.multiline}
           onBlur={field.onBlur}
           onChangeText={field.onChange}
@@ -207,6 +213,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
     icon: LucideIcon,
     options: SelectOption[],
     optional = false,
+    presentation?: "dialog" | "sheet",
   ) => (
     <Controller
       control={control}
@@ -219,6 +226,7 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
           onChange={field.onChange}
           optional={optional}
           options={options}
+          presentation={presentation}
           value={field.value}
         />
       )}
@@ -273,10 +281,10 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
         title={task ? "Edit task" : "Add task"}
       >
         {text("title", "Task title", ListTodo, {
-          placeholder: "e.g. Confirm wedding photographer",
+          placeholder: "Confirm photographer",
           required: true,
         })}
-        {select("eventId", "Linked event", CalendarHeart, eventOptions, true)}
+        {select("eventId", "Linked event", CalendarHeart, eventOptions, true, "sheet")}
         <Controller
           control={control}
           name="dueDate"
@@ -291,15 +299,15 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
             />
           )}
         />
-        {select("priority", "Priority", Flag, priorityOptions)}
+        {select("priority", "Priority", Flag, priorityOptions, false, "dialog")}
         {text("responsiblePerson", "Assigned to", UserRound, {
           optional: true,
-          placeholder: "Name of the person responsible",
+          placeholder: "Person responsible",
         })}
         {text("description", "Description", AlignLeft, {
           multiline: true,
           optional: true,
-          placeholder: "Add useful context or instructions",
+          placeholder: "Useful details",
         })}
         <Disclosure
           description="Status, category, and private planning notes."
@@ -309,12 +317,12 @@ export function TaskForm({ initialEventId = "", task }: { initialEventId?: strin
           {select("status", "Status", CircleDashed, statusOptions)}
           {text("category", "Category", Tag, {
             optional: true,
-            placeholder: "e.g. Venue and logistics",
+            placeholder: "Venue, outfits…",
           })}
           {text("notes", "Notes", StickyNote, {
             multiline: true,
             optional: true,
-            placeholder: "Anything else to remember",
+            placeholder: "Anything to remember",
           })}
         </Disclosure>
         {task ? (

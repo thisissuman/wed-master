@@ -1,35 +1,25 @@
 import { Pressable, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { memo } from "react";
-import {
-  CalendarHeart,
-  Diamond,
-  Flame,
-  Flower2,
-  Hand,
-  HeartHandshake,
-  House,
-  Music2,
-  Pencil,
-} from "lucide-react-native";
+import CalendarHeart from "lucide-react-native/icons/calendar-heart";
+import Diamond from "lucide-react-native/icons/diamond";
+import Flame from "lucide-react-native/icons/flame";
+import Flower2 from "lucide-react-native/icons/flower-2";
+import Hand from "lucide-react-native/icons/hand";
+import HeartHandshake from "lucide-react-native/icons/heart-handshake";
+import House from "lucide-react-native/icons/house";
+import Music2 from "lucide-react-native/icons/music-2";
+import Pencil from "lucide-react-native/icons/pencil";
 
 import { AppText, CreatedItemPulse, EmptyState, IconButton } from "@/components/ui";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import type { EventIconKey, WeddingEvent } from "../types";
 import type { CreatedItemHighlight } from "../created-item-highlight";
-import { PlanHeader, type PlanView } from "./PlanShared";
 
 const contentPadding = Number.parseInt(tokens.spacing.md, 10);
 const itemGap = Number.parseInt(tokens.spacing.sm, 10);
 const listFooterClearance = tokens.touchTarget + Number.parseInt(tokens.spacing["2xl"], 10) * 2;
-
-const eventColorByKey = {
-  botanical: { color: tokens.colors.primary, soft: tokens.colors.primarySoft },
-  gold: { color: tokens.colors.warning, soft: tokens.colors.accentSoft },
-  terracotta: { color: tokens.colors.danger, soft: tokens.colors.dangerSoft },
-  sage: { color: tokens.colors.success, soft: tokens.colors.successSoft },
-} as const;
 
 function iconKeyForEvent(event: WeddingEvent): EventIconKey {
   if (event.iconKey) return event.iconKey;
@@ -99,6 +89,13 @@ export const EventTimelineCard = memo(function EventTimelineCard({
   onPress,
   progress,
 }: EventTimelineCardProps) {
+  const theme = useAppTheme();
+  const eventColorByKey = {
+    botanical: { color: theme.colors.primary, soft: theme.colors.primarySoft },
+    gold: { color: theme.colors.warning, soft: theme.colors.accentSoft },
+    terracotta: { color: theme.colors.danger, soft: theme.colors.dangerSoft },
+    sage: { color: theme.colors.success, soft: theme.colors.successSoft },
+  } as const;
   const eventColor = eventColorByKey[event.colorToken ?? "gold"];
   const date = eventDateParts(event.date);
   const progressLabel = progress.total
@@ -125,10 +122,10 @@ export const EventTimelineCard = memo(function EventTimelineCard({
         <View className="flex-row items-center gap-sm p-md">
           <View
             className="h-10 w-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: highlighted ? tokens.colors.primarySoft : eventColor.soft }}
+            style={{ backgroundColor: highlighted ? theme.colors.primarySoft : eventColor.soft }}
           >
             <EventIcon
-              color={highlighted ? tokens.colors.primary : eventColor.color}
+              color={highlighted ? theme.colors.primary : eventColor.color}
               event={event}
             />
           </View>
@@ -136,7 +133,7 @@ export const EventTimelineCard = memo(function EventTimelineCard({
             accessibilityHint={`${date.weekday}, ${date.spokenDate}. ${statusLabel}`}
             accessibilityLabel={`Open event: ${event.name}`}
             accessibilityRole="button"
-            android_ripple={{ color: tokens.colors.surfaceMuted }}
+            android_ripple={{ color: theme.colors.surfaceMuted }}
             className="min-h-14 min-w-0 flex-1 rounded-control active:bg-surfaceMuted"
             onPress={onPress}
           >
@@ -172,7 +169,6 @@ export function PlanEventView({
   events,
   onEdit,
   onEventPress,
-  onViewChange,
   progressForEvent,
   weddingDate,
   createdHighlight,
@@ -181,7 +177,6 @@ export function PlanEventView({
   events: WeddingEvent[];
   onEdit: (event: WeddingEvent) => void;
   onEventPress: (event: WeddingEvent) => void;
-  onViewChange: (view: PlanView) => void;
   progressForEvent: (id: string) => { completed: number; total: number };
   weddingDate: string;
   createdHighlight?: CreatedItemHighlight;
@@ -189,8 +184,7 @@ export function PlanEventView({
 }) {
   const header = (
     <View className="gap-md pb-md">
-      <PlanHeader activeView="events" onViewChange={onViewChange} />
-      <AppText tone="primary" variant="title">
+      <AppText accessibilityRole="header" variant="heading">
         Your wedding events
       </AppText>
     </View>

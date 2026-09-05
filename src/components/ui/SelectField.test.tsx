@@ -1,10 +1,20 @@
 import { fireEvent, render } from "@testing-library/react-native";
+import * as ReactNative from "react-native";
 
 import { SelectField } from "./SelectField";
 
 jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
 
+const useWindowDimensionsSpy = jest.spyOn(ReactNative, "useWindowDimensions");
+
 describe("SelectField", () => {
+  beforeEach(() => {
+    useWindowDimensionsSpy.mockReturnValue({ fontScale: 1, height: 800, scale: 2, width: 411 });
+  });
+
+  afterAll(() => {
+    useWindowDimensionsSpy.mockRestore();
+  });
   it("opens an accessible option sheet and reports the selected value", async () => {
     const onChange = jest.fn();
     const screen = await render(
@@ -20,7 +30,10 @@ describe("SelectField", () => {
     );
 
     await fireEvent.press(screen.getByRole("button", { name: "Priority: Low" }));
-    await fireEvent.press(screen.getByRole("radio", { name: "High" }));
+    expect((await screen.findByTestId("app-bottom-sheet-layout")).props.className).toContain(
+      "justify-center",
+    );
+    await fireEvent.press(await screen.findByRole("radio", { name: "High" }));
 
     expect(onChange).toHaveBeenCalledWith("High");
   });
@@ -42,7 +55,9 @@ describe("SelectField", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Status: All statuses" }));
 
     expect(screen.queryByText("Choose one option")).toBeNull();
-    expect(screen.getByRole("radio", { name: "Completed" }).props.className).toContain("min-h-12");
+    expect((await screen.findByRole("radio", { name: "Completed" })).props.className).toContain(
+      "min-h-12",
+    );
   });
 
   it("adds search automatically for long option lists", async () => {
@@ -59,7 +74,7 @@ describe("SelectField", () => {
     );
 
     await fireEvent.press(screen.getByRole("button", { name: "Related event: Event 1" }));
-    await fireEvent.changeText(screen.getByLabelText("Search options"), "Event 9");
+    await fireEvent.changeText(await screen.findByLabelText("Search options"), "Event 9");
 
     expect(screen.getByRole("radio", { name: "Event 9" })).toBeTruthy();
     expect(screen.queryByRole("radio", { name: "Event 2" })).toBeNull();

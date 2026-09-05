@@ -111,6 +111,9 @@ describe("workspace forms", () => {
       screen.queryByText("Keep every detail on track without making simple tasks feel heavy."),
     ).toBeNull();
     expect(screen.getByRole("button", { name: "Create task" })).toBeTruthy();
+    expect(screen.getByLabelText("Task title").props.placeholder).toBe("Confirm photographer");
+    expect(screen.getByTestId("keyboard-aware-form-scroll").props.bottomOffset).toBeGreaterThan(0);
+    expect(screen.getByTestId("keyboard-sticky-form-footer")).toBeTruthy();
   });
 
   it("opens categories only after a visible Android keyboard finishes closing", async () => {

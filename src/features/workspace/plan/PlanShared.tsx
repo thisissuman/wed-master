@@ -13,7 +13,7 @@ export function PlanHeader({
 }) {
   return (
     <View className="gap-md">
-      <PageHeader title="Plan" />
+      <PageHeader heartAccent title="Plan" />
       <SegmentedControl
         accessibilityLabel="Plan view"
         onChange={onViewChange}

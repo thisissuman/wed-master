@@ -67,7 +67,8 @@ describe("BudgetOverviewDashboard", () => {
     expect(screen.queryByText("Target, spending trends, and category insights.")).toBeNull();
     expect(screen.getByText("Target")).toBeTruthy();
     expect(screen.getByText("Spent")).toBeTruthy();
-    expect(screen.getByText("Pending")).toBeTruthy();
+    expect(screen.getByText("Remaining")).toBeTruthy();
+    expect(screen.queryByText("Pending")).toBeNull();
     expect(screen.getByTestId("budget-summary")).toBeTruthy();
     expect(screen.getByText("Spending trend")).toBeTruthy();
     expect(screen.getByText("All-time insights")).toBeTruthy();

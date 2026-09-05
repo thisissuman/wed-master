@@ -4,8 +4,8 @@
 
 - `app.config.ts` owns Mangalya development, preview, and production names, schemes, package/bundle IDs, icon/splash assets, orientation, version, and build numbers.
 - `eas.json` supplies matching profiles. Do not commit signing credentials.
-- Production is `com.suman.mangalya`, scheme `mangalya`, version `0.1.0`, Android version code `4`, and iOS build number `1`. Increment the affected platform build counter for each store upload; change the marketing version deliberately.
-- Android `allowBackup` is `false`. Generated manifests must retain `android:allowBackup="false"` and removal directives for camera, microphone, and `SYSTEM_ALERT_WINDOW` permissions. Android 12+ OEM device-to-device transfer behavior is documented as platform-dependent rather than promised away in product copy.
+- Production is `com.suman.mangalya`, scheme `mangalya`, version `0.1.0`, Android version code `5`, and iOS build number `1`. Preview self-test builds use `com.suman.mangalya.preview` and `mangalya-preview`. Increment the affected platform build counter for each store upload; change the marketing version deliberately.
+- Android `allowBackup` is `false`. Generated manifests must retain `android:allowBackup="false"`, keep the explicit Inspire camera permission, and retain removal directives for microphone, overlay, legacy storage, and broad-media permissions. Android 12+ OEM device-to-device transfer behavior is documented as platform-dependent rather than promised away in product copy.
 - Sentry initializes and wraps the root only when `EXPO_PUBLIC_SENTRY_DSN` is present. Default PII is disabled and the event processor removes user/request/context/breadcrumb/extra data plus phone, money, and file-path patterns.
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are private build-time source-map upload values. Never expose them with `EXPO_PUBLIC_`.
 
@@ -18,9 +18,17 @@ npm run lint
 npm test -- --runInBand
 npm run format:check
 npx expo install --check
+npx expo-doctor
+npm audit --omit=dev
+npm audit
 APP_VARIANT=production npx expo export --platform android --output-dir /tmp/mangalya-export
 maestro test .maestro
 ```
+
+`npm audit fix` may be used only without `--force`. Expo SDK 57's current dependency graph still
+surfaces the Metro `image-size` parser advisory and an Expo/Xcode `uuid` advisory as build-tool
+exceptions; neither package is bundled into the Hermes runtime, and forcing the suggested Expo
+downgrade is not an accepted remediation.
 
 Run `npx expo-doctor` when obtainable. Inspect export size, Hermes bundle size, bundled font count, and static asset inventory against the preceding release.
 

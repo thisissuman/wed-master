@@ -1,9 +1,9 @@
 import { type ReactNode, useState } from "react";
 import { View } from "react-native";
-import { ChevronDown } from "lucide-react-native";
+import ChevronDown from "lucide-react-native/icons/chevron-down";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 import {
   exitTransition,
   motionTiming,
@@ -27,6 +27,7 @@ export function Disclosure({
   initiallyExpanded = false,
   title,
 }: DisclosureProps) {
+  const theme = useAppTheme();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const rotation = useSharedValue(initiallyExpanded ? 180 : 0);
   const chevronStyle = useAnimatedStyle(() => ({
@@ -47,7 +48,7 @@ export function Disclosure({
           accessibilityLabel={title}
           accessibilityRole="button"
           accessibilityState={{ expanded }}
-          android_ripple={{ color: tokens.colors.surfaceMuted }}
+          android_ripple={{ color: theme.colors.surfaceMuted }}
           className="min-h-14 flex-row items-center gap-sm px-md py-xs active:bg-surfaceMuted"
           onPress={toggle}
         >
@@ -56,7 +57,7 @@ export function Disclosure({
             {description ? <AppText variant="caption">{description}</AppText> : null}
           </View>
           <Animated.View style={chevronStyle}>
-            <ChevronDown color={tokens.colors.textSecondary} size={tokens.iconSize.md} />
+            <ChevronDown color={theme.colors.textSecondary} size={tokens.iconSize.md} />
           </Animated.View>
         </MotionPressable>
         {expanded ? (

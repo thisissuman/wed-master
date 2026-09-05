@@ -1,8 +1,12 @@
-import * as Haptics from "expo-haptics";
+import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { CalendarDays, Clock3, MapPin, Pencil, ReceiptIndianRupee } from "lucide-react-native";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import Clock3 from "lucide-react-native/icons/clock-3";
+import MapPin from "lucide-react-native/icons/map-pin";
+import Pencil from "lucide-react-native/icons/pencil";
+import ReceiptIndianRupee from "lucide-react-native/icons/receipt-indian-rupee";
 import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 
 import {
   AppText,
@@ -15,17 +19,25 @@ import {
   Screen,
   SectionHeader,
 } from "@/components/ui";
-import { formatTimeOfDay, todayDateOnly } from "@/lib/dates";
+import { formatTimeOfDay } from "@/lib/dates";
+import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
 import { formatInr } from "@/lib/money";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
+import { useUnlinkInspirationEventMutation } from "@/features/inspire/workspace-integration";
 
 import { removeEventCoverPhoto } from "../files/workspace-files";
+import { cleanupSummary, coordinateLocalLifecycle } from "../lifecycle/local-lifecycle";
 import { ExpenseCategoryIcon } from "../money/ExpenseCategoryIcon";
 import { useWorkspace, useWorkspaceMutation } from "../provider";
 import { TaskCompletionRow } from "../TaskCompletionRow";
-import type { BudgetCategory, Expense, Task } from "../types";
+import type { BudgetCategory, Expense } from "../types";
+import { useTaskStatusAction } from "../useTaskStatusAction";
 import { DetailHeader, formatDate } from "../ui";
+import { buildEventDetailItems } from "./event-detail-items";
+
+const contentPadding = Number.parseInt(tokens.spacing.md, 10);
+const bottomClearance = Number.parseInt(tokens.spacing["2xl"], 10);
 
 function Fact({
   icon: Icon,
@@ -36,10 +48,12 @@ function Fact({
   label: string;
   value: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View className="min-w-32 flex-1 flex-row items-center gap-xs">
       <View className="h-10 w-10 items-center justify-center rounded-control bg-elevatedSurface">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.sm} />
+        <Icon color={theme.colors.primary} size={tokens.iconSize.sm} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText tone="muted" variant="caption">
@@ -62,11 +76,13 @@ function EventExpenseRow({
   expense: Expense;
   onPress: () => void;
 }) {
+  const theme = useAppTheme();
+
   return (
     <Pressable
       accessibilityLabel={`Open expense: ${expense.title}, ${formatInr(expense.actualPaise)}`}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.surfaceMuted }}
+      android_ripple={{ color: theme.colors.surfaceMuted }}
       className="min-h-16 flex-row items-center gap-sm border-b border-borderSubtle py-sm last:border-b-0 active:bg-surfaceMuted"
       onPress={onPress}
     >
@@ -89,10 +105,14 @@ function EventExpenseRow({
 }
 
 export function EventDetailDashboard({ eventId }: { eventId: string }) {
+  const theme = useAppTheme();
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
+  const taskStatus = useTaskStatusAction();
+  const unlinkInspirationEventMutation = useUnlinkInspirationEventMutation();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [today] = useState(() => todayDateOnly());
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const today = useTodayDateOnly();
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -130,145 +150,210 @@ export function EventDetailDashboard({ eventId }: { eventId: string }) {
   const completedTasks = tasks.filter((task) => task.status === "Completed").length;
   const progress = tasks.length ? (completedTasks / tasks.length) * 100 : 0;
   const spent = expenses.reduce((sum, expense) => sum + expense.actualPaise, 0);
-
-  const toggleTask = (task: Task) => {
-    if (mutation.isPending) return;
-    mutation.mutate(
-      (repositories) =>
-        repositories.tasks.updateTask({
-          ...task,
-          status: task.status === "Completed" ? "Not Started" : "Completed",
-        }),
-      { onSuccess: () => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
-    );
-  };
+  const items = buildEventDetailItems(event, tasks, expenses);
 
   const deleteEvent = async () => {
-    await mutation.mutateAsync((repositories) => repositories.events.deleteEvent(event.id));
-    if (event.coverPhotoUri) removeEventCoverPhoto(event.coverPhotoUri);
+    if (lifecycleBusy) return;
+    setLifecycleBusy(true);
+    let outcome;
+    try {
+      outcome = await coordinateLocalLifecycle(
+        () => mutation.mutateAsync((repositories) => repositories.events.deleteEvent(event.id)),
+        [
+          {
+            area: "inspire-event-links",
+            run: async () => {
+              await unlinkInspirationEventMutation.mutateAsync({
+                weddingId: workspace.data.wedding.id,
+                eventId: event.id,
+              });
+            },
+          },
+          ...(event.coverPhotoUri
+            ? [
+                {
+                  area: "workspace-covers" as const,
+                  run: () => removeEventCoverPhoto(event.coverPhotoUri),
+                },
+              ]
+            : []),
+        ],
+      );
+    } catch (error) {
+      Alert.alert("Could not delete event", toUserMessage(error));
+      setLifecycleBusy(false);
+      return;
+    }
+    setLifecycleBusy(false);
     router.replace("/plan");
+    if (outcome.cleanupFailures.length) {
+      Alert.alert(
+        "Event deleted",
+        `The event was deleted, but cleanup is still needed for: ${cleanupSummary(outcome.cleanupFailures)}. Mangalya will retry managed-file cleanup later.`,
+      );
+    }
   };
 
   return (
     <Screen edges={["top", "right", "bottom", "left"]}>
-      <ScrollView
-        contentContainerClassName="gap-lg p-md pb-2xl"
+      <FlashList
+        contentContainerStyle={{
+          padding: contentPadding,
+          paddingBottom: bottomClearance,
+        }}
+        data={items}
+        drawDistance={720}
+        getItemType={(item) => item.type}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          switch (item.type) {
+            case "summary":
+              return (
+                <View className="gap-md pb-lg">
+                  <View className="flex-row items-start gap-xs">
+                    <View className="min-w-0 flex-1">
+                      <DetailHeader fallback="/plan" title={event.name} />
+                    </View>
+                    <Button
+                      icon={Pencil}
+                      label="Edit"
+                      onPress={() =>
+                        router.navigate({ pathname: "/events/edit", params: { id: event.id } })
+                      }
+                      variant="ghost"
+                    />
+                  </View>
+
+                  <View className="gap-md rounded-card bg-primarySoft p-md">
+                    <View className="flex-row flex-wrap gap-md">
+                      <Fact icon={CalendarDays} label="Date" value={formatDate(event.date)} />
+                      {event.time ? (
+                        <Fact
+                          icon={Clock3}
+                          label="Time"
+                          value={`${formatTimeOfDay(event.time)}${event.endTime ? ` – ${formatTimeOfDay(event.endTime)}` : ""}`}
+                        />
+                      ) : null}
+                    </View>
+                    {event.location ? (
+                      <Fact icon={MapPin} label="Venue" value={event.location} />
+                    ) : null}
+                    <View className="gap-xs border-t border-borderStrong pt-sm">
+                      <View className="flex-row justify-between gap-sm">
+                        <AppText variant="label">Preparation progress</AppText>
+                        <AppText tone="primary" variant="caption">
+                          {completedTasks}/{tasks.length} tasks
+                        </AppText>
+                      </View>
+                      <ProgressBar accessibilityLabel="Event task progress" value={progress} />
+                    </View>
+                  </View>
+                </View>
+              );
+            case "task-section":
+              return (
+                <View className="gap-xs pb-xs">
+                  <SectionHeader title="Related tasks" />
+                  {taskStatus.isError ? (
+                    <View accessibilityRole="alert" className="rounded-control bg-dangerSoft p-md">
+                      <AppText tone="danger" variant="caption">
+                        {toUserMessage(taskStatus.error)} Use Retry in the message below.
+                      </AppText>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            case "task":
+              return (
+                <View className="pb-xs">
+                  <TaskCompletionRow
+                    disabled={taskStatus.isPending}
+                    eventName={event.name}
+                    onPress={() => router.navigate(`/tasks/${item.task.id}`)}
+                    onToggle={() => taskStatus.toggleTaskStatus(item.task)}
+                    task={item.task}
+                    today={today}
+                  />
+                </View>
+              );
+            case "task-empty":
+              return (
+                <View className="pb-lg">
+                  <EmptyState
+                    actionLabel="Add task"
+                    description="Add preparation work for this event."
+                    onAction={() =>
+                      router.navigate({ pathname: "/tasks/new", params: { eventId: event.id } })
+                    }
+                    title="No related tasks"
+                  />
+                </View>
+              );
+            case "note":
+              return (
+                <View className="gap-xs rounded-card bg-surfaceMuted p-md mb-lg">
+                  <SectionHeader title="Event notes" />
+                  <AppText>{item.note}</AppText>
+                </View>
+              );
+            case "expense-section":
+              return (
+                <View className="flex-row items-center gap-sm rounded-t-card border-b border-borderSubtle bg-elevatedSurface px-md py-md shadow-card">
+                  <View className="h-12 w-12 items-center justify-center rounded-control bg-accentSoft">
+                    <ReceiptIndianRupee color={theme.colors.accent} size={tokens.iconSize.md} />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <SectionHeader title="Linked expenses" />
+                    <AppText tone="muted" variant="caption">
+                      {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
+                    </AppText>
+                  </View>
+                  <AppText className="shrink-0 text-right" tone="primary" variant="heading">
+                    {formatInr(spent)}
+                  </AppText>
+                </View>
+              );
+            case "expense": {
+              const lastExpense = expenses[expenses.length - 1]?.id === item.expense.id;
+              return (
+                <View
+                  className={`bg-elevatedSurface px-md ${lastExpense ? "rounded-b-card pb-xs" : ""}`}
+                >
+                  <EventExpenseRow
+                    category={categoryById.get(item.expense.categoryId)}
+                    expense={item.expense}
+                    onPress={() => router.navigate(`/expenses/${item.expense.id}`)}
+                  />
+                </View>
+              );
+            }
+            case "expense-empty":
+              return (
+                <View className="rounded-b-card bg-elevatedSurface px-md pb-md pt-sm">
+                  <AppText tone="muted">Link an expense to this event to see it here.</AppText>
+                </View>
+              );
+            case "action":
+              return (
+                <View className="pt-lg">
+                  <Button
+                    disabled={lifecycleBusy}
+                    label="Delete event"
+                    onPress={() => setDeleteOpen(true)}
+                    variant="dangerGhost"
+                  />
+                </View>
+              );
+          }
+        }}
         showsVerticalScrollIndicator={false}
-      >
-        <View className="flex-row items-start gap-xs">
-          <View className="min-w-0 flex-1">
-            <DetailHeader fallback="/plan" title={event.name} />
-          </View>
-          <Button
-            icon={Pencil}
-            label="Edit"
-            onPress={() => router.navigate({ pathname: "/events/edit", params: { id: event.id } })}
-            variant="ghost"
-          />
-        </View>
-
-        <View className="gap-md rounded-card bg-primarySoft p-md">
-          <View className="flex-row flex-wrap gap-md">
-            <Fact icon={CalendarDays} label="Date" value={formatDate(event.date)} />
-            {event.time ? (
-              <Fact
-                icon={Clock3}
-                label="Time"
-                value={`${formatTimeOfDay(event.time)}${event.endTime ? ` – ${formatTimeOfDay(event.endTime)}` : ""}`}
-              />
-            ) : null}
-          </View>
-          {event.location ? <Fact icon={MapPin} label="Venue" value={event.location} /> : null}
-          <View className="gap-xs border-t border-borderStrong pt-sm">
-            <View className="flex-row justify-between gap-sm">
-              <AppText variant="label">Preparation progress</AppText>
-              <AppText tone="primary" variant="caption">
-                {completedTasks}/{tasks.length} tasks
-              </AppText>
-            </View>
-            <ProgressBar accessibilityLabel="Event task progress" value={progress} />
-          </View>
-        </View>
-
-        <View className="gap-xs">
-          <SectionHeader title="Related tasks" />
-          {mutation.isError ? (
-            <View accessibilityRole="alert" className="rounded-control bg-dangerSoft p-md">
-              <AppText tone="danger" variant="caption">
-                {toUserMessage(mutation.error)} Try the task update again.
-              </AppText>
-            </View>
-          ) : null}
-          {tasks.length ? (
-            tasks.map((task) => (
-              <TaskCompletionRow
-                disabled={mutation.isPending}
-                eventName={event.name}
-                key={task.id}
-                onPress={() => router.navigate(`/tasks/${task.id}`)}
-                onToggle={() => toggleTask(task)}
-                task={task}
-                today={today}
-              />
-            ))
-          ) : (
-            <EmptyState
-              actionLabel="Add task"
-              description="Add preparation work for this event."
-              onAction={() =>
-                router.navigate({ pathname: "/tasks/new", params: { eventId: event.id } })
-              }
-              title="No related tasks"
-            />
-          )}
-        </View>
-
-        {event.notes ? (
-          <View className="gap-xs rounded-card bg-surfaceMuted p-md">
-            <SectionHeader title="Event notes" />
-            <AppText>{event.notes}</AppText>
-          </View>
-        ) : null}
-
-        <View className="overflow-hidden rounded-card bg-elevatedSurface px-md shadow-card">
-          <View className="flex-row items-center gap-sm border-b border-borderSubtle py-md">
-            <View className="h-12 w-12 items-center justify-center rounded-control bg-accentSoft">
-              <ReceiptIndianRupee color={tokens.colors.accent} size={tokens.iconSize.md} />
-            </View>
-            <View className="min-w-0 flex-1">
-              <SectionHeader title="Linked expenses" />
-              <AppText tone="muted" variant="caption">
-                {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
-              </AppText>
-            </View>
-            <AppText className="shrink-0 text-right" tone="primary" variant="heading">
-              {formatInr(spent)}
-            </AppText>
-          </View>
-          {expenses.length ? (
-            expenses.map((expense) => (
-              <EventExpenseRow
-                category={categoryById.get(expense.categoryId)}
-                expense={expense}
-                key={expense.id}
-                onPress={() => router.navigate(`/expenses/${expense.id}`)}
-              />
-            ))
-          ) : (
-            <AppText className="py-md" tone="muted">
-              Link an expense to this event to see it here.
-            </AppText>
-          )}
-        </View>
-
-        <Button label="Delete event" onPress={() => setDeleteOpen(true)} variant="dangerGhost" />
-      </ScrollView>
+      />
       <ConfirmationDialog
         confirmLabel="Delete event"
-        description="Tasks and expenses will stay in your workspace but will no longer be linked."
+        description="Tasks, expenses, and inspiration will stay in your workspace but will no longer be linked to this event."
         onCancel={() => setDeleteOpen(false)}
         onConfirm={() => void deleteEvent()}
-        pending={mutation.isPending}
+        pending={mutation.isPending || unlinkInspirationEventMutation.isPending || lifecycleBusy}
         title="Delete this event?"
         visible={deleteOpen}
       />

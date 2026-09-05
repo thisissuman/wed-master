@@ -1,8 +1,10 @@
 import * as Haptics from "expo-haptics";
-import { Minus, Plus } from "lucide-react-native";
+import Minus from "lucide-react-native/icons/minus";
+import Plus from "lucide-react-native/icons/plus";
 import { TextInput, View } from "react-native";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
+import { runNonCriticalNativeEffect } from "@/lib/native-effects";
 
 import { AppText } from "./AppText";
 import { FieldLabel } from "./FieldLabel";
@@ -25,6 +27,7 @@ export function NumberStepper({
   required?: boolean;
   value: string;
 }) {
+  const theme = useAppTheme();
   const parsed = Number.parseInt(value, 10);
   const current = Number.isFinite(parsed) ? parsed : minimum;
   const decrementDisabled = current <= minimum;
@@ -32,7 +35,7 @@ export function NumberStepper({
 
   const update = (next: number) => {
     onChange(String(Math.min(maximum, Math.max(minimum, next))));
-    void Haptics.selectionAsync();
+    runNonCriticalNativeEffect(() => Haptics.selectionAsync());
   };
 
   return (
@@ -54,7 +57,7 @@ export function NumberStepper({
           onPress={() => update(current - 1)}
           pressedScale={0.94}
         >
-          <Minus color={tokens.colors.primary} size={tokens.iconSize.md} />
+          <Minus color={theme.colors.primary} size={tokens.iconSize.md} />
         </MotionPressable>
         <TextInput
           accessibilityLabel={label}
@@ -77,7 +80,7 @@ export function NumberStepper({
           onPress={() => update(current + 1)}
           pressedScale={0.94}
         >
-          <Plus color={tokens.colors.primary} size={tokens.iconSize.md} />
+          <Plus color={theme.colors.primary} size={tokens.iconSize.md} />
         </MotionPressable>
       </View>
       {error ? (

@@ -1,13 +1,15 @@
 import { Image } from "expo-image";
 import { ActivityIndicator, View } from "react-native";
-import { ImagePlus, Trash2 } from "lucide-react-native";
+import ImagePlus from "lucide-react-native/icons/image-plus";
+import Trash2 from "lucide-react-native/icons/trash-2";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { AppText } from "./AppText";
 import { FieldLabel } from "./FieldLabel";
 import { IconButton } from "./IconButton";
 import { MotionPressable } from "./MotionPressable";
+import { useKeyboardSettledAction } from "./useKeyboardSettledAction";
 
 export function ImagePickerField({
   error,
@@ -26,6 +28,9 @@ export function ImagePickerField({
   optional?: boolean;
   uri?: string;
 }) {
+  const theme = useAppTheme();
+  const pickAfterKeyboard = useKeyboardSettledAction(onPick);
+
   return (
     <View className="gap-2xs">
       <FieldLabel label={label} optional={optional} />
@@ -37,7 +42,7 @@ export function ImagePickerField({
           accessibilityRole="button"
           className="min-h-36 overflow-hidden"
           disabled={loading}
-          onPress={onPick}
+          onPress={pickAfterKeyboard.run}
           pressedScale={0.99}
         >
           {uri ? (
@@ -50,10 +55,10 @@ export function ImagePickerField({
           ) : (
             <View className="min-h-36 items-center justify-center gap-xs border border-dashed border-borderStrong bg-surfaceMuted/40 p-lg">
               {loading ? (
-                <ActivityIndicator color={tokens.colors.primary} />
+                <ActivityIndicator color={theme.colors.primary} />
               ) : (
                 <View className="h-12 w-12 items-center justify-center rounded-full bg-primarySoft">
-                  <ImagePlus color={tokens.colors.primary} size={tokens.iconSize.lg} />
+                  <ImagePlus color={theme.colors.primary} size={tokens.iconSize.lg} />
                 </View>
               )}
               <AppText tone="primary" variant="label">

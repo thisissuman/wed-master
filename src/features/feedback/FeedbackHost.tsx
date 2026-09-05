@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppText } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { tokens } from "@/theme";
+import { useAppTheme } from "@/theme";
 
 import {
   feedbackActionDurationMilliseconds,
@@ -14,6 +14,7 @@ import {
 } from "./feedback-store";
 
 export function FeedbackHost() {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const current = useFeedbackStore((state) => state.current);
@@ -24,13 +25,33 @@ export function FeedbackHost() {
   useEffect(() => {
     if (!current) return;
     AccessibilityInfo.announceForAccessibility(current.message);
-    const duration =
+    const baseDuration =
       current.durationMilliseconds ??
       (current.actionLabel && current.onAction
         ? feedbackActionDurationMilliseconds
         : feedbackPassiveDurationMilliseconds);
-    const timeout = setTimeout(dismiss, duration);
-    return () => clearTimeout(timeout);
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const scheduleDismissal = async () => {
+      let duration = baseDuration;
+      if (current.actionLabel && current.onAction) {
+        try {
+          const recommendedDuration =
+            await AccessibilityInfo.getRecommendedTimeoutMillis(baseDuration);
+          if (Number.isFinite(recommendedDuration) && recommendedDuration > 0) {
+            duration = recommendedDuration;
+          }
+        } catch {
+          // Accessibility timeout guidance is optional; retain the safe default.
+        }
+      }
+      if (!cancelled) timeout = setTimeout(dismiss, duration);
+    };
+    void scheduleDismissal();
+    return () => {
+      cancelled = true;
+      if (timeout) clearTimeout(timeout);
+    };
   }, [current, dismiss]);
 
   if (!current) return null;
@@ -64,11 +85,13 @@ export function FeedbackHost() {
               setPendingNoticeId(current.id);
               void Promise.resolve(current.onAction?.())
                 .then(dismiss)
-                .catch((error) => show({ message: `Undo failed: ${toUserMessage(error)}` }));
+                .catch((error) =>
+                  show({ message: `${current.actionLabel} failed: ${toUserMessage(error)}` }),
+                );
             }}
           >
             {actionPending ? (
-              <ActivityIndicator color={tokens.colors.onNight} />
+              <ActivityIndicator color={theme.colors.onNight} />
             ) : (
               <AppText tone="nightAccent" variant="label">
                 {current.actionLabel}

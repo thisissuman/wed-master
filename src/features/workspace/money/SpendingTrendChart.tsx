@@ -15,7 +15,7 @@ import { AppText, Card } from "@/components/ui";
 import { formatDateOnly, formatShortDateOnly } from "@/lib/dates";
 import { formatInr, formatInrCompact } from "@/lib/money";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { useAppTheme } from "@/theme";
 import { stateEnteringTransition } from "@/theme/motion";
 
 import type { SpendingTrendPoint } from "../selectors";
@@ -67,6 +67,7 @@ export function SpendingTrendChart({
   points: SpendingTrendPoint[];
   rangeLabel: string;
 }) {
+  const theme = useAppTheme();
   const { fontScale } = useWindowDimensions();
   const maximum = Math.max(0, ...points.map((point) => point.actualPaise));
   const total = points.reduce((sum, point) => sum + point.actualPaise, 0);
@@ -150,14 +151,14 @@ export function SpendingTrendChart({
               >
                 <Defs>
                   <SvgLinearGradient id="moneyTrendArea" x1="0" x2="0" y1="0" y2="1">
-                    <Stop offset="0" stopColor={tokens.colors.primary} stopOpacity={0.3} />
-                    <Stop offset="1" stopColor={tokens.colors.primary} stopOpacity={0.02} />
+                    <Stop offset="0" stopColor={theme.colors.primary} stopOpacity={0.3} />
+                    <Stop offset="1" stopColor={theme.colors.primary} stopOpacity={0.02} />
                   </SvgLinearGradient>
                 </Defs>
                 {[plotTop, plotTop + plotHeight / 2, plotBottom].map((y) => (
                   <Line
                     key={y}
-                    stroke={tokens.colors.borderSubtle}
+                    stroke={theme.colors.borderSubtle}
                     strokeDasharray="4 6"
                     strokeWidth={1}
                     x1={plotLeft}
@@ -172,7 +173,7 @@ export function SpendingTrendChart({
                     <Path
                       d={linePath}
                       fill="none"
-                      stroke={tokens.colors.primary}
+                      stroke={theme.colors.primary}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={3}
@@ -181,10 +182,10 @@ export function SpendingTrendChart({
                       <Circle
                         cx={point.x}
                         cy={point.y}
-                        fill={tokens.colors.elevatedSurface}
+                        fill={theme.colors.elevatedSurface}
                         key={`${points[index]?.endDate}-${point.amount}`}
                         r={4}
-                        stroke={tokens.colors.primary}
+                        stroke={theme.colors.primary}
                         strokeWidth={2.5}
                       />
                     ))}
@@ -197,7 +198,7 @@ export function SpendingTrendChart({
                     );
                     return (
                       <Rect
-                        fill={tokens.colors.primary}
+                        fill={theme.colors.primary}
                         height={Math.max(5, plotBottom - point.y)}
                         key={`${points[index]?.endDate}-${point.amount}`}
                         opacity={0.9}

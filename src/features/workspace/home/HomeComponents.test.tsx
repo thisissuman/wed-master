@@ -1,9 +1,11 @@
 import { fireEvent, render } from "@testing-library/react-native";
+import * as ReactNative from "react-native";
 
 import { demoWorkspace } from "../seed";
 import { homeBudgetSummary } from "../selectors";
 import { HomeBudgetOverview } from "./HomeBudgetOverview";
 import { WeddingHero } from "./WeddingHero";
+import { weddingCardThemes } from "./wedding-card-themes";
 
 describe("Home components", () => {
   it("shows real hero data, an accessible countdown, and zero-state planning progress", async () => {
@@ -20,19 +22,27 @@ describe("Home components", () => {
       />,
     );
 
-    expect(screen.getByText("Asha & Ravi")).toBeTruthy();
+    expect(screen.getByRole("header", { name: "Asha & Ravi" })).toBeTruthy();
     expect(screen.getByText("150", { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByText("days to go", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText("days remaining", { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByText("Berhampur, Odisha")).toBeNull();
     expect(screen.queryByText("NEXT EVENT")).toBeNull();
     expect(screen.getByTestId("wedding-hero").props.colors).toHaveLength(3);
     expect(
-      screen.getByRole("progressbar", { name: "Planning progress" }).props.accessibilityValue,
-    ).toEqual({ max: 100, min: 0, now: 0, text: "No planning tasks yet, 0% planned" });
-    expect(screen.getByLabelText("150 days until the wedding")).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Wedding card for Asha & Ravi. Tap the card" }),
+      screen.getByTestId("wedding-hero-artwork", { includeHiddenElements: true }),
     ).toBeTruthy();
+    expect(
+      screen.getByTestId("wedding-default-cover-monogram", { includeHiddenElements: true }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Planning progress").props.accessibilityValue).toEqual({
+      max: 100,
+      min: 0,
+      now: 0,
+      text: "No planning tasks yet, 0% planned",
+    });
+    expect(screen.getByLabelText("Planning progress").props.accessibilityRole).toBe("progressbar");
+    expect(screen.getByLabelText("150 days remaining")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Wedding card for Asha & Ravi" })).toBeTruthy();
     expect(screen.queryByText("A little something for the two of you")).toBeNull();
     expect(screen.queryByText("Open")).toBeNull();
   });
@@ -52,13 +62,10 @@ describe("Home components", () => {
       />,
     );
 
-    const homeCard = screen.getByRole("button", {
-      name: "Wedding card for Asha & Ravi. Tap the card",
-    });
-    await fireEvent(homeCard, "layout", {
+    await fireEvent(screen.getByTestId("wedding-hero-source"), "layout", {
       nativeEvent: { layout: { height: 286, width: 379, x: 0, y: 0 } },
     });
-    await fireEvent.press(homeCard);
+    await fireEvent.press(screen.getByRole("button", { name: "Wedding card for Asha & Ravi" }));
 
     expect(screen.getByTestId("wedding-keepsake-dialog").props.accessibilityViewIsModal).toBe(true);
     expect(screen.getByTestId("wedding-keepsake-card").props.style).toEqual(
@@ -71,13 +78,33 @@ describe("Home components", () => {
 
     expect(screen.getByText(`“${message}”`)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Wedding message. Tap the card" })).toBeTruthy();
-    await fireEvent.press(
-      screen.getByTestId("wedding-keepsake-backdrop", { includeHiddenElements: true }),
-    );
+    await fireEvent.press(screen.getByRole("button", { name: "Close keepsake" }));
     expect(screen.queryByTestId("wedding-keepsake-dialog")).toBeNull();
   });
 
-  it("uses explicit wedding-day and past-date states", async () => {
+  it("uses the selected Lavender Pearl artwork and palette", async () => {
+    const screen = await render(
+      <WeddingHero
+        completedTasks={1}
+        daysUntilWedding={14}
+        isPhotoPending={false}
+        name="Asha & Ravi"
+        onPhotoPress={jest.fn()}
+        totalTasks={4}
+        weddingCardThemeId="lavenderPearl"
+        weddingDate="2026-12-14"
+      />,
+    );
+
+    expect(
+      screen.getByTestId("wedding-hero-artwork", { includeHiddenElements: true }).props.source,
+    ).toEqual([weddingCardThemes.lavenderPearl.artwork]);
+    expect(
+      screen.getByTestId("wedding-default-cover-monogram", { includeHiddenElements: true }),
+    ).toBeTruthy();
+  });
+
+  it("describes wedding day and past dates accurately", async () => {
     const props = {
       completedTasks: 1,
       isPhotoPending: false,
@@ -90,7 +117,7 @@ describe("Home components", () => {
 
     expect(screen.getByLabelText("Wedding day")).toBeTruthy();
     await screen.rerender(<WeddingHero {...props} daysUntilWedding={-1} />);
-    expect(screen.getByLabelText("Wedding date has passed")).toBeTruthy();
+    expect(screen.getByLabelText("1 day since the wedding")).toBeTruthy();
   });
 
   it("falls back safely when a persisted cover file is missing", async () => {
@@ -114,6 +141,36 @@ describe("Home components", () => {
       { nativeEvent: { error: "File not found" } },
     );
     expect(screen.getByRole("button", { name: "Add wedding cover photo" })).toBeTruthy();
+  });
+
+  it("uses a flexible semantic hero at large system text sizes", async () => {
+    const dimensions = jest.spyOn(ReactNative, "useWindowDimensions").mockReturnValue({
+      fontScale: 2,
+      height: 800,
+      scale: 2,
+      width: 360,
+    });
+    try {
+      const screen = await render(
+        <WeddingHero
+          completedTasks={1}
+          daysUntilWedding={14}
+          isPhotoPending={false}
+          name="Asha & Ravi"
+          onPhotoPress={jest.fn()}
+          totalTasks={4}
+          weddingDate="2026-12-14"
+        />,
+      );
+
+      expect(
+        screen.getByRole("header", { name: "Asha & Ravi" }).props.numberOfLines,
+      ).toBeUndefined();
+      expect(screen.getByLabelText("14 days remaining")).toBeTruthy();
+      expect(screen.getByLabelText("Planning progress")).toBeTruthy();
+    } finally {
+      dimensions.mockRestore();
+    }
   });
 
   it("shows the actual over-budget percentage and warning", async () => {

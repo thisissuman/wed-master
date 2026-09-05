@@ -11,8 +11,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { motionDurations, tokens } from "@/theme";
+import { motionDurations, tokens, useAppTheme } from "@/theme";
 import { motionEasing } from "@/theme/motion";
+import { runNonCriticalNativeEffect } from "@/lib/native-effects";
 
 import { AppText } from "./AppText";
 
@@ -83,6 +84,7 @@ export function SegmentedControl<Value extends string>({
   options,
   value,
 }: SegmentedControlProps<Value>) {
+  const theme = useAppTheme();
   const reduceMotion = useReducedMotion();
   const selectedOptionIndex = Math.max(
     0,
@@ -118,16 +120,14 @@ export function SegmentedControl<Value extends string>({
       className="relative flex-row overflow-hidden rounded-control bg-surfaceMuted p-2xs"
       onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
     >
-      {indicatorWidth ? (
-        <Animated.View
-          accessibilityElementsHidden
-          className="absolute bottom-2xs left-2xs top-2xs rounded-control bg-primary"
-          importantForAccessibility="no-hide-descendants"
-          pointerEvents="none"
-          style={indicatorStyle}
-          testID="segmented-control-indicator"
-        />
-      ) : null}
+      <Animated.View
+        accessibilityElementsHidden
+        className="absolute bottom-2xs left-2xs top-2xs rounded-control bg-primary"
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+        style={indicatorStyle}
+        testID="segmented-control-indicator"
+      />
       {options.map((option, index) => {
         const selected = option.value === value;
         return (
@@ -135,12 +135,14 @@ export function SegmentedControl<Value extends string>({
             accessibilityLabel={option.label}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            android_ripple={{ color: tokens.colors.primarySoft }}
-            className="min-h-12 flex-1 items-center justify-center overflow-hidden rounded-control px-sm"
+            android_ripple={{ color: theme.colors.primarySoft }}
+            className={`min-h-12 flex-1 items-center justify-center overflow-hidden rounded-control px-sm ${
+              selected && !indicatorWidth ? "bg-primary" : ""
+            }`}
             key={option.value}
             onPress={() => {
               if (selected) return;
-              void Haptics.selectionAsync();
+              runNonCriticalNativeEffect(() => Haptics.selectionAsync());
               onChange(option.value);
             }}
           >

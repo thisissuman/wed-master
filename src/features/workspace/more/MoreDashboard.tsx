@@ -1,5 +1,10 @@
 import type { LucideIcon } from "lucide-react-native";
-import { ChevronRight, Gift, Phone, Settings, UploadCloud, Users } from "lucide-react-native";
+import Archive from "lucide-react-native/icons/archive";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import Gift from "lucide-react-native/icons/gift";
+import Phone from "lucide-react-native/icons/phone";
+import Settings from "lucide-react-native/icons/settings";
+import Users from "lucide-react-native/icons/users";
 import { router } from "expo-router";
 import { ScrollView, useWindowDimensions, View } from "react-native";
 
@@ -13,7 +18,7 @@ import {
 } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { useWorkspace } from "../provider";
 
@@ -45,8 +50,8 @@ const moreItems: MoreFeature[] = [
     title: "Emergency contacts",
   },
   {
-    description: "Export, import and protect your planning data",
-    icon: UploadCloud,
+    description: "Create local archives and export your planning data",
+    icon: Archive,
     route: "/more/backup",
     title: "Backup & export",
   },
@@ -67,6 +72,7 @@ export function MoreFeatureTile({
   stacked: boolean;
   wide?: boolean;
 }) {
+  const theme = useAppTheme();
   const Icon = item.icon;
 
   if (wide) {
@@ -75,14 +81,14 @@ export function MoreFeatureTile({
         accessibilityHint={item.description}
         accessibilityLabel={`Open ${item.title}`}
         accessibilityRole="button"
-        android_ripple={{ color: tokens.colors.primarySoft }}
+        android_ripple={{ color: theme.colors.primarySoft }}
         className="min-h-24 w-full flex-row items-center gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-raised active:bg-surfaceMuted"
         onPress={() => router.navigate(item.route)}
         pressedScale={0.99}
         testID={`more-feature-row-${item.route}`}
       >
         <View className="h-12 w-12 items-center justify-center rounded-control bg-nightElevated">
-          <Icon color={tokens.colors.nightAccent} size={tokens.iconSize.md} strokeWidth={1.8} />
+          <Icon color={theme.colors.nightAccent} size={tokens.iconSize.md} strokeWidth={1.8} />
         </View>
         <View className="min-w-0 flex-1 gap-2xs">
           <AppText variant="heading">{item.title}</AppText>
@@ -90,7 +96,7 @@ export function MoreFeatureTile({
             {item.description}
           </AppText>
         </View>
-        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+        <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
       </MotionPressable>
     );
   }
@@ -100,7 +106,7 @@ export function MoreFeatureTile({
       accessibilityHint={item.description}
       accessibilityLabel={`Open ${item.title}`}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.primarySoft }}
+      android_ripple={{ color: theme.colors.primarySoft }}
       className="min-h-40 gap-sm rounded-card border border-borderSubtle bg-elevatedSurface p-md shadow-raised active:bg-surfaceMuted"
       onPress={() => router.navigate(item.route)}
       pressedScale={0.99}
@@ -109,9 +115,9 @@ export function MoreFeatureTile({
     >
       <View className="flex-row items-start justify-between gap-sm">
         <View className="h-12 w-12 items-center justify-center rounded-control bg-nightElevated">
-          <Icon color={tokens.colors.nightAccent} size={tokens.iconSize.md} strokeWidth={1.8} />
+          <Icon color={theme.colors.nightAccent} size={tokens.iconSize.md} strokeWidth={1.8} />
         </View>
-        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+        <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText numberOfLines={2} variant="heading">
@@ -155,7 +161,7 @@ export function MoreDashboard() {
         contentContainerClassName="gap-xl p-md pb-2xl"
         showsVerticalScrollIndicator={false}
       >
-        <PageHeader title="More" />
+        <PageHeader heartAccent title="More" />
         {stacked ? (
           <View className="gap-sm">
             {moreItems.map((item) => (

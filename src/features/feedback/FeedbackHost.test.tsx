@@ -80,4 +80,31 @@ describe("FeedbackHost", () => {
     await act(() => jest.advanceTimersByTime(1));
     expect(useFeedbackStore.getState().current).toBeUndefined();
   });
+
+  it("honours the Android accessibility action timeout recommendation", async () => {
+    const timeoutRecommendation = jest
+      .spyOn(AccessibilityInfo, "getRecommendedTimeoutMillis")
+      .mockResolvedValue(12_000);
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <FeedbackHost />
+      </SafeAreaProvider>,
+    );
+
+    await act(() =>
+      useFeedbackStore.getState().show({
+        actionLabel: "Retry",
+        message: "Could not save",
+        onAction: jest.fn(),
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(() => jest.advanceTimersByTime(5_000));
+    expect(useFeedbackStore.getState().current?.message).toBe("Could not save");
+    await act(() => jest.advanceTimersByTime(7_000));
+    expect(useFeedbackStore.getState().current).toBeUndefined();
+    timeoutRecommendation.mockRestore();
+  });
 });

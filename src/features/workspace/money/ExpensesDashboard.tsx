@@ -1,18 +1,16 @@
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
-import {
-  CalendarDays,
-  ChartNoAxesCombined,
-  ChevronRight,
-  Pencil,
-  Plus,
-  ReceiptIndianRupee,
-  Target,
-  type LucideIcon,
-} from "lucide-react-native";
-import { memo, useMemo, useRef, useState } from "react";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import ChartNoAxesCombined from "lucide-react-native/icons/chart-no-axes-combined";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import Pencil from "lucide-react-native/icons/pencil";
+import ReceiptIndianRupee from "lucide-react-native/icons/receipt-indian-rupee";
+import Target from "lucide-react-native/icons/target";
+import type { LucideIcon } from "lucide-react-native";
+import { memo, useMemo, useState } from "react";
 import { ScrollView, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   AppBottomSheet,
@@ -22,6 +20,7 @@ import {
   CreatedItemPulse,
   EmptyState,
   ErrorState,
+  FloatingActionButton,
   IconButton,
   LoadingState,
   MotionPressable,
@@ -30,11 +29,13 @@ import {
   SegmentedControl,
   TextField,
 } from "@/components/ui";
-import { formatDateOnly, todayDateOnly } from "@/lib/dates";
+import { formatDateOnly } from "@/lib/dates";
+import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 import { formatInr, formatInrCompact } from "@/lib/money";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { fromPaise, toPaise } from "../forms";
 import { useWorkspace, useWorkspaceMutation } from "../provider";
@@ -52,12 +53,13 @@ import {
 import type { BudgetCategory, Expense } from "../types";
 import { DetailHeader } from "../ui";
 import { useCreatedItemHighlight } from "../created-item-highlight";
-import { ExpenseCategoryIcon, expenseCategoryPresentation } from "./ExpenseCategoryIcon";
+import { ExpenseCategoryIcon, useExpenseCategoryPresentation } from "./ExpenseCategoryIcon";
 import { SpendingTrendChart } from "./SpendingTrendChart";
 
 const contentPadding = Number.parseInt(tokens.spacing.md, 10);
 const itemGap = Number.parseInt(tokens.spacing.sm, 10);
-const listFooterClearance = tokens.touchTarget + Number.parseInt(tokens.spacing["2xl"], 10) * 2;
+const fabInset = Number.parseInt(tokens.spacing.md, 10);
+const listBottomPadding = tokens.touchTarget + Number.parseInt(tokens.spacing["4xl"], 10);
 
 const trendRangeOptions: { label: string; value: SpendingTrendRange }[] = [
   { label: "30 days", value: "30d" },
@@ -126,9 +128,10 @@ function BudgetPosition({
   onAction: () => void;
   summary: ReturnType<typeof homeBudgetSummary>;
 }) {
+  const theme = useAppTheme();
   const hasTarget = summary.targetPaise !== undefined;
   const overBudget = summary.overBudgetPaise > 0;
-  const remainingLabel = overBudget ? "Over by" : "Pending";
+  const remainingLabel = overBudget ? "Over by" : "Remaining";
   const remainingValue = overBudget
     ? formatInrCompact(summary.overBudgetPaise)
     : summary.remainingPaise === undefined
@@ -141,16 +144,16 @@ function BudgetPosition({
   const leadValue = overBudget
     ? `${formatInr(summary.overBudgetPaise)} over target`
     : hasTarget
-      ? `${formatInr(summary.remainingPaise ?? 0)} pending`
+      ? `${formatInr(summary.remainingPaise ?? 0)} remaining`
       : "Set a shared spending target";
 
   return (
     <View className="overflow-hidden rounded-hero bg-nightSurface" testID="budget-summary">
       <LinearGradient
         colors={[
-          tokens.gradients.weddingNight[0],
-          tokens.gradients.weddingNight[1],
-          tokens.gradients.weddingNight[2],
+          theme.gradients.weddingNight[0],
+          theme.gradients.weddingNight[1],
+          theme.gradients.weddingNight[2],
         ]}
         end={{ x: 1, y: 1 }}
         pointerEvents="none"
@@ -230,6 +233,8 @@ function InsightRow({
   label: string;
   value: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View
       accessible
@@ -237,7 +242,7 @@ function InsightRow({
       className="min-h-20 flex-row items-center gap-sm border-b border-borderSubtle py-sm last:border-b-0"
     >
       <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.md} />
+        <Icon color={theme.colors.primary} size={tokens.iconSize.md} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText tone="muted" variant="caption">
@@ -263,6 +268,7 @@ function AllTimeInsights({
   latestExpense?: Expense;
   peak?: SpendingTrendPoint;
 }) {
+  const expenseCategoryPresentation = useExpenseCategoryPresentation();
   const topCategory = breakdown[0];
   const topPresentation = topCategory
     ? expenseCategoryPresentation[topCategory.iconKey]
@@ -271,7 +277,7 @@ function AllTimeInsights({
   return (
     <View className="gap-md">
       <View className="gap-2xs">
-        <AppText tone="primary" variant="title">
+        <AppText accessibilityRole="header" variant="heading">
           All-time insights
         </AppText>
         <AppText tone="muted" variant="caption">
@@ -334,7 +340,6 @@ function BudgetTargetEditor({
   const { fontScale } = useWindowDimensions();
   const mutation = useWorkspaceMutation();
   const workspace = useWorkspace();
-  const submissionInFlight = useRef(false);
   const [value, setValue] = useState(() => fromPaise(currentTarget));
   const [error, setError] = useState<string>();
   const stackActions = isLargeText(fontScale);
@@ -344,8 +349,7 @@ function BudgetTargetEditor({
     setError(undefined);
     onClose();
   };
-  const save = async () => {
-    if (submissionInFlight.current) return;
+  const save = useSingleFlightSubmission(async () => {
     const trimmed = value.trim();
     if (trimmed && !/^\d+(\.\d{1,2})?$/.test(trimmed)) {
       setError("Enter a valid non-negative amount.");
@@ -357,7 +361,6 @@ function BudgetTargetEditor({
     }
     const wedding = workspace.data?.wedding;
     if (!wedding) return;
-    submissionInFlight.current = true;
     setError(undefined);
     try {
       await mutation.mutateAsync((repositories) =>
@@ -368,11 +371,9 @@ function BudgetTargetEditor({
       );
     } catch {
       return;
-    } finally {
-      submissionInFlight.current = false;
     }
     onClose();
-  };
+  });
 
   return (
     <AppBottomSheet
@@ -410,7 +411,7 @@ function BudgetTargetEditor({
         keyboardType="decimal-pad"
         label="Target amount (₹)"
         onChangeText={setValue}
-        placeholder="Leave empty to clear"
+        placeholder="Empty clears target"
         value={value}
       />
       {mutation.error ? (
@@ -433,6 +434,7 @@ export const ExpenseCard = memo(function ExpenseCard({
   expense,
   onPress,
 }: ExpenseCardProps) {
+  const theme = useAppTheme();
   const amountRecorded = expense.actualPaise > 0;
   const { fontScale } = useWindowDimensions();
   const stacked = isLargeText(fontScale);
@@ -449,7 +451,7 @@ export const ExpenseCard = memo(function ExpenseCard({
       accessibilityHint={amountRecorded ? "Opens expense details" : "Opens amount editing"}
       accessibilityLabel={`${actionLabel}: ${expense.title}. ${amountLabel}. ${categoryLabel}. ${dateLabel}. ${attachmentLabel}.`}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.surfaceMuted }}
+      android_ripple={{ color: theme.colors.surfaceMuted }}
       className="min-h-16 overflow-hidden rounded-control border border-borderSubtle bg-elevatedSurface active:bg-surfaceMuted"
       onPress={onPress}
       pressedScale={0.99}
@@ -480,20 +482,21 @@ export const ExpenseCard = memo(function ExpenseCard({
             {amountLabel}
           </AppText>
         </View>
-        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+        <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
       </View>
     </MotionPressable>
   );
 });
 
 function CategoryBreakdown({ items }: { items: CategorySpending[] }) {
+  const expenseCategoryPresentation = useExpenseCategoryPresentation();
   const { fontScale } = useWindowDimensions();
   const stacked = isLargeText(fontScale);
 
   return (
     <View className="gap-md">
       <View className="gap-2xs">
-        <AppText accessibilityRole="header" tone="primary" variant="title">
+        <AppText accessibilityRole="header" variant="heading">
           Where money went
         </AppText>
         <AppText tone="muted" variant="caption">
@@ -560,7 +563,7 @@ export function BudgetOverviewDashboard() {
   const workspace = useWorkspace();
   const [targetEditorOpen, setTargetEditorOpen] = useState(false);
   const [trendRange, setTrendRange] = useState<SpendingTrendRange>("30d");
-  const [today] = useState(() => todayDateOnly());
+  const today = useTodayDateOnly();
 
   const data = workspace.data;
   const recentExpenses = useMemo(
@@ -628,7 +631,7 @@ export function BudgetOverviewDashboard() {
         <BudgetPosition onAction={() => setTargetEditorOpen(true)} summary={analytics.summary} />
         <View className="gap-md">
           <View className="gap-2xs">
-            <AppText accessibilityRole="header" tone="primary" variant="title">
+            <AppText accessibilityRole="header" variant="heading">
               Spending trend
             </AppText>
             <AppText tone="muted" variant="caption">
@@ -670,6 +673,7 @@ export function BudgetOverviewDashboard() {
 }
 
 export function ExpensesDashboard() {
+  const insets = useSafeAreaInsets();
   const isScreenFocused = useIsFocused();
   const workspace = useWorkspace();
   const data = workspace.data;
@@ -728,7 +732,7 @@ export function ExpensesDashboard() {
 
   const header = (
     <View className="gap-lg pb-md">
-      <PageHeader title="Money" />
+      <PageHeader heartAccent title="Money" />
       <BudgetPosition
         actionIcon={ChartNoAxesCombined}
         actionLabel="Open budget overview"
@@ -736,7 +740,7 @@ export function ExpensesDashboard() {
         summary={budgetSummary}
       />
       <View className="flex-row items-center justify-between gap-sm">
-        <AppText accessibilityRole="header" tone="primary" variant="title">
+        <AppText accessibilityRole="header" variant="heading">
           Recent expenses
         </AppText>
         <AppText
@@ -756,8 +760,9 @@ export function ExpensesDashboard() {
   return (
     <Screen>
       <FlashList
+        testID="money-expense-list"
         contentContainerStyle={{
-          paddingBottom: listFooterClearance,
+          paddingBottom: listBottomPadding,
           paddingHorizontal: contentPadding,
           paddingTop: contentPadding,
         }}
@@ -807,12 +812,13 @@ export function ExpensesDashboard() {
         }
         showsVerticalScrollIndicator={false}
       />
-      <View
-        className="border-t border-borderSubtle bg-elevatedSurface p-md shadow-floating"
-        testID="money-action-footer"
-      >
-        <Button icon={Plus} label="Add expense" onPress={() => router.navigate("/expenses/new")} />
-      </View>
+      <FloatingActionButton
+        accessibilityHint="Opens the expense form"
+        accessibilityLabel="Add expense"
+        bottomInset={insets.bottom + fabInset}
+        onPress={() => router.navigate("/expenses/new")}
+        testID="money-add-expense-fab"
+      />
     </Screen>
   );
 }

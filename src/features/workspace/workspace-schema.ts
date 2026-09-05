@@ -8,9 +8,11 @@ import type {
   WorkspaceSnapshotV1,
   WorkspaceSnapshotV2,
   WorkspaceSnapshotV3,
+  WorkspaceSnapshotV4,
 } from "./types";
 import { derivePaymentStatus } from "./domain";
 import { migrateBudgetCategories } from "./expense-categories";
+import { starterTaskKeyForTitle } from "./task-suggestions";
 import { keepsakeMessageMaxLength } from "./wedding-profile";
 import {
   budgetCategoryIconKeys,
@@ -24,6 +26,7 @@ import {
   rsvpStatuses,
   serviceStatuses,
   starterEventKeys,
+  starterTaskKeys,
   taskPriorities,
   taskStatuses,
 } from "./types";
@@ -101,6 +104,7 @@ const taskSchema = z
   .object({
     id: idSchema,
     title: nonBlankTextSchema,
+    starterTaskKey: z.enum(starterTaskKeys).optional(),
     notes: textSchema.optional(),
     description: textSchema.optional(),
     category: textSchema.optional(),
@@ -236,7 +240,7 @@ function addDuplicateIssues(
 
 const workspaceSnapshotObjectSchema = z
   .object({
-    version: z.literal(4),
+    version: z.literal(5),
     wedding: weddingSchema,
     events: z.array(eventSchema).max(maximumRecordsPerCollection),
     tasks: z.array(taskSchema).max(maximumRecordsPerCollection),
@@ -409,6 +413,7 @@ const legacyGiftSchema = giftSchema
   })
   .strict();
 const legacyTaskSchema = taskSchema.omit({
+  starterTaskKey: true,
   description: true,
   category: true,
   checklist: true,
@@ -440,7 +445,7 @@ export const workspaceSnapshotV2Schema: z.ZodType<WorkspaceSnapshotV2> = z
     version: z.literal(2),
     wedding: weddingSchema,
     events: z.array(eventSchema).max(maximumRecordsPerCollection),
-    tasks: z.array(taskSchema).max(maximumRecordsPerCollection),
+    tasks: z.array(taskSchema.omit({ starterTaskKey: true })).max(maximumRecordsPerCollection),
     categories: z.array(legacyCategorySchema).max(maximumRecordsPerCollection),
     expenses: z.array(legacyExpenseSchemaV2).max(maximumRecordsPerCollection),
     households: z.array(legacyHouseholdSchema).max(maximumRecordsPerCollection),
@@ -455,11 +460,26 @@ export const workspaceSnapshotV3Schema: z.ZodType<WorkspaceSnapshotV3> = z
     version: z.literal(3),
     wedding: weddingSchema,
     events: z.array(eventSchema).max(maximumRecordsPerCollection),
-    tasks: z.array(taskSchema).max(maximumRecordsPerCollection),
+    tasks: z.array(taskSchema.omit({ starterTaskKey: true })).max(maximumRecordsPerCollection),
     categories: z.array(categorySchema).max(maximumRecordsPerCollection),
     expenses: z.array(expenseSchema).max(maximumRecordsPerCollection),
     households: z.array(legacyHouseholdSchema).max(maximumRecordsPerCollection),
     gifts: z.array(legacyGiftSchema).max(maximumRecordsPerCollection),
+    emergencyContacts: z.array(contactSchema).max(maximumRecordsPerCollection),
+    backupHistory: z.array(backupHistorySchema).max(20),
+  })
+  .strict();
+
+export const workspaceSnapshotV4Schema: z.ZodType<WorkspaceSnapshotV4> = z
+  .object({
+    version: z.literal(4),
+    wedding: weddingSchema,
+    events: z.array(eventSchema).max(maximumRecordsPerCollection),
+    tasks: z.array(taskSchema.omit({ starterTaskKey: true })).max(maximumRecordsPerCollection),
+    categories: z.array(categorySchema).max(maximumRecordsPerCollection),
+    expenses: z.array(expenseSchema).max(maximumRecordsPerCollection),
+    households: z.array(householdSchema).max(maximumRecordsPerCollection),
+    gifts: z.array(giftSchema).max(maximumRecordsPerCollection),
     emergencyContacts: z.array(contactSchema).max(maximumRecordsPerCollection),
     backupHistory: z.array(backupHistorySchema).max(20),
   })
@@ -522,7 +542,7 @@ function deriveHouseholdRsvp(
   return "Pending";
 }
 
-function migrateWorkspaceSnapshotV3(snapshot: WorkspaceSnapshotV3): WorkspaceSnapshot {
+function migrateWorkspaceSnapshotV3(snapshot: WorkspaceSnapshotV3): WorkspaceSnapshotV4 {
   return {
     ...snapshot,
     version: 4,
@@ -537,17 +557,34 @@ function migrateWorkspaceSnapshotV3(snapshot: WorkspaceSnapshotV3): WorkspaceSna
   };
 }
 
+function migrateWorkspaceSnapshotV4(snapshot: WorkspaceSnapshotV4): WorkspaceSnapshot {
+  return {
+    ...snapshot,
+    version: 5,
+    tasks: snapshot.tasks.map((task) => {
+      const starterTaskKey = starterTaskKeyForTitle(task.title);
+      return starterTaskKey ? { ...task, starterTaskKey } : { ...task };
+    }),
+  };
+}
+
 export function migrateWorkspaceSnapshot(
-  snapshot: WorkspaceSnapshotV1 | WorkspaceSnapshotV2 | WorkspaceSnapshotV3,
+  snapshot: WorkspaceSnapshotV1 | WorkspaceSnapshotV2 | WorkspaceSnapshotV3 | WorkspaceSnapshotV4,
 ): WorkspaceSnapshot {
   const current = snapshot.version === 1 ? migrateWorkspaceSnapshotV1(snapshot) : snapshot;
   const versionThree = current.version === 2 ? migrateWorkspaceSnapshotV2(current) : current;
-  return migrateWorkspaceSnapshotV3(versionThree);
+  const versionFour =
+    versionThree.version === 3 ? migrateWorkspaceSnapshotV3(versionThree) : versionThree;
+  return migrateWorkspaceSnapshotV4(versionFour);
 }
 
 export function parseOrMigrateWorkspaceSnapshot(value: unknown): WorkspaceSnapshot {
   const current = workspaceSnapshotSchema.safeParse(value);
   if (current.success) return current.data;
+  const versionFour = workspaceSnapshotV4Schema.safeParse(value);
+  if (versionFour.success) {
+    return workspaceSnapshotSchema.parse(migrateWorkspaceSnapshot(versionFour.data));
+  }
   const versionThree = workspaceSnapshotV3Schema.safeParse(value);
   if (versionThree.success) {
     return workspaceSnapshotSchema.parse(migrateWorkspaceSnapshot(versionThree.data));

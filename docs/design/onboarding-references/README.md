@@ -77,22 +77,26 @@ The PNG set contains inconsistent font sizes, type assignments, button treatment
 
 ### Shipped illustration assets
 
-The app-owned PNGs live in [`assets/images/mangalya/onboarding`](../../../assets/images/mangalya/onboarding). They use one text-free editorial paper-cut/gouache system so typography and real values remain code-owned:
+The app-owned WebP artwork lives in [`assets/images/mangalya/onboarding`](../../../assets/images/mangalya/onboarding). It uses one text-free editorial paper-cut/gouache system so typography and real values remain code-owned. The optimized runtime files preserve the generated PNG dimensions and alpha where present while reducing the referenced onboarding raster payload by 90.09%:
 
-- [`intro-together.png`](../../../assets/images/mangalya/onboarding/intro-together.png), [`intro-calm.png`](../../../assets/images/mangalya/onboarding/intro-calm.png), and [`intro-family.png`](../../../assets/images/mangalya/onboarding/intro-family.png)
-- [`names.png`](../../../assets/images/mangalya/onboarding/names.png), [`date-budget.png`](../../../assets/images/mangalya/onboarding/date-budget.png), [`cover-photo.png`](../../../assets/images/mangalya/onboarding/cover-photo.png), and [`events.png`](../../../assets/images/mangalya/onboarding/events.png)
-- [`review.png`](../../../assets/images/mangalya/onboarding/review.png) and [`building.png`](../../../assets/images/mangalya/onboarding/building.png)
+- [`intro-together.webp`](../../../assets/images/mangalya/onboarding/intro-together.webp), [`intro-calm.webp`](../../../assets/images/mangalya/onboarding/intro-calm.webp), and [`intro-family.webp`](../../../assets/images/mangalya/onboarding/intro-family.webp)
+- [`names.webp`](../../../assets/images/mangalya/onboarding/names.webp), [`date-budget.webp`](../../../assets/images/mangalya/onboarding/date-budget.webp), [`cover-photo.webp`](../../../assets/images/mangalya/onboarding/cover-photo.webp), and [`events.webp`](../../../assets/images/mangalya/onboarding/events.webp)
+- [`review.webp`](../../../assets/images/mangalya/onboarding/review.webp) and [`building.webp`](../../../assets/images/mangalya/onboarding/building.webp)
 
-## Future application-wide direction
+## Application-wide direction
 
-The lavender, plum, bridal red, ivory, and restrained-gold family should be considered for a future Mangalya-wide colour evolution. That work must be handled as a separate design-system change: audit every semantic token, contrast state, chart, navigation surface, empty/error state, and generated asset before changing shared tokens.
+The lavender, plum, bridal red, ivory, and restrained-gold family is now Mangalya's shared application palette. Exact primitives live in `src/theme/tokens.json`; onboarding reads those tokens instead of maintaining a second palette. Ivory remains the primary reading canvas, lavender supports selections, bridal red identifies primary action, plum anchors structure and night surfaces, and restrained gold remains decorative.
 
-This onboarding phase deliberately does **not** change `src/theme/tokens.json`, the existing planner screens, the shared navigation shell, or the workspace schema.
+The original onboarding phase did **not** change the planner or workspace schema. The 2026-08-14 application-wide colour follow-up remapped existing semantic theme roles and shared chrome only; it did not change workspace data or planner functionality.
 
 ## Change log
 
 ### 2026-08-14
 
+- Promoted the onboarding palette into shared application brand and semantic tokens.
+- Mapped bridal red to primary actions and compact active navigation, lavender to selected/supporting surfaces, plum to structure and night surfaces, ivory to the canvas, and gold to restrained detail.
+- Made onboarding consume the shared palette so onboarding and planner colours cannot drift.
+- Added a small decorative bridal-red/lavender heart flourish to the four root-page headers without changing accessibility meaning.
 - Removed generic ivory/glass pills from the live artwork layer and mapped content directly to each illustrated paper region with responsive percentage coordinates.
 - Switched personalised illustration values to EB Garamond Semibold for a more invitation-like aesthetic while keeping functional fields and controls in Manrope.
 - Made the selected cover photo fill the central illustrated frame and removed the duplicate large preview.
