@@ -1,7 +1,7 @@
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import * as ReactNative from "react-native";
-import { Alert } from "react-native";
+import { Alert, BackHandler, Keyboard } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -271,11 +271,40 @@ describe("local beta UI hardening", () => {
     expect(screen.getByLabelText("Partner’s name").props.value).toBe("Dev");
   });
 
+  it("lets Android Back dismiss the onboarding keyboard before changing steps", async () => {
+    const addBackHandler = jest.spyOn(BackHandler, "addEventListener");
+    const keyboardVisible = jest.spyOn(Keyboard, "isVisible").mockReturnValue(false);
+    const focusedInput = jest
+      .spyOn(ReactNative.TextInput.State, "currentlyFocusedInput")
+      .mockReturnValue(null as never);
+    const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
+    const screen = await render(<LocalSetupScreen />);
+    await finishIntroduction(screen);
+
+    const backHandler = addBackHandler.mock.calls.at(-1)?.[1];
+    const backEvent = { timeStamp: 0, type: "hardwareBackPress" };
+    await fireEvent(screen.getByLabelText("Your name"), "focus");
+    await fireEvent(screen.getByLabelText("Your name"), "blur");
+    expect(backHandler?.(backEvent)).toBe(true);
+    expect(dismissKeyboard).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Who’s getting married?")).toBeTruthy();
+
+    await act(async () => {
+      expect(backHandler?.(backEvent)).toBe(true);
+    });
+    expect(screen.getByLabelText("Mangalya introduction")).toBeTruthy();
+
+    addBackHandler.mockRestore();
+    keyboardVisible.mockRestore();
+    focusedInput.mockRestore();
+    dismissKeyboard.mockRestore();
+  });
+
   it("persists the completed onboarding values and safely adopts a staged wedding photo", async () => {
     const coverPhotoUri = "file:///documents/wedding-covers/selected.jpg";
     mockPickWeddingCoverPhoto.mockResolvedValue({ status: "selected", uri: coverPhotoUri });
     createWorkspaceMutateAsync.mockResolvedValue(undefined);
-    const screen = await render(<LocalSetupScreen />);
+    const screen = await render(<LocalSetupScreen buildDelayMs={0} />);
 
     await reachCoverStep(screen);
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
@@ -429,7 +458,7 @@ describe("local beta UI hardening", () => {
     createWorkspaceMutateAsync
       .mockRejectedValueOnce(new Error("Storage unavailable"))
       .mockResolvedValueOnce(undefined);
-    const screen = await render(<LocalSetupScreen />);
+    const screen = await render(<LocalSetupScreen buildDelayMs={0} />);
 
     await reachCoverStep(screen);
     await fireEvent.press(screen.getByRole("button", { name: "Next" }));
@@ -454,7 +483,7 @@ describe("local beta UI hardening", () => {
     createWorkspaceMutateAsync.mockImplementation(
       () => new Promise<void>((resolve) => (resolveCreation = resolve)),
     );
-    const screen = await render(<LocalSetupScreen />);
+    const screen = await render(<LocalSetupScreen buildDelayMs={0} />);
 
     await reachCoverStep(screen);
     await fireEvent.press(screen.getByRole("button", { name: "Next" }));

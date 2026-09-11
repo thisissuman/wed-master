@@ -69,7 +69,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: `com.suman.mangalya${variantSuffix}`,
       permissions: ["android.permission.CAMERA"],
       softwareKeyboardLayoutMode: "resize",
-      versionCode: 5,
+      versionCode: 6,
       adaptiveIcon: {
         backgroundColor: defaultTheme.colors.canvas,
         backgroundImage: "./assets/images/android-icon-background.png",
@@ -84,6 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-router",
+      ["expo-dev-client", { addGeneratedScheme: variant === "development" }],
       [
         "expo-splash-screen",
         {

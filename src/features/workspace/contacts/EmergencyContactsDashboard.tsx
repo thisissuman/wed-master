@@ -76,7 +76,7 @@ function ContactCard({
           accessibilityLabel={`Call ${contact.name}`}
           accessibilityRole="button"
           android_ripple={{ color: theme.colors.primarySoft }}
-          className="min-h-12 flex-1 flex-row items-center justify-center gap-xs overflow-hidden rounded-control bg-primarySoft px-sm"
+          className="min-h-4xl flex-1 flex-row items-center justify-center gap-xs overflow-hidden rounded-control bg-primarySoft px-sm"
           onPress={() => void openContactLink("tel", contact.phone)}
         >
           <Phone color={theme.colors.primary} size={tokens.iconSize.md} />
@@ -88,7 +88,7 @@ function ContactCard({
           accessibilityLabel={`Message ${contact.name}`}
           accessibilityRole="button"
           android_ripple={{ color: theme.colors.surfaceMuted }}
-          className="min-h-12 flex-1 flex-row items-center justify-center gap-xs overflow-hidden rounded-control bg-surfaceMuted px-sm"
+          className="min-h-4xl flex-1 flex-row items-center justify-center gap-xs overflow-hidden rounded-control bg-surfaceMuted px-sm"
           onPress={() => void openContactLink("sms", contact.phone)}
         >
           <MessageCircle color={theme.colors.accent} size={tokens.iconSize.md} />

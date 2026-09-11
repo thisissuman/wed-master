@@ -69,6 +69,27 @@ describe("local repositories", () => {
     );
   });
 
+  it("keeps caller and returned replacement snapshots detached from the persisted cache", async () => {
+    const values = populatedValues();
+    const storage = {
+      getItem: jest.fn(async (key: string) => values.get(key) ?? null),
+      setItem: jest.fn(async (key: string, value: string) => {
+        values.set(key, value);
+      }),
+    };
+    const store = new LocalWorkspaceStore(storage);
+    const replacement = structuredClone(demoWorkspace);
+    const expectedName = replacement.wedding.name;
+
+    const returned = await store.replace(replacement);
+    replacement.wedding.name = "Caller mutation";
+    returned.wedding.name = "Returned mutation";
+
+    await expect(store.getSnapshot()).resolves.toMatchObject({
+      wedding: { name: expectedName },
+    });
+  });
+
   it("changes only task status when completing an existing task", async () => {
     const values = populatedValues();
     const storage = {

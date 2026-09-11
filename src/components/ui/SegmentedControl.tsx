@@ -136,7 +136,7 @@ export function SegmentedControl<Value extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             android_ripple={{ color: theme.colors.primarySoft }}
-            className={`min-h-12 flex-1 items-center justify-center overflow-hidden rounded-control px-sm ${
+            className={`min-h-4xl flex-1 items-center justify-center overflow-hidden rounded-control px-sm ${
               selected && !indicatorWidth ? "bg-primary" : ""
             }`}
             key={option.value}

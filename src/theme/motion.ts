@@ -5,7 +5,6 @@ import {
   LinearTransition,
   ReduceMotion,
   SlideInUp,
-  SlideOutDown,
 } from "react-native-reanimated";
 
 import { motionDurations } from "./index";
@@ -54,10 +53,6 @@ export const exitTransition = FadeOut.duration(motionDurations.exit)
 
 export const sheetEnteringTransition = SlideInUp.duration(motionDurations.entrance)
   .easing(motionEasing.enter)
-  .reduceMotion(ReduceMotion.System);
-
-export const sheetExitTransition = SlideOutDown.duration(motionDurations.exit)
-  .easing(motionEasing.exit)
   .reduceMotion(ReduceMotion.System);
 
 export const dialogEnteringTransition = FadeIn.duration(motionDurations.fast)

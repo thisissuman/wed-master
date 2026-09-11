@@ -185,7 +185,7 @@ export function FilterPopover({
                 accessibilityLabel="Reset filters"
                 accessibilityRole="button"
                 accessibilityState={{ disabled: activeCount === 0 }}
-                className="min-h-12 justify-center px-xs"
+                className="min-h-4xl justify-center px-xs"
                 disabled={activeCount === 0}
                 onPress={onReset}
                 pressedScale={0.98}
@@ -239,7 +239,7 @@ export function FilterChoiceGroup({
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
               android_ripple={{ color: theme.colors.primarySoft }}
-              className={`min-h-12 flex-row items-center justify-center gap-2xs rounded-control border px-sm ${
+              className={`min-h-4xl flex-row items-center justify-center gap-2xs rounded-control border px-sm ${
                 selected
                   ? "border-primary bg-primary"
                   : "border-borderStrong bg-elevatedSurface active:bg-surfaceMuted"

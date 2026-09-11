@@ -206,7 +206,7 @@ export function SelectField({
                   accessibilityRole="radio"
                   accessibilityState={{ checked: optionSelected }}
                   android_ripple={{ color: theme.colors.primarySoft }}
-                  className={`${compact ? "min-h-12" : "min-h-14"} flex-row items-center gap-sm rounded-control px-md py-xs ${
+                  className={`${compact ? "min-h-4xl" : "min-h-14"} flex-row items-center gap-sm rounded-control px-md py-xs ${
                     optionSelected ? "bg-primarySoft" : "bg-elevatedSurface active:bg-surfaceMuted"
                   }`}
                   key={option.value}

@@ -63,7 +63,7 @@ function SummaryItem({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="text"
       accessible
-      className="min-h-12 flex-1 flex-row items-center justify-center gap-2xs px-xs"
+      className="min-h-4xl flex-1 flex-row items-center justify-center gap-2xs px-xs"
     >
       {icon}
       <AppText variant="caption">{label}</AppText>

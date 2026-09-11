@@ -54,7 +54,7 @@ export function Button({
   const iconColor = theme.colors[iconColorRoleByVariant[variant]];
 
   const content = (
-    <View className="min-h-12 flex-row items-center justify-center gap-xs px-lg">
+    <View className="min-h-4xl flex-row items-center justify-center gap-xs px-lg">
       {loading ? <ActivityIndicator color={iconColor} /> : null}
       {Icon && !loading ? <Icon color={iconColor} size={tokens.iconSize.sm} /> : null}
       <AppText style={{ color: iconColor }} variant="label">
@@ -71,7 +71,7 @@ export function Button({
       accessibilityState={{ ...accessibilityState, busy: loading, disabled: isDisabled }}
       android_ripple={{ color: theme.colors.surfaceMuted }}
       disabled={isDisabled}
-      className={`min-h-12 overflow-hidden rounded-control ${variantClassNames[variant]} ${
+      className={`min-h-4xl overflow-hidden rounded-control ${variantClassNames[variant]} ${
         isDisabled ? "opacity-50" : "active:opacity-80"
       } ${className}`}
       pressedScale={variant === "primary" ? 0.975 : 0.985}

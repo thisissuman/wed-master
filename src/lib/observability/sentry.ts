@@ -1,5 +1,8 @@
 import type * as SentryModule from "@sentry/react-native";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
+import { sentryReleaseContext } from "./sentry-release";
 import { sanitizeSentryEvent } from "./sentry-scrubbing";
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim();
@@ -19,6 +22,7 @@ const Sentry: SentryApi = dsn
 if (dsn) {
   Sentry.init({
     dsn,
+    ...sentryReleaseContext(Constants.expoConfig, Platform.OS),
     enableAutoSessionTracking: false,
     maxBreadcrumbs: 0,
     sendDefaultPii: false,

@@ -6,7 +6,7 @@ ordered so each can run independently with a clean local workspace.
 The development build needs Metro plus an ADB reverse tunnel. Start them before Maestro:
 
 ```sh
-APP_VARIANT=development npx expo start --dev-client --localhost
+npm run dev
 adb reverse tcp:8081 tcp:8081
 ```
 

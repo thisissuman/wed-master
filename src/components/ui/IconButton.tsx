@@ -47,7 +47,7 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityState={{ ...accessibilityState, disabled: isDisabled }}
       android_ripple={{ color: theme.colors.surfaceMuted }}
-      className={`min-h-12 min-w-12 items-center justify-center rounded-control active:opacity-80 ${backgroundClassByVariant[variant]} ${className}`}
+      className={`min-h-4xl min-w-4xl items-center justify-center rounded-control active:opacity-80 ${backgroundClassByVariant[variant]} ${className}`}
       disabled={isDisabled}
       pressedScale={0.94}
     >

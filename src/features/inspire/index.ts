@@ -29,7 +29,6 @@ export {
 export {
   createInspirationRecord,
   filterAndPageInspirations,
-  inspirationMediaFromDraft,
   maximumInspirationPageSize,
   updateInspirationRecord,
 } from "./domain";

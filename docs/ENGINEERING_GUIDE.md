@@ -41,6 +41,28 @@
 
 A feature is complete when requested behavior, type safety, mobile interaction, focused tests, relevant loading/empty/error/permission states, accessibility basics, and documentation impact have all been reviewed. Verification must state what ran and what did not.
 
+## Git workflow
+
+- Keep `main` releasable. Never push directly to it.
+- Use short-lived branches with the repository conventions: `feat/...`, `fix/...`, `chore/...`, or
+  `refactor/...`. Codex-created branches use the `codex/` prefix unless the task specifies another
+  name.
+- Write imperative Conventional Commits such as `feat(tasks): add due-date filter` or
+  `fix(backup): reject oversized input`.
+- Keep commits focused. Do not combine unrelated styling, data, configuration, or documentation
+  work.
+- Rebase or merge `main` deliberately before review; never force-push a shared branch without the
+  owner's direction.
+- Use a pull request for structural or release work. Describe the problem, resulting behavior,
+  validation, data/privacy impact, screenshots for UI changes, and intentional follow-ups.
+- Self-review the complete diff before committing. Remove debugging output, commented-out code,
+  accidental generated files, and secrets.
+- Prefer squash-and-merge for feature branches so `main` receives one clear Conventional Commit.
+
+Pull-request checks are typecheck, lint, tests, formatting, and whitespace validation. Preview or
+development builds run after merge or when native validation is required. Maestro and signed-build
+checks belong to release acceptance; see [TESTING.md](./TESTING.md) and [RELEASE.md](./RELEASE.md).
+
 ## Quality commands
 
 - `npm run lint`

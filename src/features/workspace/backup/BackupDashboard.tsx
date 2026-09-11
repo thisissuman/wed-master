@@ -305,7 +305,7 @@ export function BackupDashboard() {
                 <Pressable
                   accessibilityLabel={`Share ${entry.fileName} again`}
                   accessibilityRole="button"
-                  className="h-12 w-12 items-center justify-center rounded-control active:bg-surfaceMuted"
+                  className="h-4xl w-4xl items-center justify-center rounded-control active:bg-surfaceMuted"
                   disabled={Boolean(busy) || mutation.isPending || lifecycleBusy}
                   onPress={() => void reShare(entry)}
                 >
@@ -314,7 +314,7 @@ export function BackupDashboard() {
                 <Pressable
                   accessibilityLabel={`Delete ${entry.fileName}`}
                   accessibilityRole="button"
-                  className="h-12 w-12 items-center justify-center rounded-control active:bg-dangerSoft"
+                  className="h-4xl w-4xl items-center justify-center rounded-control active:bg-dangerSoft"
                   disabled={Boolean(busy) || mutation.isPending || lifecycleBusy}
                   onPress={() => setPendingDelete(entry)}
                 >
@@ -328,7 +328,7 @@ export function BackupDashboard() {
           {data.backupHistory.length ? (
             <Pressable
               accessibilityRole="button"
-              className="min-h-12 items-center justify-center rounded-control border border-danger px-md"
+              className="min-h-4xl items-center justify-center rounded-control border border-danger px-md"
               disabled={Boolean(busy) || mutation.isPending || lifecycleBusy}
               onPress={() => setPendingDelete("all")}
             >

@@ -94,7 +94,7 @@ function MoneyMetric({
       accessibilityLabel={`${label}: ${accessibilityValue}`}
       className={`min-w-0 ${
         stacked
-          ? `min-h-12 flex-row items-center justify-between gap-sm py-xs ${
+          ? `min-h-4xl flex-row items-center justify-between gap-sm py-xs ${
               divider ? "border-b border-nightBorder" : ""
             }`
           : `flex-1 gap-2xs px-xs ${divider ? "border-r border-nightBorder" : ""}`
@@ -676,6 +676,8 @@ export function ExpensesDashboard() {
   const insets = useSafeAreaInsets();
   const isScreenFocused = useIsFocused();
   const workspace = useWorkspace();
+  const { fontScale } = useWindowDimensions();
+  const largeText = isLargeText(fontScale);
   const data = workspace.data;
   const categoriesById = useMemo(
     () => new Map((data?.categories ?? []).map((category) => [category.id, category])),
@@ -739,7 +741,15 @@ export function ExpensesDashboard() {
         onAction={() => router.navigate("/budget/overview")}
         summary={budgetSummary}
       />
-      <View className="flex-row items-center justify-between gap-sm">
+      <View
+        className="gap-xs"
+        style={{
+          alignItems: largeText ? "flex-start" : "center",
+          flexDirection: largeText ? "column" : "row",
+          justifyContent: "space-between",
+        }}
+        testID="money-recent-heading-layout"
+      >
         <AppText accessibilityRole="header" variant="heading">
           Recent expenses
         </AppText>

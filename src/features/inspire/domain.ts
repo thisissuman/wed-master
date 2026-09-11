@@ -8,8 +8,6 @@ import {
   type CreateInspirationInput,
   type Inspiration,
   type InspirationListQuery,
-  type InspirationMedia,
-  type InspirationMediaDraft,
   type InspirationPage,
   type UpdateInspirationInput,
 } from "./types";
@@ -145,8 +143,4 @@ export function updateInspirationRecord(
     }
   }
   return inspirationSchema.parse(next);
-}
-
-export function inspirationMediaFromDraft(draft: InspirationMediaDraft): InspirationMedia {
-  return clone(draft.media);
 }

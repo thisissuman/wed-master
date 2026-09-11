@@ -13,7 +13,6 @@ export { FilterChip, type FilterChipProps } from "./FilterChip";
 export { FilterChoiceGroup, FilterPopover, type FilterPopoverProps } from "./FilterPopover";
 export { FloatingActionButton } from "./floating-action-button";
 export { IconButton } from "./IconButton";
-export { ImagePickerField } from "./ImagePickerField";
 export { ListRow } from "./ListRow";
 export { LoadingState } from "./LoadingState";
 export { MotionPressable } from "./MotionPressable";

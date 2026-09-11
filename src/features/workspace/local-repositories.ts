@@ -244,7 +244,9 @@ export class LocalWorkspaceStore {
     candidate: WorkspaceSnapshot,
     { capacityMode = "growth-only", clearDeletionTombstone = false }: CommitCandidateOptions = {},
   ): Promise<WorkspaceSnapshot> {
-    const validated = workspaceSnapshotSchemaParse(copy(candidate));
+    // Zod returns a detached parsed value, so cloning the complete snapshot before parsing only
+    // duplicates hot-write work. Keep the parsed cache and returned snapshot isolated below.
+    const validated = workspaceSnapshotSchemaParse(candidate);
     const serialized = JSON.stringify(validated);
     const candidateBytes = utf8ByteLength(serialized);
     let currentBytes = 0;

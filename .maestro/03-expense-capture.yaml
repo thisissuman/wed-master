@@ -14,5 +14,5 @@ appId: com.suman.mangalya.development
 - inputText: "4500"
 - hideKeyboard
 - tapOn: "Add expense"
-- assertVisible: "Expense added"
+- assertVisible: "Spent: ₹4,500.00"
 - assertVisible: "Wedding shoes"

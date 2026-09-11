@@ -1,6 +1,7 @@
 import * as DocumentPicker from "expo-document-picker";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 
 import { BackupFileTooLargeError, BackupFileUnreadableError } from "@/lib/errors";
@@ -11,6 +12,8 @@ import {
   clearWorkspaceAttachments,
   clearWorkspaceExports,
   cleanupOrphanedWorkspaceFiles,
+  createExpensesCsv,
+  createWorkspaceBackupFile,
   pickEventCoverPhoto,
   pickWorkspaceAttachment,
   pickWorkspaceBackup,
@@ -18,6 +21,7 @@ import {
   removeWorkspaceAttachment,
   removeWorkspaceExport,
   removeWeddingCoverPhoto,
+  shareWorkspaceFile,
 } from "./workspace-files";
 import { maximumBackupBytes, serializeDataBackup } from "../backup/backup-data";
 import { demoWorkspace } from "../seed";
@@ -37,16 +41,24 @@ jest.mock("expo-file-system", () => {
   const files = new Map<string, { size: number; text?: string; textError?: Error }>();
   const directories = new Set<string>();
   let copyError: Error | undefined;
+  let directoryUrisEndWithSlash = false;
 
   const pathOf = (part: unknown) =>
     typeof part === "string" ? part : ((part as { uri?: string } | undefined)?.uri ?? "");
-  const join = (...parts: unknown[]) => parts.map(pathOf).filter(Boolean).join("/");
+  const join = (...parts: unknown[]) => {
+    const [first = "", ...rest] = parts.map(pathOf).filter(Boolean);
+    return rest.reduce(
+      (path, part) => `${path.replace(/\/+$/, "")}/${part.replace(/^\/+/, "")}`,
+      first,
+    );
+  };
 
   class Directory {
     uri: string;
 
     constructor(...parts: unknown[]) {
-      this.uri = join(...parts);
+      const uri = join(...parts);
+      this.uri = directoryUrisEndWithSlash ? `${uri.replace(/\/+$/, "")}/` : uri;
     }
 
     get exists() {
@@ -120,17 +132,71 @@ jest.mock("expo-file-system", () => {
     __setCopyError: (error?: Error) => {
       copyError = error;
     },
+    __setDirectoryTrailingSlash: (enabled: boolean) => {
+      directoryUrisEndWithSlash = enabled;
+    },
   };
 });
 
 const mockImagePicker = jest.mocked(ImagePicker);
 const mockManipulateAsync = jest.mocked(manipulateAsync);
 const mockDocumentPicker = jest.mocked(DocumentPicker);
+const mockSharing = jest.mocked(Sharing);
 const mockFileSystem = jest.requireMock("expo-file-system") as {
   __directories: Set<string>;
   __files: Map<string, { size: number; text?: string; textError?: Error }>;
   __setCopyError: (error?: Error) => void;
+  __setDirectoryTrailingSlash: (enabled: boolean) => void;
 };
+
+describe("workspace export sharing", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFileSystem.__directories.clear();
+    mockFileSystem.__files.clear();
+    mockFileSystem.__setDirectoryTrailingSlash(false);
+    mockSharing.isAvailableAsync.mockResolvedValue(true);
+    mockSharing.shareAsync.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => mockFileSystem.__setDirectoryTrailingSlash(false));
+
+  it.each([
+    ["without", false],
+    ["with", true],
+  ] as const)(
+    "shares valid managed backup and CSV files %s a directory trailing slash",
+    async (_variant, trailingSlash) => {
+      mockFileSystem.__setDirectoryTrailingSlash(trailingSlash);
+      const backup = createWorkspaceBackupFile(demoWorkspace);
+      const expenses = createExpensesCsv(demoWorkspace);
+
+      await expect(shareWorkspaceFile(backup.uri)).resolves.toBeUndefined();
+      await expect(shareWorkspaceFile(expenses.uri)).resolves.toBeUndefined();
+
+      expect(mockSharing.shareAsync).toHaveBeenNthCalledWith(1, backup.uri);
+      expect(mockSharing.shareAsync).toHaveBeenNthCalledWith(2, expenses.uri);
+    },
+  );
+
+  it.each([
+    "file:///private/export.json",
+    "file:///documents/mangalya/exports/../private.json",
+    "file:///documents/mangalya/exports/nested/export.json",
+  ])("rejects an invalid or non-direct managed path: %s", async (uri) => {
+    mockFileSystem.__files.set(uri, { size: 100 });
+
+    await expect(shareWorkspaceFile(uri)).rejects.toBeInstanceOf(BackupFileUnreadableError);
+    expect(mockSharing.shareAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing managed file", async () => {
+    await expect(
+      shareWorkspaceFile("file:///documents/mangalya/exports/missing.json"),
+    ).rejects.toBeInstanceOf(BackupFileUnreadableError);
+    expect(mockSharing.shareAsync).not.toHaveBeenCalled();
+  });
+});
 
 describe("wedding cover files", () => {
   beforeEach(() => {

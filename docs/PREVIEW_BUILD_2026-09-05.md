@@ -29,7 +29,8 @@ Result:
 - The working tree contained the current visual redesign, Inspire feature, lifecycle/storage
   hardening, test, documentation, and asset-conversion batch. These changes were kept together and
   tested as the requested release candidate.
-- No push to `main` was attempted. This follows [GIT_WORKFLOW.md](./GIT_WORKFLOW.md).
+- No push to `main` was attempted. This follows the branch rules in
+  [ENGINEERING_GUIDE.md](./ENGINEERING_GUIDE.md).
 
 ## Repository-defined test gate
 
@@ -175,11 +176,10 @@ Result:
 - The staged whitespace check passed.
 - Local commit `e396a6478eca47da8653a4ea395ce14c2a456350` was created on
   `codex/ux-simplification-visual-redesign`.
-- The automatic approval reviewer blocked the push because the 238-file source and asset snapshot
-  was being sent to an external remote that it had not independently verified as trusted. The
-  remote configured in Git is `https://github.com/thisissuman/wed-master.git`, and the authenticated
-  Expo/GitHub account name is `thisissuman`. The local branch is therefore ahead of its remote and
-  requires the user's explicit approval before retrying the same push.
+- The first push attempt was blocked by automatic approval review while the external remote was
+  being verified. It was later authorized and pushed successfully. Subsequent documentation
+  commits also reached `origin/codex/ux-simplification-visual-redesign`; the local and upstream
+  branch both resolved to `983b16e` when this record was consolidated on 2026-09-05.
 
 ## EAS Preview APK
 

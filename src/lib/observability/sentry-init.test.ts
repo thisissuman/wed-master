@@ -38,6 +38,7 @@ describe("Sentry initialization", () => {
       expect.objectContaining({
         dsn: "https://public@example.invalid/1",
         enableAutoSessionTracking: false,
+        environment: "development",
         maxBreadcrumbs: 0,
         sendDefaultPii: false,
         tracesSampleRate: 0,

@@ -44,7 +44,7 @@ export function AttachmentField({
           <Pressable
             accessibilityLabel={`Remove ${attachment.name}`}
             accessibilityRole="button"
-            className="min-h-12 min-w-12 items-center justify-center"
+            className="min-h-4xl min-w-4xl items-center justify-center"
             onPress={onRemove}
           >
             <Trash2 color={theme.colors.danger} size={tokens.iconSize.md} />

@@ -32,7 +32,7 @@ export function ListRow({
   const theme = useAppTheme();
   const ending = trailing ?? accessory;
   const content = (
-    <View className={`min-h-12 flex-row items-center gap-sm py-md ${className}`}>
+    <View className={`min-h-4xl flex-row items-center gap-sm py-md ${className}`}>
       {leading ? <View>{leading}</View> : null}
       <View className="flex-1 gap-2xs">
         <AppText variant="label">{title}</AppText>

@@ -63,7 +63,7 @@ function HomeSectionHeader({
           accessibilityLabel={actionLabel}
           accessibilityRole="button"
           android_ripple={{ color: theme.colors.primarySoft }}
-          className="min-h-12 flex-row items-center justify-center gap-2xs rounded-control px-xs active:bg-primarySoft"
+          className="min-h-4xl flex-row items-center justify-center gap-2xs rounded-control px-xs active:bg-primarySoft"
           onPress={onAction}
           pressedScale={0.98}
         >

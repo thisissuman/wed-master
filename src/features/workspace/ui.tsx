@@ -1,31 +1,16 @@
 import { type ReactNode, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import ChevronLeft from "lucide-react-native/icons/chevron-left";
-import MapPin from "lucide-react-native/icons/map-pin";
 import type { Href } from "expo-router";
 import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AppText, Button, IconButton, ListRow } from "@/components/ui";
+import { AppText, Button, IconButton } from "@/components/ui";
 import { formatDateOnly } from "@/lib/dates";
-import { formatInr } from "@/lib/money";
-import { tokens, useAppTheme } from "@/theme";
+import { tokens } from "@/theme";
 import { goBackOr } from "@/lib/navigation";
 
-import type { Expense, WeddingEvent } from "./types";
-
 export const formatDate = formatDateOnly;
-
-export function PageHeader({ eyebrow, title }: { eyebrow?: string; title: string }) {
-  return (
-    <View className="gap-2xs">
-      {eyebrow ? <AppText variant="label">{eyebrow}</AppText> : null}
-      <AppText tone="brand" variant="title">
-        {title}
-      </AppText>
-    </View>
-  );
-}
 
 export function DetailHeader({
   eyebrow,
@@ -50,72 +35,6 @@ export function DetailHeader({
         </AppText>
       </View>
     </View>
-  );
-}
-
-export function EventTimelineRow({
-  event,
-  onPress,
-  taskProgress,
-}: {
-  event: WeddingEvent;
-  onPress: () => void;
-  taskProgress: { completed: number; total: number };
-}) {
-  const theme = useAppTheme();
-  const progressLabel =
-    taskProgress.total === 0
-      ? "No tasks linked"
-      : `${taskProgress.completed} of ${taskProgress.total} tasks done`;
-
-  return (
-    <View className="flex-row gap-sm">
-      <View className="items-center pt-xl">
-        <View className="h-2xs w-2xs rounded-full bg-primary" />
-      </View>
-      <Pressable
-        accessibilityLabel={`Open event: ${event.name}`}
-        accessibilityRole="button"
-        android_ripple={{ color: theme.colors.surfaceMuted }}
-        className="flex-1 border-b border-borderSubtle py-md active:bg-surfaceMuted"
-        onPress={onPress}
-      >
-        <View className="gap-2xs">
-          <AppText variant="heading">{event.name}</AppText>
-          <AppText variant="caption">
-            {formatDateOnly(event.date)}
-            {event.location ? ` · ${event.location}` : ""}
-          </AppText>
-          <AppText tone="muted" variant="caption">
-            {progressLabel}
-          </AppText>
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-export function ExpenseListItem({
-  categoryName,
-  expense,
-  onPress,
-}: {
-  categoryName: string;
-  expense: Expense;
-  onPress: () => void;
-}) {
-  return (
-    <ListRow
-      accessibilityLabel={`Open expense: ${expense.title}`}
-      description={categoryName}
-      onPress={onPress}
-      title={expense.title}
-      trailing={
-        <AppText tone={expense.actualPaise > 0 ? undefined : "warning"} variant="label">
-          {expense.actualPaise > 0 ? formatInr(expense.actualPaise) : "Amount not recorded"}
-        </AppText>
-      }
-    />
   );
 }
 
@@ -213,18 +132,6 @@ export function FormShell({
       ) : (
         <KeyboardStickyView testID="keyboard-sticky-form-footer">{formFooter}</KeyboardStickyView>
       )}
-    </View>
-  );
-}
-
-export function LocationLine({ location }: { location?: string }) {
-  const theme = useAppTheme();
-  if (!location) return null;
-
-  return (
-    <View className="flex-row items-center gap-2xs">
-      <MapPin color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
-      <AppText variant="body">{location}</AppText>
     </View>
   );
 }

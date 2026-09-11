@@ -3,7 +3,6 @@ import { todayDateOnly, toDateOnly } from "@/lib/dates";
 import type {
   BudgetCategoryIconKey,
   Expense,
-  GiftKind,
   GiftRecord,
   Household,
   ISODate,
@@ -147,9 +146,6 @@ export function homeBudgetSummary(snapshot: WorkspaceSnapshot) {
     targetPaise: hasTarget ? targetPaise : undefined,
   } as const;
 }
-export const categoryTotals = (snapshot: WorkspaceSnapshot, categoryId: string) =>
-  expenseTotals(snapshot.expenses.filter((expense) => expense.categoryId === categoryId));
-
 export function selectRecentExpenses(expenses: Expense[]): Expense[] {
   return [...expenses].sort(
     (left, right) =>
@@ -395,28 +391,4 @@ export function giftSummary(gifts: GiftRecord[]) {
     total: gifts.length,
     totalValuePaise: gifts.reduce((sum, gift) => sum + (gift.valuePaise ?? 0), 0),
   };
-}
-
-export function selectAndSortGifts(
-  gifts: GiftRecord[],
-  kind: GiftKind,
-  sort: "name" | "recent" | "value",
-) {
-  return gifts
-    .filter((gift) => (gift.kind ?? "Received") === kind)
-    .sort((left, right) => {
-      if (sort === "value") return (right.valuePaise ?? 0) - (left.valuePaise ?? 0);
-      if (sort === "name") return left.personName.localeCompare(right.personName);
-      return (right.date ?? "").localeCompare(left.date ?? "");
-    });
-}
-
-export function linkedVendorNames(expenses: Expense[]) {
-  return [
-    ...new Set(
-      expenses
-        .map((expense) => expense.vendorName?.trim())
-        .filter((name): name is string => Boolean(name)),
-    ),
-  ];
 }

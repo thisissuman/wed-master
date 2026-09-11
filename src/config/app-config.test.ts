@@ -3,6 +3,9 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 import buildExpoConfig from "../../app.config";
 
 const originalVariant = process.env.APP_VARIANT;
+const originalSentryOrg = process.env.SENTRY_ORG;
+const originalSentryProject = process.env.SENTRY_PROJECT;
+const originalSentryUrl = process.env.SENTRY_URL;
 
 function configFor(variant?: string) {
   if (variant) process.env.APP_VARIANT = variant;
@@ -25,10 +28,24 @@ function navigationBarOptions(config: ExpoConfig) {
   return Array.isArray(plugin) ? plugin[1] : undefined;
 }
 
+function devClientOptions(config: ExpoConfig) {
+  const plugin = config.plugins?.find(
+    (candidate) => Array.isArray(candidate) && candidate[0] === "expo-dev-client",
+  );
+  return Array.isArray(plugin) ? plugin[1] : undefined;
+}
+
+function restoreEnvironment(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
 describe("Expo application variants", () => {
   afterAll(() => {
-    if (originalVariant) process.env.APP_VARIANT = originalVariant;
-    else delete process.env.APP_VARIANT;
+    restoreEnvironment("APP_VARIANT", originalVariant);
+    restoreEnvironment("SENTRY_ORG", originalSentryOrg);
+    restoreEnvironment("SENTRY_PROJECT", originalSentryProject);
+    restoreEnvironment("SENTRY_URL", originalSentryUrl);
   });
 
   it.each([
@@ -61,7 +78,7 @@ describe("Expo application variants", () => {
     ]);
     expect(config.android?.predictiveBackGestureEnabled).toBe(true);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
-    expect(config.android?.versionCode).toBe(5);
+    expect(config.android?.versionCode).toBe(6);
     expect(config.userInterfaceStyle).toBe("automatic");
     expect(config.android?.adaptiveIcon?.backgroundColor).toBe("#1D0B23");
     expect(config.plugins).toContainEqual([
@@ -69,6 +86,9 @@ describe("Expo application variants", () => {
       expect.objectContaining({ backgroundColor: "#1D0B23" }),
     ]);
     expect(config.plugins).toContain("expo-asset");
+    expect(devClientOptions(config)).toEqual({
+      addGeneratedScheme: variant === undefined || variant === "development",
+    });
     expect(config.plugins).toContainEqual(["expo-secure-store", { configureAndroidBackup: false }]);
     expect(navigationBarOptions(config)).toEqual({ enforceContrast: false, style: "light" });
     expect(imagePickerOptions(config)).toMatchObject({
@@ -77,5 +97,28 @@ describe("Expo application variants", () => {
       photosPermission:
         "Allow Mangalya to choose wedding photos and inspiration images from your library.",
     });
+  });
+
+  it("configures source-map upload only when the private Sentry project is supplied", () => {
+    delete process.env.SENTRY_ORG;
+    delete process.env.SENTRY_PROJECT;
+    expect(
+      configFor("production").plugins?.some(
+        (candidate) => Array.isArray(candidate) && candidate[0] === "@sentry/react-native",
+      ),
+    ).toBe(false);
+
+    process.env.SENTRY_ORG = "example-organization";
+    process.env.SENTRY_PROJECT = "mangalya";
+    process.env.SENTRY_URL = "https://sentry.example.invalid/";
+
+    expect(configFor("production").plugins).toContainEqual([
+      "@sentry/react-native",
+      {
+        organization: "example-organization",
+        project: "mangalya",
+        url: "https://sentry.example.invalid/",
+      },
+    ]);
   });
 });

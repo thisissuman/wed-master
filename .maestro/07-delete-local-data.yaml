@@ -6,6 +6,11 @@ appId: com.suman.mangalya.development
     file: subflows/create-workspace.yaml
 - tapOn: "More"
 - tapOn: "Open Settings"
+- scrollUntilVisible:
+    element:
+      text: "Delete local data"
+    direction: DOWN
+    timeout: 30000
 - tapOn: "Delete local data"
 - tapOn: "Confirmation"
 - inputText: "DELETE"

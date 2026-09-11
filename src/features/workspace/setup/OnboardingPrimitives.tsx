@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react-native";
 import ArrowLeft from "lucide-react-native/icons/arrow-left";
 import ChevronRight from "lucide-react-native/icons/chevron-right";
 import { type PropsWithChildren, type ReactNode, useState } from "react";
-import { ScrollView, Text, View, type TextProps } from "react-native";
+import { ScrollView, Text, useWindowDimensions, View, type TextProps } from "react-native";
 import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated, { FadeIn, FadeOut, ReduceMotion } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,6 +25,8 @@ export function OnboardingText({
     family?: "body" | "medium" | "semibold" | "bold" | "wordmark";
     size?: number;
   }>) {
+  const { fontScale } = useWindowDimensions();
+
   return (
     <Text
       allowFontScaling
@@ -33,7 +35,7 @@ export function OnboardingText({
           color,
           fontFamily: theme.fonts[family],
           fontSize: size,
-          lineHeight: Math.round(size * 1.35),
+          lineHeight: Math.round(size * 1.35 * fontScale),
         },
         style,
       ]}

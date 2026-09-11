@@ -56,7 +56,7 @@ describe("SelectField", () => {
 
     expect(screen.queryByText("Choose one option")).toBeNull();
     expect((await screen.findByRole("radio", { name: "Completed" })).props.className).toContain(
-      "min-h-12",
+      "min-h-4xl",
     );
   });
 

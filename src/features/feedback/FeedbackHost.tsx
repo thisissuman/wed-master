@@ -79,7 +79,7 @@ export function FeedbackHost() {
             accessibilityLabel={current.actionLabel}
             accessibilityRole="button"
             accessibilityState={{ busy: actionPending, disabled: actionPending }}
-            className="min-h-12 min-w-12 items-center justify-center rounded-control px-xs active:bg-nightSoft"
+            className="min-h-4xl min-w-4xl items-center justify-center rounded-control px-xs active:bg-nightSoft"
             disabled={actionPending}
             onPress={() => {
               setPendingNoticeId(current.id);

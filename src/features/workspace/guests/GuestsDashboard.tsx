@@ -108,7 +108,7 @@ function GuestSummaryPanel({
                 accessibilityLabel={`${item.label}, ${item.value}`}
                 accessibilityRole="text"
                 accessible
-                className="min-h-12 flex-1 items-center justify-center gap-2xs px-xs"
+                className="min-h-4xl flex-1 items-center justify-center gap-2xs px-xs"
               >
                 <AppText style={{ fontVariant: ["tabular-nums"] }} tone="primary" variant="heading">
                   {item.value}

@@ -274,7 +274,7 @@ function WeddingAvatar({
         accessibilityRole="button"
         accessibilityState={{ busy: isPhotoPending, disabled: isPhotoPending }}
         android_ripple={{ borderless: true, color: theme.ripple, radius: 24 }}
-        className="absolute -bottom-1 -right-1 min-h-12 min-w-12 rounded-full disabled:opacity-60"
+        className="absolute -bottom-1 -right-1 min-h-4xl min-w-4xl rounded-full disabled:opacity-60"
         disabled={isPhotoPending}
         onPress={(event) => {
           event.stopPropagation();
@@ -880,7 +880,7 @@ function FocusedWeddingKeepsake({
         <MotionPressable
           accessibilityLabel="Close keepsake"
           accessibilityRole="button"
-          className="min-h-12 flex-row items-center justify-center gap-xs rounded-control border border-translucentBorder bg-translucentSurface px-md"
+          className="min-h-4xl flex-row items-center justify-center gap-xs rounded-control border border-translucentBorder bg-translucentSurface px-md"
           onPress={onClose}
           pressedScale={0.97}
           ref={closeButtonRef}

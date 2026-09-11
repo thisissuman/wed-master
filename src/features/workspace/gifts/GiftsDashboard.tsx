@@ -56,7 +56,7 @@ function Metric({
       accessibilityLabel={`${label}: ${accessibilityValue}`}
       className={`min-w-0 ${
         stacked
-          ? `min-h-12 flex-row items-center justify-between gap-sm py-xs ${
+          ? `min-h-4xl flex-row items-center justify-between gap-sm py-xs ${
               divider ? "border-b border-borderSubtle" : ""
             }`
           : `flex-1 items-center gap-2xs px-xs ${divider ? "border-r border-borderSubtle" : ""}`

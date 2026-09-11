@@ -19,6 +19,7 @@ import {
   Alert,
   BackHandler,
   FlatList,
+  Keyboard,
   Linking,
   ScrollView,
   TextInput,
@@ -44,6 +45,7 @@ import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
 import { uiFieldLimits } from "@/lib/forms/fieldLimits";
 import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
+import { isLargeText } from "@/lib/responsive";
 import { useAppTheme } from "@/theme";
 
 import {
@@ -109,7 +111,6 @@ const buildingMessages = [
   "Connecting dates and budget",
   "Finishing your private workspace",
 ] as const;
-
 const setupCoverErrorMessage = (error: unknown) =>
   coverPhotoErrorMessage(error) ?? toUserMessage(error);
 
@@ -125,6 +126,7 @@ function FormTextField({
   label,
   onChangeText,
   maxLength,
+  onFocusChange,
   optional = false,
   placeholder,
   prefix,
@@ -134,6 +136,7 @@ function FormTextField({
   label: string;
   onChangeText: (value: string) => void;
   maxLength?: number;
+  onFocusChange?: (focused: boolean) => void;
   optional?: boolean;
   placeholder?: string;
   prefix?: string;
@@ -181,9 +184,15 @@ function FormTextField({
           autoComplete="off"
           keyboardType={prefix ? "number-pad" : "default"}
           maxLength={maxLength}
-          onBlur={() => setFocused(false)}
+          onBlur={() => {
+            setFocused(false);
+            onFocusChange?.(false);
+          }}
           onChangeText={onChangeText}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            setFocused(true);
+            onFocusChange?.(true);
+          }}
           placeholder={placeholder}
           placeholderTextColor={theme.colors.mutedText}
           returnKeyType="done"
@@ -215,12 +224,14 @@ function ReviewSummaryTile({
   icon: Icon,
   label,
   onPress,
+  stacked,
   value,
 }: {
   fullWidth?: boolean;
   icon: LucideIcon;
   label: string;
   onPress: () => void;
+  stacked: boolean;
   value: string;
 }) {
   return (
@@ -235,7 +246,7 @@ function ReviewSummaryTile({
         borderColor: theme.colors.translucentBorder,
         borderRadius: theme.radius.control,
         borderWidth: 1,
-        flexBasis: fullWidth ? "100%" : "47%",
+        flexBasis: fullWidth || stacked ? "100%" : "47%",
         flexDirection: "row",
         flexGrow: 1,
         gap: 10,
@@ -260,7 +271,12 @@ function ReviewSummaryTile({
         <OnboardingText color={theme.colors.onNightMuted} size={10}>
           {label}
         </OnboardingText>
-        <OnboardingText color={theme.colors.onNight} family="semibold" size={13} numberOfLines={1}>
+        <OnboardingText
+          color={theme.colors.onNight}
+          family="semibold"
+          numberOfLines={stacked ? undefined : 1}
+          size={13}
+        >
           {value}
         </OnboardingText>
       </View>
@@ -405,12 +421,18 @@ function IntroScreen({
   );
 }
 
-export function LocalSetupScreen() {
+export function LocalSetupScreen({
+  buildDelayMs = theme.motion.build,
+}: { buildDelayMs?: number } = {}) {
   useAppTheme();
+  const { fontScale } = useWindowDimensions();
+  const largeText = isLargeText(fontScale);
   const mutation = useCreateWorkspaceMutation();
   const reduceMotion = useReducedMotion();
   const today = useTodayDateOnly() as ISODate;
   const pendingCoverPhotoRef = useRef<string | undefined>(undefined);
+  const formFieldEditingRef = useRef(false);
+  const keyboardShownRef = useRef(false);
   const [stage, setStage] = useState<OnboardingStage>("intro");
   const [introIndex, setIntroIndex] = useState(0);
   const [yourName, setYourName] = useState("");
@@ -450,7 +472,21 @@ export function LocalSetupScreen() {
     [],
   );
 
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      keyboardShownRef.current = true;
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      keyboardShownRef.current = false;
+    });
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   const previousStage = useCallback(() => {
+    formFieldEditingRef.current = false;
     if (stage === "names") setStage("intro");
     else if (stage === "milestones") setStage("names");
     else if (stage === "cover") setStage("milestones");
@@ -459,8 +495,22 @@ export function LocalSetupScreen() {
     else if (stage === "review") setStage("tasks");
   }, [stage]);
 
+  const handleFormFieldFocusChange = useCallback((focused: boolean) => {
+    if (focused) formFieldEditingRef.current = true;
+  }, []);
+
   useEffect(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (
+        keyboardShownRef.current ||
+        formFieldEditingRef.current ||
+        Keyboard.isVisible() ||
+        TextInput.State.currentlyFocusedInput()
+      ) {
+        formFieldEditingRef.current = false;
+        Keyboard.dismiss();
+        return true;
+      }
       if (stage === "building") {
         if (submitError) {
           setSubmitError(undefined);
@@ -486,6 +536,7 @@ export function LocalSetupScreen() {
     };
     setNameErrors(errors);
     if (errors.yours || errors.partner) return;
+    formFieldEditingRef.current = false;
     setStage("milestones");
   };
 
@@ -586,7 +637,7 @@ export function LocalSetupScreen() {
       );
       await Promise.all([
         mutation.mutateAsync({ ...snapshot, tasks: starterTasks }),
-        reduceMotion ? Promise.resolve() : delay(theme.motion.build),
+        reduceMotion ? Promise.resolve() : delay(buildDelayMs),
       ]);
       router.replace("/(app)/(tabs)");
     } catch (error) {
@@ -720,6 +771,7 @@ export function LocalSetupScreen() {
             error={nameErrors.yours}
             label="Your name"
             maxLength={uiFieldLimits.shortText}
+            onFocusChange={handleFormFieldFocusChange}
             onChangeText={(value) => {
               setYourName(value);
               if (value.trim()) setNameErrors((errors) => ({ ...errors, yours: undefined }));
@@ -730,6 +782,7 @@ export function LocalSetupScreen() {
             error={nameErrors.partner}
             label="Partner’s name"
             maxLength={uiFieldLimits.shortText}
+            onFocusChange={handleFormFieldFocusChange}
             onChangeText={(value) => {
               setPartnerName(value);
               if (value.trim()) setNameErrors((errors) => ({ ...errors, partner: undefined }));
@@ -801,6 +854,7 @@ export function LocalSetupScreen() {
             error={budgetError}
             label="Target budget"
             maxLength={uiFieldLimits.currency}
+            onFocusChange={handleFormFieldFocusChange}
             onChangeText={(value) => {
               setBudgetTarget(formatBudgetInput(value));
               setBudgetError(undefined);
@@ -949,7 +1003,7 @@ export function LocalSetupScreen() {
                   borderColor: selected ? theme.colors.plum : theme.colors.border,
                   borderRadius: theme.radius.control,
                   borderWidth: selected ? 2 : 1,
-                  flexBasis: "46%",
+                  flexBasis: largeText ? "100%" : "46%",
                   flexDirection: "row",
                   flexGrow: 1,
                   gap: 10,
@@ -1124,6 +1178,7 @@ export function LocalSetupScreen() {
                   key={label}
                   onPress={() => setStage(editStage)}
                   label={label}
+                  stacked={largeText}
                   value={value}
                 />
               ))}

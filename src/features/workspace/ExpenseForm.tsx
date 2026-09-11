@@ -177,7 +177,7 @@ function QuickExpenseSheet({
           edges={["bottom"]}
           style={{ maxHeight: "100%" }}
         >
-          <View className="min-h-12 flex-row items-center justify-end px-md">
+          <View className="min-h-4xl flex-row items-center justify-end px-md">
             <IconButton accessibilityLabel="Close expense form" icon={X} onPress={onCancel} />
           </View>
           <ScrollView

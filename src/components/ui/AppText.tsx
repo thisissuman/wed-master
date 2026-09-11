@@ -1,5 +1,5 @@
 import { type PropsWithChildren } from "react";
-import { Text, type TextProps } from "react-native";
+import { Text, type TextProps, useWindowDimensions } from "react-native";
 
 import { tokens, useAppTheme, type AppThemeColorRole } from "@/theme";
 
@@ -60,6 +60,29 @@ const variantFontFamilies: Record<AppTextVariant, string> = {
   wordmark: tokens.fontFamily.serifSemibold,
 };
 
+const tokenLineHeight = (variant: keyof typeof tokens.typography) => {
+  const configuration = tokens.typography[variant][1];
+  return Number.parseInt(
+    typeof configuration === "string" ? configuration : configuration.lineHeight,
+    10,
+  );
+};
+
+const variantLineHeights: Record<AppTextVariant, number> = {
+  body: tokenLineHeight("body"),
+  caption: tokenLineHeight("caption"),
+  countdown: tokenLineHeight("countdown"),
+  display: tokenLineHeight("display"),
+  formTitle: tokenLineHeight("formTitle"),
+  heading: tokenLineHeight("heading"),
+  hero: tokenLineHeight("hero"),
+  heroCompact: tokenLineHeight("heroCompact"),
+  label: tokenLineHeight("label"),
+  metadata: tokenLineHeight("metadata"),
+  title: tokenLineHeight("title"),
+  wordmark: tokenLineHeight("wordmark"),
+};
+
 const toneColorRoles: Record<AppTextTone, AppThemeColorRole> = {
   accent: "accent",
   brand: "headingAccent",
@@ -92,13 +115,17 @@ export function AppText({
   ...props
 }: AppTextProps) {
   const theme = useAppTheme();
+  const { fontScale } = useWindowDimensions();
 
   return (
     <Text
       allowFontScaling
       className={`${variantClassNames[variant]} ${className}`}
       style={[
-        { fontFamily: variantFontFamilies[variant] },
+        {
+          fontFamily: variantFontFamilies[variant],
+          lineHeight: variantLineHeights[variant] * fontScale,
+        },
         tone ? { color: theme.colors[toneColorRoles[tone]] } : undefined,
         style,
       ]}

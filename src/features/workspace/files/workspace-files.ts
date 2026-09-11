@@ -14,11 +14,9 @@ import {
 
 import {
   expensesCsv,
-  guestsCsv,
   maximumBackupBytes,
   parseDataBackup,
   serializeDataBackup,
-  tasksCsv,
 } from "../backup/backup-data";
 import { makeWorkspaceId } from "../local-repositories";
 import type { AttachmentRef, BackupHistoryEntry, WorkspaceSnapshot } from "../types";
@@ -80,7 +78,7 @@ function deleteFileSafely(file: File | undefined) {
 function managedFile(uri: string, directory: Directory): File | null {
   try {
     const file = new File(uri);
-    const prefix = `${directory.uri}/`;
+    const prefix = directory.uri.endsWith("/") ? directory.uri : `${directory.uri}/`;
     const relativePath = file.uri.startsWith(prefix) ? file.uri.slice(prefix.length) : "";
     if (
       !relativePath ||
@@ -406,14 +404,6 @@ export async function shareWorkspaceFile(uri: string) {
 
 export function createExpensesCsv(snapshot: WorkspaceSnapshot): BackupHistoryEntry {
   return createCsvEntry("expenses", "expenses-csv", expensesCsv(snapshot));
-}
-
-export function createTasksCsv(snapshot: WorkspaceSnapshot): BackupHistoryEntry {
-  return createCsvEntry("tasks", "tasks-csv", tasksCsv(snapshot));
-}
-
-export function createGuestsCsv(snapshot: WorkspaceSnapshot): BackupHistoryEntry {
-  return createCsvEntry("guests", "guests-csv", guestsCsv(snapshot));
 }
 
 function createCsvEntry(

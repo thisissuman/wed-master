@@ -1,5 +1,5 @@
 import { type ComponentProps, useEffect } from "react";
-import { Pressable, useWindowDimensions, View, type ColorValue } from "react-native";
+import { Pressable, Text, useWindowDimensions, View, type ColorValue } from "react-native";
 import Grid2X2 from "lucide-react-native/icons/grid-2x2";
 import House from "lucide-react-native/icons/house";
 import IndianRupee from "lucide-react-native/icons/indian-rupee";
@@ -23,6 +23,24 @@ const tabIconSize = tokens.iconSize.md;
 const tabInset = Number.parseInt(tokens.spacing.sm, 10);
 const tabOuterGap = Number.parseInt(tokens.spacing.xs, 10);
 const tabInnerGap = Number.parseInt(tokens.spacing["2xs"], 10);
+
+function TabLabel({ children, color }: { children: string; color: ColorValue }) {
+  return (
+    <Text
+      allowFontScaling
+      maxFontSizeMultiplier={tokens.layout.largeTextScale}
+      numberOfLines={1}
+      style={{
+        color,
+        fontFamily: tokens.fontFamily.sansMedium,
+        fontSize: 12,
+        lineHeight: 16 * tokens.layout.largeTextScale,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
 
 type TabsScreenOptions = Exclude<
   ComponentProps<typeof Tabs>["screenOptions"],
@@ -106,13 +124,13 @@ function TabIcon({
 
 export default function TabLayout() {
   const theme = useAppTheme();
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
   const showTabBar = isRootTabPath(pathname);
-  const tabBar = adaptiveTabBarConfig(width);
+  const tabBar = adaptiveTabBarConfig(width, height);
   const expanded = tabBar.position === "left";
-  const itemLayout = adaptiveTabBarItemStyle(width);
+  const itemLayout = adaptiveTabBarItemStyle(width, height);
 
   return (
     <Tabs
@@ -126,17 +144,13 @@ export default function TabLayout() {
         tabBarHideOnKeyboard: true,
         tabBarInactiveBackgroundColor: "transparent",
         tabBarInactiveTintColor: expanded ? theme.colors.onNightMuted : theme.colors.textSecondary,
+        tabBarLabel: ({ children, color }) => <TabLabel color={color}>{children}</TabLabel>,
         tabBarLabelPosition: "below-icon",
         tabBarItemStyle: {
           borderRadius: Number.parseInt(tokens.radius.control, 10),
           marginHorizontal: expanded ? 0 : tabInnerGap,
           marginVertical: expanded ? tabOuterGap : tabInnerGap,
           ...itemLayout,
-        },
-        tabBarLabelStyle: {
-          fontFamily: tokens.fontFamily.sansMedium,
-          fontSize: 12,
-          lineHeight: 16,
         },
         tabBarPosition: tabBar.position,
         tabBarStyle: !showTabBar
