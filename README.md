@@ -21,7 +21,7 @@ Public Supabase values are optional for the local beta. Never put service-role k
 tokens, payment secrets, or other privileged values in `EXPO_PUBLIC_*` variables. A fresh install
 opens setup and never silently creates demo records.
 
-The app currently writes workspace schema v5. Version `0.1.0` uses Android version code `5` and iOS
+The app currently writes workspace schema v5. Version `0.1.0` uses Android version code `6` and iOS
 build number `1`. See the release guide before rebuilding native clients or creating a Preview APK.
 
 ## Documentation
@@ -32,5 +32,6 @@ build number `1`. See the release guide before rebuilding native clients or crea
 - [Engineering guide](docs/ENGINEERING_GUIDE.md)
 - [Testing](docs/TESTING.md)
 - [Release guide](docs/RELEASE.md)
+- [Latest signed Android Preview](docs/PREVIEW_BUILD_2026-09-11.md)
 - [Next steps](docs/NEXT_STEPS.md)
 - [Decisions](docs/DECISIONS.md)

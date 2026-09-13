@@ -102,7 +102,7 @@ source change requires another build.
 
 Record the source commit, checks, EAS build ID/page, artifact link, checksum, signing and manifest
 inspection, and device result in a dated build record. Follow
-[PREVIEW_BUILD_2026-09-05.md](./PREVIEW_BUILD_2026-09-05.md) as the current example.
+[PREVIEW_BUILD_2026-09-11.md](./PREVIEW_BUILD_2026-09-11.md) as the current example.
 
 Verify fresh setup and upgrade/migration without data loss; all create/edit/detail/delete/Undo
 flows; backup/restore/recovery; permissions and sharing; 360dp and expanded layouts; landscape;

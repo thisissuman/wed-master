@@ -94,7 +94,7 @@ push directly to `main`. Use the installed development client for ordinary sourc
 - `docs/TESTING.md`: automated gate, manual matrix, and acceptance thresholds.
 - `docs/RELEASE.md`: development, native build, Preview APK, and production release procedures.
 - `docs/NEXT_STEPS.md`: unfinished work and external blockers.
-- `docs/PREVIEW_BUILD_2026-09-05.md`: latest signed Android Preview evidence.
+- `docs/PREVIEW_BUILD_2026-09-11.md`: latest signed Android Preview evidence.
 - `docs/archive/VERIFICATION_HISTORY_2026-09-05.md`: older dated verification evidence.
 - `docs/SECURITY_PERFORMANCE_AUDIT_2026-08-12.md`: local-first security/performance audit.
 - `docs/DECISIONS.md`: costly-to-reverse decisions only.

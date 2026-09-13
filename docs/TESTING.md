@@ -99,4 +99,4 @@ permission, identifier, icon, splash, or native-dependency changes.
 
 Historical results are in
 [VERIFICATION_HISTORY_2026-09-05.md](./archive/VERIFICATION_HISTORY_2026-09-05.md); the latest signed
-APK evidence is in [PREVIEW_BUILD_2026-09-05.md](./PREVIEW_BUILD_2026-09-05.md).
+APK evidence is in [PREVIEW_BUILD_2026-09-11.md](./PREVIEW_BUILD_2026-09-11.md).
