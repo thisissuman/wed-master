@@ -65,11 +65,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
         "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.WRITE_CONTACTS",
       ],
       package: `com.suman.mangalya${variantSuffix}`,
       permissions: ["android.permission.CAMERA"],
       softwareKeyboardLayoutMode: "resize",
-      versionCode: 6,
+      versionCode: 7,
       adaptiveIcon: {
         backgroundColor: defaultTheme.colors.canvas,
         backgroundImage: "./assets/images/android-icon-background.png",
@@ -93,6 +94,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           imageWidth: 200,
         },
       ],
+      ["expo-contacts", { contactsPermission: "Allow Mangalya to choose an emergency contact." }],
       "expo-image",
       "expo-sharing",
       [

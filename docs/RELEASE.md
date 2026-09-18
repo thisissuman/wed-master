@@ -7,7 +7,7 @@ unrelated work, and never push directly to `main`.
 
 - `app.config.ts` owns names, schemes, package/bundle IDs, icons, splash, orientation, marketing
   version, and platform build numbers. `eas.json` owns matching build profiles.
-- Version `0.1.0` currently uses Android version code `6` and iOS build number `1`.
+- Version `0.1.0` currently uses Android version code `7` and iOS build number `1`.
 - Development is `Mangalya Dev` / `com.suman.mangalya.development` /
   `mangalya-development`; Preview is `Mangalya Preview` / `com.suman.mangalya.preview` /
   `mangalya-preview`; production is `Mangalya` / `com.suman.mangalya` / `mangalya`.
@@ -16,7 +16,7 @@ unrelated work, and never push directly to `main`.
 - Increment the affected platform counter for every store upload and change the marketing version
   deliberately. Use semantic prerelease tags such as `v0.1.0-beta.1` when tagging releases.
 - Keep signing credentials in EAS or the release environment. Never commit them.
-- Android must retain `allowBackup=false`, intentional Camera access for Inspire, and removal rules
+- Android must retain `allowBackup=false`, intentional Camera access for Inspire and read-only Contacts access on picker request, and removal rules
   for microphone, overlay, legacy-storage, and broad-media permissions.
 - Sentry wraps the root only when `EXPO_PUBLIC_SENTRY_DSN` is present. Keep default PII disabled and
   preserve event scrubbing. Runtime events use the app variant as `environment`, the platform build
@@ -61,6 +61,10 @@ APP_VARIANT=development npx expo prebuild --clean --platform android
 APP_VARIANT=development ANDROID_HOME=/Users/kira/Library/Android/sdk npx expo run:android
 ```
 
+The emergency-contact picker uses `expo-contacts/legacy`. Its config plugin adds read access;
+`WRITE_CONTACTS` is explicitly blocked. Request Android access only on a picker tap, preserve
+manual entry, and verify the system Contacts picker in the rebuilt binary.
+
 Confirm the installed package and scheme are `com.suman.mangalya.development` and
 `mangalya-development`. An old native shell running current Metro JavaScript is not native-release
 evidence. Do not remove an obsolete app package until its local data is backed up or its owner
@@ -93,8 +97,12 @@ exact source on a feature branch, and confirming the active Expo account:
 
 ```bash
 npx eas-cli@latest whoami
-npx eas-cli@latest build --platform android --profile preview --wait --non-interactive
+npx eas-cli@latest build --platform android --profile preview --no-wait --non-interactive
 ```
+
+`--no-wait` returns the build-status link after submission. Share that link when the Product Owner
+wants to monitor the build themselves; do not poll unless asked. A submitted build is not a verified
+APK: record signing, artifact and device evidence only after those checks actually happen.
 
 This uploads a source snapshot and consumes an applicable Android EAS cloud build. The resulting APK
 contains its JavaScript bundle and needs neither Metro nor the Mac after installation. Any later

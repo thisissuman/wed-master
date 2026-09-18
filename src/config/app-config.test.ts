@@ -75,10 +75,11 @@ describe("Expo application variants", () => {
       "android.permission.USE_BIOMETRIC",
       "android.permission.USE_FINGERPRINT",
       "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.WRITE_CONTACTS",
     ]);
     expect(config.android?.predictiveBackGestureEnabled).toBe(true);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
-    expect(config.android?.versionCode).toBe(6);
+    expect(config.android?.versionCode).toBe(7);
     expect(config.userInterfaceStyle).toBe("automatic");
     expect(config.android?.adaptiveIcon?.backgroundColor).toBe("#1D0B23");
     expect(config.plugins).toContainEqual([
