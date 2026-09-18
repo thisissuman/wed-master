@@ -21,6 +21,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withTiming,
+  withSequence,
 } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -557,6 +558,46 @@ function WeddingNames({
   );
 }
 
+function WeddingCelebration({ name, theme }: { name: string; theme: WeddingCardTheme }) {
+  const reducedMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    if (!reducedMotion)
+      scale.set(
+        withSequence(
+          withTiming(1.12, { duration: motionDurations.entrance }),
+          withTiming(1, { duration: motionDurations.entrance }),
+        ),
+      );
+  }, [reducedMotion, scale]);
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <View className="items-center gap-sm px-lg py-lg" testID="wedding-celebration">
+      <Animated.View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={heartStyle}
+      >
+        <Heart color={theme.keepsakeAccent} fill={theme.keepsakeAccent} size={tokens.iconSize.lg} />
+      </Animated.View>
+      <AppText className="text-center" style={{ color: theme.nameText }} variant="title">
+        Congratulations!
+      </AppText>
+      <AppText
+        accessibilityRole="header"
+        className="text-center"
+        style={{ color: theme.nameText }}
+        variant="heading"
+      >
+        {name}
+      </AppText>
+      <AppText className="text-center" style={{ color: theme.mutedText }} variant="caption">
+        Here’s to your beautiful beginning, and a lifetime of little moments together.
+      </AppText>
+    </View>
+  );
+}
+
 type WeddingCardFaceProps = WeddingHeroProps & {
   failedImageUri?: string;
   onImageError: () => void;
@@ -584,11 +625,11 @@ function WeddingCardFace({
   const theme = getWeddingCardTheme(weddingCardThemeId);
   const cardSurface = (
     <LinearGradient
-      colors={theme.heroGradient}
+      colors={daysUntilWedding < 0 ? theme.keepsakeGradient : theme.heroGradient}
       end={{ x: 1, y: 1 }}
       start={{ x: 0, y: 0 }}
       style={{
-        aspectRatio: largeText ? undefined : weddingCardArtworkAspectRatio,
+        aspectRatio: largeText || daysUntilWedding < 0 ? undefined : weddingCardArtworkAspectRatio,
         borderRadius: Number.parseInt(tokens.radius.card, 10),
         minHeight: largeText ? tokens.touchTarget * 7 : undefined,
         overflow: "hidden",
@@ -596,18 +637,40 @@ function WeddingCardFace({
       }}
       testID="wedding-hero"
     >
-      <Image
-        accessible={false}
-        accessibilityElementsHidden
-        contentFit="fill"
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        source={theme.artwork}
-        style={StyleSheet.absoluteFill}
-        testID="wedding-hero-artwork"
-        transition={motionDurations.state}
-      />
-      {largeText ? (
+      {daysUntilWedding >= 0 ? (
+        <Image
+          accessible={false}
+          accessibilityElementsHidden
+          contentFit="fill"
+          importantForAccessibility="no-hide-descendants"
+          pointerEvents="none"
+          source={theme.artwork}
+          style={StyleSheet.absoluteFill}
+          testID="wedding-hero-artwork"
+          transition={motionDurations.state}
+        />
+      ) : null}
+      {daysUntilWedding < 0 ? (
+        <View className="items-center justify-center py-md">
+          <HeroOrnament mirrored theme={theme} />
+          <WeddingAvatar
+            coverPhotoUri={coverPhotoUri}
+            failedImageUri={failedImageUri}
+            isPhotoPending={isPhotoPending}
+            name={name}
+            onImageError={onImageError}
+            onPhotoPress={onPhotoPress}
+            size={tokens.touchTarget * 1.5}
+            theme={theme}
+          />
+          <WeddingCelebration name={name} theme={theme} />
+          <View className="pb-sm">
+            <AppText style={{ color: theme.mutedText }} variant="caption">
+              {formatDateOnly(weddingDate)}
+            </AppText>
+          </View>
+        </View>
+      ) : largeText ? (
         <View className="gap-lg p-md">
           <View className="flex-row flex-wrap items-center gap-md">
             <WeddingAvatar

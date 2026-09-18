@@ -22,6 +22,7 @@ import {
   Card,
   ConfirmationDialog,
   DateField,
+  Disclosure,
   ErrorState,
   LoadingState,
   MotionPressable,
@@ -434,20 +435,16 @@ export function WeddingSettingsDashboard() {
         showsVerticalScrollIndicator={false}
       >
         <MoreScreenHeader title="Settings" />
-        <SectionHeader title="Wedding details" />
         <Card className="px-lg py-xs">
           <SettingRow
             icon={CalendarDays}
             label="Wedding details"
             onPress={openEditor}
-            value="Name, date, tradition and keepsake message"
+            value={`${wedding.name} · ${wedding.date}`}
           />
         </Card>
         <View className="gap-sm">
-          <SectionHeader title="Application theme" />
-          <AppText tone="muted">
-            Changes colours across Mangalya, including your live wedding card on Home.
-          </AppText>
+          <SectionHeader title="Theme" />
           <View className={stackThemeChoices ? "gap-sm" : "flex-row gap-sm"}>
             {weddingCardThemeOptions.map((theme) => (
               <WeddingCardThemeChoice
@@ -467,52 +464,30 @@ export function WeddingSettingsDashboard() {
             </AppText>
           ) : null}
         </View>
-        <SectionHeader title="Money" />
         <Card className="px-lg py-xs">
           <SettingRow
             icon={ChartNoAxesCombined}
             label="Budget & expenses"
             onPress={() => router.navigate("/budget/overview")}
-            value="Target, trends, dates and category insights"
+            value="Manage your wedding budget"
           />
         </Card>
-        <View className="gap-sm">
-          <SectionHeader title="Data & Privacy" />
-          <AppText tone="muted">
-            Mangalya is designed for a trusted, screen-locked personal device. Workspace data and
-            managed photos stay local and are not protected by application-level encryption.
+        <Disclosure title="Privacy & app information">
+          <AppText tone="muted" variant="caption">
+            Your plans stay on this device. Keep your phone locked and save a backup before changing
+            phones.
           </AppText>
-          <Card className="gap-sm">
-            <View className="gap-2xs">
-              <AppText variant="label">Local storage</AppText>
-              <AppText tone="muted" variant="caption">
-                Data is stored unencrypted inside the app sandbox. Exported files are plaintext
-                after they are shared outside Mangalya.
-              </AppText>
-            </View>
-            <View className="gap-2xs">
-              <AppText variant="label">Data-only backup exclusions</AppText>
-              <AppText tone="muted" variant="caption">
-                Inspire records and photos, wedding and event covers, receipts, and attachments are
-                not included.
-              </AppText>
-            </View>
-            <View className="gap-2xs">
-              <AppText variant="label">Crash reporting</AppText>
-              <AppText tone="muted" variant="caption">
-                {sentryEnabled
-                  ? "Enabled for redacted error reports only; tracing is disabled."
-                  : "Off for this self-test build because reporting credentials are not configured."}
-              </AppText>
-            </View>
-            <View className="gap-2xs">
-              <AppText variant="label">Build identity</AppText>
-              <AppText tone="muted" variant="caption">
-                {appVariant} · {appVersion} ({buildNumber})
-              </AppText>
-            </View>
-          </Card>
-        </View>
+          <AppText tone="muted" variant="caption">
+            Backups exclude Inspire, photos, receipts and attachments. App data and exported files
+            are not encrypted by Mangalya.
+          </AppText>
+          <AppText tone="muted" variant="caption">
+            Crash reporting: {sentryEnabled ? "on, with personal details removed" : "off"}.
+          </AppText>
+          <AppText tone="muted" variant="caption">
+            Mangalya {appVersion} ({buildNumber}) · {appVariant}
+          </AppText>
+        </Disclosure>
         <Card className="px-lg py-xs">
           {showDemoReset ? (
             <SettingRow

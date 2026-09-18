@@ -65,6 +65,38 @@ describe("PlanScreen", () => {
     mockMutateAsync.mockResolvedValue(demoWorkspace);
   });
 
+  it("sorts recently actioned tasks ahead of due dates and completion", async () => {
+    mockSearchParams = { view: "tasks" };
+    mockUseWorkspace.mockReturnValue({
+      data: {
+        ...demoWorkspace,
+        tasks: [
+          {
+            ...demoWorkspace.tasks[0],
+            id: "older",
+            title: "Older action",
+            status: "Not Started",
+            updatedAt: "2026-09-17T12:00:00.000Z",
+          },
+          {
+            ...demoWorkspace.tasks[0],
+            id: "recent",
+            title: "Recent completion",
+            status: "Completed",
+            updatedAt: "2026-09-18T12:00:00.000Z",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useWorkspace>);
+    const screen = await render(<PlanScreen />);
+    await fireEvent.press(screen.getByRole("tab", { name: "Recently actioned" }));
+    const rows = screen.getAllByRole("checkbox");
+    expect(rows[0].props.accessibilityLabel).toContain("Recent completion");
+    expect(rows[1].props.accessibilityLabel).toContain("Older action");
+  });
+
   it("waits for Plan to regain focus before completing the new-task breath", async () => {
     jest.useFakeTimers();
     const task = demoWorkspace.tasks[0];
@@ -122,9 +154,9 @@ describe("PlanScreen", () => {
     await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
 
     expect(screen.getByLabelText("Plan view")).toBe(control);
-    expect(screen.getByTestId("segmented-control-indicator", { includeHiddenElements: true })).toBe(
-      indicator,
-    );
+    expect(
+      screen.getAllByTestId("segmented-control-indicator", { includeHiddenElements: true })[0],
+    ).toBe(indicator);
   });
 
   it("keeps event and task suggestions out of the live Plan workspace", async () => {

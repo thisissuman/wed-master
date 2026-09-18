@@ -210,3 +210,17 @@ Data-backup JSON deliberately excludes the complete Inspire document and media, 
 A future Supabase implementation must satisfy all current repository contracts, then replace only the registry composition. Inspire additionally requires authenticated wedding membership, private Storage, RLS on every wedding-owned row, remote cursor queries, and an explicit local-to-cloud import. It must not introduce a hidden sync queue, background sync, conflict resolution, or realtime behavior without a separately approved design.
 
 Money is stored as integer paise. Dates remain date-only. Event `time` and `endTime` are the narrow local `HH:mm` exception and intentionally carry no timezone.
+
+## September 2026 mobile refinements
+
+- Emergency-contact import uses the SDK-compatible `expo-contacts/legacy` native picker. Android
+  requests read access on demand; `WRITE_CONTACTS` is blocked. Only the selected name/number is
+  copied into editable local fields; the phone address book is never modified. Web retains manual
+  entry. This native dependency requires a rebuilt client/Preview.
+- Workspace v5 accepts optional `Task.updatedAt` ISO timestamps and `Expense.direction`
+  (`expense` or `refund`). Existing tasks have unknown activity until acted on, and missing expense
+  direction means expenditure. Task creation, edits, status changes and restore write activity time.
+- Amounts remain nonnegative integer paise. `netExpensePaise` subtracts refunds from Home, Money
+  and event totals. The `Got back` category is offered to old and new workspaces and materialized
+  with the first record using it. Direction survives structured backup; expense CSV adds a Type
+  column. Spending charts/category breakdown remain gross outflows and explicitly exclude refunds.

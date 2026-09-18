@@ -52,6 +52,7 @@ describe("Inspire components", () => {
     await userEvent.press(tile);
     await userEvent.longPress(tile);
 
+    expect(screen.getByText("Lavender mandap")).toBeTruthy();
     expect(onPress).toHaveBeenCalledTimes(1);
     expect(onLongPress).toHaveBeenCalledTimes(1);
   });

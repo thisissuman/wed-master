@@ -50,6 +50,7 @@ export function PlanDashboard() {
   const [activeView, setActiveView] = useState<PlanView>(() => requestedView);
   const today = useTodayDateOnly() as ISODate;
   const [filters, setFilters] = useState<TaskFilterState>(() => emptyTaskFilters());
+  const [sortOrder, setSortOrder] = useState<"planned" | "recent">("planned");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const workspace = useWorkspace();
   const createdHighlight = useCreatedItemHighlight((state) => state.current);
@@ -76,6 +77,10 @@ export function PlanDashboard() {
   const tasks = useMemo(
     () =>
       filterTasks(data?.tasks ?? [], filters).sort((left, right) => {
+        if (sortOrder === "recent") {
+          const recentDifference = (right.updatedAt ?? "").localeCompare(left.updatedAt ?? "");
+          if (recentDifference) return recentDifference;
+        }
         const completionDifference =
           Number(left.status === "Completed") - Number(right.status === "Completed");
         if (completionDifference) return completionDifference;
@@ -85,7 +90,7 @@ export function PlanDashboard() {
         if (dueDateDifference) return dueDateDifference;
         return priorityOrder[left.priority] - priorityOrder[right.priority];
       }),
-    [data?.tasks, filters],
+    [data?.tasks, filters, sortOrder],
   );
   const progressByEvent = useMemo(() => taskProgressByEvent(data?.tasks ?? []), [data?.tasks]);
   const eventNameById = useMemo(
@@ -156,6 +161,8 @@ export function PlanDashboard() {
       <Animated.View className="flex-1" entering={stateEnteringTransition} key={activeView}>
         {activeView === "tasks" ? (
           <PlanTaskView
+            sortOrder={sortOrder}
+            onSortChange={setSortOrder}
             advancedFilterCount={taskFilterCount(filters)}
             eventNameById={eventNameForId}
             filters={filters}

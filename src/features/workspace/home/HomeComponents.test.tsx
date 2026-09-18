@@ -117,7 +117,9 @@ describe("Home components", () => {
 
     expect(screen.getByLabelText("Wedding day")).toBeTruthy();
     await screen.rerender(<WeddingHero {...props} daysUntilWedding={-1} />);
-    expect(screen.getByLabelText("1 day since the wedding")).toBeTruthy();
+    expect(screen.getByText("Congratulations!")).toBeTruthy();
+    expect(screen.queryByLabelText("Planning progress")).toBeNull();
+    expect(screen.getByRole("header", { name: "Asha & Ravi" })).toBeTruthy();
   });
 
   it("falls back safely when a persisted cover file is missing", async () => {
@@ -198,7 +200,7 @@ describe("Home components", () => {
       screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLabel,
     ).toContain("125% of target spent");
     expect(screen.getByText("Target")).toBeTruthy();
-    expect(screen.getByText("Spent")).toBeTruthy();
+    expect(screen.getByText("Net spent")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /Open Budget & expenses/ }).props.className,
     ).toContain("shadow-raised");

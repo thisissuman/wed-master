@@ -7,6 +7,7 @@ import {
 } from "@/lib/errors";
 import { utf8ByteLength } from "@/lib/storage/utf8-byte-length";
 
+import { refundCategory } from "./expense-categories";
 import { createDemoWorkspace } from "./seed";
 import { selectRecentExpenses } from "./selectors";
 import type {
@@ -419,17 +420,23 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
             attachments: task.attachments ?? [],
             checklist: task.checklist ?? [],
             id: makeWorkspaceId("task"),
+            updatedAt: new Date().toISOString(),
           });
         }),
       updateTask: (task: Task) =>
         store.update((snapshot) => {
           const index = snapshot.tasks.findIndex((item) => item.id === task.id);
-          if (index >= 0) snapshot.tasks[index] = task;
+          if (index >= 0) snapshot.tasks[index] = { ...task, updatedAt: new Date().toISOString() };
         }),
       updateTaskStatus: (id, status) =>
         store.update((snapshot) => {
           const index = snapshot.tasks.findIndex((item) => item.id === id);
-          if (index >= 0) snapshot.tasks[index] = { ...snapshot.tasks[index], status };
+          if (index >= 0)
+            snapshot.tasks[index] = {
+              ...snapshot.tasks[index],
+              status,
+              updatedAt: new Date().toISOString(),
+            };
         }),
       deleteTask: (id) =>
         store.update((snapshot) => {
@@ -437,7 +444,8 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
         }),
       restoreTask: (task) =>
         store.update((snapshot) => {
-          if (!snapshot.tasks.some((item) => item.id === task.id)) snapshot.tasks.push(task);
+          if (!snapshot.tasks.some((item) => item.id === task.id))
+            snapshot.tasks.push({ ...task, updatedAt: new Date().toISOString() });
         }),
     },
     budget: {
@@ -470,12 +478,22 @@ export function createLocalRepositories(store = new LocalWorkspaceStore()): Repo
           id: makeWorkspaceId("expense"),
         };
         const snapshot = await store.update((candidate) => {
+          if (
+            created.categoryId === refundCategory.id &&
+            !candidate.categories.some((category) => category.id === refundCategory.id)
+          )
+            candidate.categories.push(refundCategory);
           candidate.expenses.push(created);
         });
         return { expense: copy(created), snapshot };
       },
       updateExpense: (expense: Expense) =>
         store.update((snapshot) => {
+          if (
+            expense.categoryId === refundCategory.id &&
+            !snapshot.categories.some((category) => category.id === refundCategory.id)
+          )
+            snapshot.categories.push(refundCategory);
           const index = snapshot.expenses.findIndex((item) => item.id === expense.id);
           if (index >= 0) snapshot.expenses[index] = expense;
         }),

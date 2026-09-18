@@ -102,6 +102,7 @@ const eventSchema = z
   .strict();
 const taskSchema = z
   .object({
+    updatedAt: z.string().datetime().optional(),
     id: idSchema,
     title: nonBlankTextSchema,
     starterTaskKey: z.enum(starterTaskKeys).optional(),
@@ -147,6 +148,7 @@ const legacyExpenseSchemaV2 = z
   .strict();
 const expenseSchema = z
   .object({
+    direction: z.enum(["expense", "refund"]).optional(),
     id: idSchema,
     title: nonBlankTextSchema,
     categoryId: idSchema,

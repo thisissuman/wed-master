@@ -22,6 +22,7 @@ import {
   IconButton,
   PageHeader,
   Screen,
+  SegmentedControl,
   TextField,
   useKeyboardSettledAction,
 } from "@/components/ui";
@@ -66,8 +67,10 @@ type BoardFilter = "all" | "favourites" | InspirationCategory;
 
 const largeTabletBoardWidth = 840;
 
-export function inspirationBoardColumnCount(width: number) {
-  return width >= largeTabletBoardWidth ? 4 : width >= tokens.layout.expandedWidth ? 3 : 2;
+export type InspirationGridSize = "small" | "medium" | "large";
+export function inspirationBoardColumnCount(width: number, size: InspirationGridSize = "medium") {
+  const medium = width >= largeTabletBoardWidth ? 4 : width >= tokens.layout.expandedWidth ? 3 : 2;
+  return Math.max(1, medium + (size === "small" ? 1 : size === "large" ? -1 : 0));
 }
 
 export function InspireDashboard() {
@@ -79,6 +82,7 @@ export function InspireDashboard() {
   const favouriteMutation = useSetInspirationFavouriteMutation();
   const deleteMutation = useDeleteInspirationMutation();
   const restoreMutation = useRestoreInspirationMutation();
+  const [gridSize, setGridSize] = useState<InspirationGridSize>("medium");
   const [filter, setFilter] = useState<BoardFilter>("all");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -104,7 +108,7 @@ export function InspireDashboard() {
     () => inspirationQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [inspirationQuery.data?.pages],
   );
-  const columnCount = inspirationBoardColumnCount(width);
+  const columnCount = inspirationBoardColumnCount(width, gridSize);
   const hasFilter = filter !== "all" || Boolean(query.trim());
   const openSourceSheet = useKeyboardSettledAction(() => setSourceSheetOpen(true));
 
@@ -277,6 +281,16 @@ export function InspireDashboard() {
         heartAccent
         title="Inspire"
       />
+      <SegmentedControl
+        accessibilityLabel="Photo size"
+        value={gridSize}
+        onChange={setGridSize}
+        options={[
+          { label: "Small", value: "small" },
+          { label: "Medium", value: "medium" },
+          { label: "Big", value: "large" },
+        ]}
+      />
       {searchOpen ? (
         <TextField
           autoCapitalize="none"
@@ -359,6 +373,7 @@ export function InspireDashboard() {
             paddingTop: Number.parseInt(tokens.spacing.xs, 10),
           }}
           data={inspirations}
+          key={`inspiration-grid-${columnCount}`}
           extraData={`${columnCount}-${favouriteMutation.isPending}`}
           keyExtractor={(inspiration) => inspiration.id}
           ListFooterComponent={

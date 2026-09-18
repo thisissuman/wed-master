@@ -21,6 +21,7 @@ import {
   FilterChip,
   FilterChoiceGroup,
   FilterPopover,
+  SegmentedControl,
 } from "@/components/ui";
 import { isLargeText } from "@/lib/responsive";
 import { tokens, useAppTheme } from "@/theme";
@@ -169,6 +170,8 @@ export type PlanTaskViewHandle = {
 };
 
 type PlanTaskViewProps = {
+  sortOrder: "planned" | "recent";
+  onSortChange: (value: "planned" | "recent") => void;
   advancedFilterCount: number;
   eventNameById: (id?: string) => string | undefined;
   filters: TaskFilterState;
@@ -191,6 +194,8 @@ type PlanTaskViewProps = {
 
 export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(function PlanTaskView(
   {
+    sortOrder,
+    onSortChange,
     advancedFilterCount,
     eventNameById,
     filters,
@@ -222,6 +227,15 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
   const header = (
     <View className="gap-md pb-md">
       <TaskSummaryCard summary={summary} />
+      <SegmentedControl
+        accessibilityLabel="Sort tasks"
+        value={sortOrder}
+        onChange={onSortChange}
+        options={[
+          { label: "Due date", value: "planned" },
+          { label: "Recently actioned", value: "recent" },
+        ]}
+      />
       {mutationError ? (
         <View
           accessibilityRole="alert"

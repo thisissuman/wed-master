@@ -189,7 +189,7 @@ describe("ExpensesDashboard", () => {
       screen.getByText("Reception stage, floral installation and lighting package").props
         .numberOfLines,
     ).toBe(2);
-    expect(screen.getByText(formatInr(185_000_000)).props.numberOfLines).toBeUndefined();
+    expect(screen.getByText(`-${formatInr(185_000_000)}`).props.numberOfLines).toBeUndefined();
     expect(screen.getByRole("button", { name: "Open budget overview" })).toBeTruthy();
     expect(screen.getByTestId("money-recent-heading-layout").props.style).toEqual(
       expect.objectContaining({ alignItems: "flex-start", flexDirection: "column" }),

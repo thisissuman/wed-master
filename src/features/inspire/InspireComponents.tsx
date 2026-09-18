@@ -80,6 +80,16 @@ export const InspirationTile = memo(function InspirationTile({
           style={{ height: "100%", width: "100%" }}
         />
       )}
+      {inspiration.title ? (
+        <View
+          pointerEvents="none"
+          className="absolute bottom-0 left-0 right-0 bg-elevatedSurface px-sm py-xs"
+        >
+          <AppText numberOfLines={2} variant="caption">
+            {inspiration.title}
+          </AppText>
+        </View>
+      ) : null}
       {inspiration.isFavourite ? (
         <View
           accessibilityElementsHidden

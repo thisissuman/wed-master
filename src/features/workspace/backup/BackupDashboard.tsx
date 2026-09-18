@@ -9,7 +9,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, View } from "react-native";
 
-import { AppText, ConfirmationDialog, ErrorState, LoadingState, Screen } from "@/components/ui";
+import {
+  AppText,
+  Disclosure,
+  ConfirmationDialog,
+  ErrorState,
+  LoadingState,
+  Screen,
+} from "@/components/ui";
 import { clearInspirationMedia } from "@/features/inspire/media";
 import { inspirationQueryKeys, useInspirationRepository } from "@/features/inspire/provider";
 import { toUserMessage } from "@/lib/errors";
@@ -237,19 +244,19 @@ export function BackupDashboard() {
     {
       icon: FileArchive,
       label: "Export data backup",
-      description: "Create a structured backup without Inspire, photos, or attachment files",
+      description: "Save a copy of your plans",
       run: () => run("Export data backup", async () => createWorkspaceBackupFile(data)),
     },
     {
       icon: Import,
       label: "Import backup",
-      description: "Validate and restore a previous Mangalya data backup",
+      description: "Replace your plans with a saved backup",
       run: importBackup,
     },
     {
       icon: FileSpreadsheet,
       label: "Export expenses CSV",
-      description: "Export expenses with INR decimal amounts",
+      description: "Open your money records in a spreadsheet",
       run: () => run("Export expenses CSV", async () => createExpensesCsv(data)),
       tone: "accent",
     },
@@ -271,21 +278,10 @@ export function BackupDashboard() {
             />
           ))}
         </View>
-        <View className="rounded-card border border-primary bg-primarySoft p-md">
-          <AppText tone="danger" variant="label">
-            Data-only backup
-          </AppText>
-          <AppText tone="muted" variant="caption">
-            Inspire records and photos, wedding cover photos, receipts, and task attachment files
-            are not included. Importing replaces the local workspace and clears the current Inspire
-            board because it cannot be restored from this backup. Exported files are plaintext once
-            shared outside Mangalya.
-          </AppText>
-        </View>
-        <View className="gap-xs">
-          <AppText tone="primary" variant="heading">
-            Backup history
-          </AppText>
+        <AppText tone="muted" variant="caption">
+          Backups save your plans, but exclude Inspire, photos, receipts and attachments.
+        </AppText>
+        <Disclosure title="Backup history">
           {data.backupHistory.length ? (
             data.backupHistory.map((entry) => (
               <View
@@ -337,7 +333,7 @@ export function BackupDashboard() {
               </AppText>
             </Pressable>
           ) : null}
-        </View>
+        </Disclosure>
       </ScrollView>
       <ConfirmationDialog
         confirmLabel="Replace workspace"

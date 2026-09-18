@@ -185,6 +185,16 @@ describe("InspireDashboard", () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith("/inspire/inspiration-1");
   });
 
+  it("switches between small, medium and big photos", async () => {
+    const screen = await render(<InspireDashboard />);
+    await fireEvent.press(screen.getByRole("tab", { name: "Small" }));
+    expect(screen.getByRole("tab", { name: "Small" }).props.accessibilityState.selected).toBe(true);
+    expect(inspirationBoardColumnCount(360, "small")).toBe(3);
+    await fireEvent.press(screen.getByRole("tab", { name: "Big" }));
+    expect(screen.getByRole("tab", { name: "Big" }).props.accessibilityState.selected).toBe(true);
+    expect(inspirationBoardColumnCount(360, "large")).toBe(1);
+  });
+
   it("renders the five bundled previews only for an empty unfiltered board", async () => {
     mockUseInspirationPages.mockReturnValue(
       inspirationResult({ data: { pages: [{ items: [] }] } }),

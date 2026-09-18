@@ -72,7 +72,7 @@ describe("workspace forms", () => {
     } as unknown as ReturnType<typeof useWorkspaceMutation>);
   });
 
-  it("starts compactly and puts Other first in the seven-category picker", async () => {
+  it("starts compactly and puts Other first in the category picker", async () => {
     const screen = await render(<ExpenseForm />);
 
     expect(screen.getByTestId("quick-expense-overlay").props.className).toContain("bg-overlay");
@@ -94,6 +94,7 @@ describe("workspace forms", () => {
         .map((item) => item.props.accessibilityLabel),
     ).toEqual([
       "Other",
+      "Got back",
       "Task, choose existing task",
       "Event, choose existing event",
       "Shopping",
@@ -211,6 +212,7 @@ describe("workspace forms", () => {
 
     await waitFor(() =>
       expect(createMutateAsync).toHaveBeenCalledWith({
+        direction: "expense",
         actualPaise: 5_000,
         categoryId: "category-core-task",
         date: todayDateOnly(),
@@ -246,6 +248,28 @@ describe("workspace forms", () => {
     expect(screen.getByLabelText("Amount").props.value).toBe("");
   });
 
+  it("records money got back as a refund", async () => {
+    createMutateAsync.mockResolvedValue({
+      expense: { ...demoWorkspace.expenses[0], id: "new-refund" },
+      snapshot: demoWorkspace,
+    });
+    const screen = await render(<ExpenseForm />);
+    await fireEvent.changeText(screen.getByLabelText("Expense title"), "Caterer refund");
+    await fireEvent.press(screen.getByRole("button", { name: "Select category, required" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Got back" }));
+    await fireEvent.changeText(screen.getByLabelText("Amount"), "500");
+    await fireEvent.press(screen.getByRole("button", { name: "Add expense" }));
+    await waitFor(() =>
+      expect(createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actualPaise: 50000,
+          direction: "refund",
+          categoryId: "category-core-got-back",
+        }),
+      ),
+    );
+  });
+
   it("creates an actual-only expense and returns directly to Money", async () => {
     const created: Expense = {
       actualPaise: 12_345,
@@ -266,6 +290,7 @@ describe("workspace forms", () => {
 
     await waitFor(() =>
       expect(createMutateAsync).toHaveBeenCalledWith({
+        direction: "expense",
         actualPaise: 12_345,
         categoryId: "category-core-shopping",
         date: todayDateOnly(),

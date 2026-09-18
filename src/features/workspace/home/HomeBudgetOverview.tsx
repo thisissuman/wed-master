@@ -139,7 +139,7 @@ export function HomeBudgetOverview({
           withDivider={false}
         />
         <BudgetMetric
-          label="Spent"
+          label="Net spent"
           stacked={stacked}
           value={formatInrCompact(summary.spentPaise)}
           withDivider

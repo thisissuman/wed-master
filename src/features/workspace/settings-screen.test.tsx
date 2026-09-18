@@ -113,7 +113,7 @@ describe("WeddingSettingsDashboard", () => {
     expect(screen.queryByText(demoWorkspace.wedding.name)).toBeNull();
     expect(screen.getByRole("button", { name: "Wedding details" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Wedding details" }).props.accessibilityHint).toBe(
-      "Name, date, tradition and keepsake message",
+      `${demoWorkspace.wedding.name} · ${demoWorkspace.wedding.date}`,
     );
     expect(screen.queryByText("Currency")).toBeNull();
     expect(screen.queryByText("Event management")).toBeNull();
@@ -121,12 +121,12 @@ describe("WeddingSettingsDashboard", () => {
     expect(screen.queryByText("Budget target")).toBeNull();
     expect(screen.getByRole("button", { name: "Budget & expenses" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Budget & expenses" }).props.accessibilityHint).toBe(
-      "Target, trends, dates and category insights",
+      "Manage your wedding budget",
     );
     expect(
       screen.queryByText("Keep the essentials in one place. Spending insights live in Money."),
     ).toBeNull();
-    expect(screen.getByText("Data & Privacy")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Privacy & app information" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Reset demo data/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Delete local data/ })).toBeTruthy();
   });

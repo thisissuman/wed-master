@@ -1,5 +1,13 @@
 import type { BudgetCategory, BudgetCategoryIconKey, LegacyBudgetCategory } from "./types";
 
+export const refundCategory: BudgetCategory = {
+  id: "category-core-got-back",
+  name: "Got back",
+  iconKey: "other",
+  archived: false,
+  sortOrder: 7,
+};
+
 export const coreBudgetCategories = [
   { id: "category-core-event", name: "Event", iconKey: "event" },
   { id: "category-core-task", name: "Task", iconKey: "task" },
@@ -61,8 +69,15 @@ export function createCoreBudgetCategories(): BudgetCategory[] {
   }));
 }
 
+export function withRefundCategory(categories: BudgetCategory[]): BudgetCategory[] {
+  return [
+    ...categories,
+    ...(categories.some((category) => category.id === refundCategory.id) ? [] : [refundCategory]),
+  ];
+}
+
 export function selectableBudgetCategories(categories: BudgetCategory[]): BudgetCategory[] {
-  return categories
+  return withRefundCategory(categories)
     .filter((category) => !category.archived)
     .sort((left, right) => left.sortOrder - right.sortOrder);
 }

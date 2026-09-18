@@ -82,7 +82,15 @@ function rupees(paise?: number): string {
 export function expensesCsv(snapshot: WorkspaceSnapshot): string {
   const categories = new Map(snapshot.categories.map((category) => [category.id, category.name]));
   const rows = [
-    csvLine(["Title", "Category", "Amount INR", "Expense Date", "Notes", "Attachment Name"]),
+    csvLine([
+      "Title",
+      "Category",
+      "Amount INR",
+      "Expense Date",
+      "Notes",
+      "Attachment Name",
+      "Type",
+    ]),
     ...snapshot.expenses.map((expense) =>
       csvLine([
         expense.title,
@@ -91,6 +99,7 @@ export function expensesCsv(snapshot: WorkspaceSnapshot): string {
         expense.date,
         expense.notes,
         expense.receipt?.name,
+        expense.direction === "refund" ? "Got back" : "Expense",
       ]),
     ),
   ];

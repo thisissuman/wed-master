@@ -42,7 +42,11 @@ import { runNonCriticalNativeEffect } from "@/lib/native-effects";
 import { tokens, useAppTheme } from "@/theme";
 import { sheetEnteringTransition } from "@/theme/motion";
 
-import { selectableBudgetCategories } from "./expense-categories";
+import {
+  refundCategory,
+  selectableBudgetCategories,
+  withRefundCategory,
+} from "./expense-categories";
 import { AttachmentField } from "./files/AttachmentField";
 import { pickWorkspaceAttachment, removeWorkspaceAttachment } from "./files/workspace-files";
 import {
@@ -646,7 +650,10 @@ function CreateExpenseForm() {
   });
   const title = useWatch({ control, name: "title" });
   const categoryId = useWatch({ control, name: "categoryId" });
-  const categories = useMemo(() => workspace.data?.categories ?? [], [workspace.data?.categories]);
+  const categories = useMemo(
+    () => withRefundCategory(workspace.data?.categories ?? []),
+    [workspace.data?.categories],
+  );
   const selectableCategories = useMemo(() => selectableBudgetCategories(categories), [categories]);
   const selectedCategory = categories.find((category) => category.id === categoryId);
   const busy = isSubmitting || createMutation.isPending;
@@ -743,6 +750,7 @@ function CreateExpenseForm() {
     try {
       const result = await createMutation.mutateAsync({
         actualPaise: toPaise(values.amount),
+        direction: values.categoryId === refundCategory.id ? "refund" : "expense",
         categoryId: values.categoryId,
         date: todayDateOnly() as Expense["date"],
         ...(relatedSelection?.eventId ? { eventId: relatedSelection.eventId } : {}),
@@ -881,7 +889,10 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
     resolver: zodResolver(expenseFormSchema),
   });
   const categoryId = useWatch({ control, name: "categoryId" });
-  const categories = useMemo(() => workspace.data?.categories ?? [], [workspace.data?.categories]);
+  const categories = useMemo(
+    () => withRefundCategory(workspace.data?.categories ?? []),
+    [workspace.data?.categories],
+  );
   const currentCategory = categories.find((category) => category.id === categoryId);
   const selectableCategories = useMemo(() => {
     const active = selectableBudgetCategories(categories);
@@ -927,6 +938,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
         repositories.expenses.updateExpense({
           ...expense,
           actualPaise: toPaise(values.amount),
+          direction: values.categoryId === refundCategory.id ? "refund" : "expense",
           categoryId: values.categoryId,
           date: values.date as Expense["date"],
           notes: values.notes || undefined,

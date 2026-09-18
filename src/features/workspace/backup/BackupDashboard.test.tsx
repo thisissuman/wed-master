@@ -90,6 +90,7 @@ describe("BackupDashboard export history", () => {
   it("retains a committed export when the share sheet fails", async () => {
     mockShare.mockRejectedValueOnce(new UnsupportedSharingError());
     const screen = await renderDashboard();
+    await fireEvent.press(screen.getByRole("button", { name: "Backup history" }));
 
     await act(async () => {
       fireEvent.press(screen.getByRole("button", { name: "Export data backup" }));
@@ -116,6 +117,7 @@ describe("BackupDashboard export history", () => {
       isLoading: false,
     } as ReturnType<typeof useWorkspace>);
     const screen = await renderDashboard();
+    await fireEvent.press(screen.getByRole("button", { name: "Backup history" }));
 
     await act(async () => {
       fireEvent.press(screen.getByRole("button", { name: `Share ${entry.fileName} again` }));

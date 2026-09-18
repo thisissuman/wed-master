@@ -1,3 +1,4 @@
+import { expenseAmountLabel, netExpensePaise } from "../expense-amount";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import CalendarDays from "lucide-react-native/icons/calendar-days";
@@ -80,7 +81,7 @@ function EventExpenseRow({
 
   return (
     <Pressable
-      accessibilityLabel={`Open expense: ${expense.title}, ${formatInr(expense.actualPaise)}`}
+      accessibilityLabel={`Open expense: ${expense.title}, ${expenseAmountLabel(expense)}`}
       accessibilityRole="button"
       android_ripple={{ color: theme.colors.surfaceMuted }}
       className="min-h-16 flex-row items-center gap-sm border-b border-borderSubtle py-sm last:border-b-0 active:bg-surfaceMuted"
@@ -97,8 +98,12 @@ function EventExpenseRow({
             .join(" · ")}
         </AppText>
       </View>
-      <AppText className="shrink-0 text-right" tone="primary" variant="label">
-        {formatInr(expense.actualPaise)}
+      <AppText
+        className="shrink-0 text-right"
+        tone={expense.direction === "refund" ? "success" : "danger"}
+        variant="label"
+      >
+        {expenseAmountLabel(expense)}
       </AppText>
     </Pressable>
   );
@@ -149,7 +154,7 @@ export function EventDetailDashboard({ eventId }: { eventId: string }) {
   );
   const completedTasks = tasks.filter((task) => task.status === "Completed").length;
   const progress = tasks.length ? (completedTasks / tasks.length) * 100 : 0;
-  const spent = expenses.reduce((sum, expense) => sum + expense.actualPaise, 0);
+  const spent = expenses.reduce((sum, expense) => sum + netExpensePaise(expense), 0);
   const items = buildEventDetailItems(event, tasks, expenses);
 
   const deleteEvent = async () => {

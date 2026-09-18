@@ -1,3 +1,4 @@
+import { expenseAmountLabel } from "../expense-amount";
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
@@ -198,7 +199,7 @@ function BudgetPosition({
         <MoneyMetric
           accessibilityValue={formatInr(summary.spentPaise)}
           divider
-          label="Spent"
+          label="Net spent"
           stacked={stacked}
           tone="primary"
           value={formatInrCompact(summary.spentPaise)}
@@ -316,7 +317,7 @@ function AllTimeInsights({
         <InsightRow
           detail={
             latestExpense
-              ? `${formatInr(latestExpense.actualPaise)} most recently added`
+              ? `${expenseAmountLabel(latestExpense)} most recently added`
               : "Add an expense to start the timeline"
           }
           icon={ReceiptIndianRupee}
@@ -438,7 +439,7 @@ export const ExpenseCard = memo(function ExpenseCard({
   const amountRecorded = expense.actualPaise > 0;
   const { fontScale } = useWindowDimensions();
   const stacked = isLargeText(fontScale);
-  const amountLabel = amountRecorded ? formatInr(expense.actualPaise) : "Amount not recorded";
+  const amountLabel = amountRecorded ? expenseAmountLabel(expense) : "Amount not recorded";
   const categoryLabel = category?.name ?? "Other";
   const dateLabel = expense.date
     ? `Expense date ${formatDateOnly(expense.date)}`
@@ -476,7 +477,9 @@ export const ExpenseCard = memo(function ExpenseCard({
             className={stacked ? "self-start" : "shrink-0 text-right"}
             numberOfLines={stacked ? undefined : 1}
             style={{ fontVariant: ["tabular-nums"] }}
-            tone={amountRecorded ? "primary" : "warning"}
+            tone={
+              amountRecorded ? (expense.direction === "refund" ? "success" : "danger") : "warning"
+            }
             variant="heading"
           >
             {amountLabel}
@@ -500,7 +503,7 @@ function CategoryBreakdown({ items }: { items: CategorySpending[] }) {
           Where money went
         </AppText>
         <AppText tone="muted" variant="caption">
-          Categories ranked by actual recorded spending
+          Spending before refunds, by category
         </AppText>
       </View>
       {items.length ? (
@@ -635,7 +638,7 @@ export function BudgetOverviewDashboard() {
               Spending trend
             </AppText>
             <AppText tone="muted" variant="caption">
-              See how recorded spending changed over time
+              Spending before refunds over time
             </AppText>
           </View>
           <SegmentedControl

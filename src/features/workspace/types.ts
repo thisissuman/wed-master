@@ -94,6 +94,7 @@ export type TaskChecklistItem = {
 };
 
 export type Task = {
+  updatedAt?: string;
   id: string;
   title: string;
   starterTaskKey?: StarterTaskKey;
@@ -131,6 +132,7 @@ export const paymentStatuses = ["Not Paid", "Partially Paid", "Paid"] as const;
 export type PaymentStatus = (typeof paymentStatuses)[number];
 
 export type Expense = {
+  direction?: "expense" | "refund";
   id: string;
   title: string;
   categoryId: string;
@@ -278,7 +280,7 @@ export type WorkspaceSnapshot = Omit<WorkspaceSnapshotV4, "tasks" | "version"> &
 
 export type CreateExpenseInput = Pick<
   Expense,
-  "actualPaise" | "categoryId" | "date" | "eventId" | "notes" | "receipt" | "title"
+  "actualPaise" | "categoryId" | "date" | "direction" | "eventId" | "notes" | "receipt" | "title"
 >;
 
 export type CreateExpenseResult = {

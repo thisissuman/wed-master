@@ -1,5 +1,7 @@
 import { todayDateOnly, toDateOnly } from "@/lib/dates";
 
+import { netExpensePaise } from "./expense-amount";
+
 import type {
   BudgetCategoryIconKey,
   Expense,
@@ -120,7 +122,7 @@ export const expenseTotals = (expenses: Expense[]) =>
   expenses.reduce(
     (totals, expense) => ({
       estimatedPaise: totals.estimatedPaise + (expense.estimatedPaise ?? 0),
-      actualPaise: totals.actualPaise + expense.actualPaise,
+      actualPaise: totals.actualPaise + netExpensePaise(expense),
       paidPaise: totals.paidPaise + (expense.paidPaise ?? 0),
       outstandingPaise:
         totals.outstandingPaise + Math.max(0, expense.actualPaise - (expense.paidPaise ?? 0)),
@@ -131,7 +133,7 @@ export const expenseTotals = (expenses: Expense[]) =>
 export type HomeBudgetSummary = ReturnType<typeof homeBudgetSummary>;
 
 export function homeBudgetSummary(snapshot: WorkspaceSnapshot) {
-  const spentPaise = snapshot.expenses.reduce((sum, expense) => sum + expense.actualPaise, 0);
+  const spentPaise = snapshot.expenses.reduce((sum, expense) => sum + netExpensePaise(expense), 0);
   const targetPaise = snapshot.wedding.budgetTargetPaise;
   const hasTarget = targetPaise !== undefined && targetPaise > 0;
   const differencePaise = hasTarget ? targetPaise - spentPaise : undefined;
@@ -231,6 +233,7 @@ export type CategorySpending = {
 export function categorySpending(snapshot: WorkspaceSnapshot): CategorySpending[] {
   const categories = new Map(snapshot.categories.map((category) => [category.id, category]));
   const totals = snapshot.expenses.reduce<Map<BudgetCategoryIconKey, number>>((result, expense) => {
+    if (expense.direction === "refund") return result;
     const iconKey = categories.get(expense.categoryId)?.iconKey ?? "other";
     result.set(iconKey, (result.get(iconKey) ?? 0) + expense.actualPaise);
     return result;
@@ -284,6 +287,7 @@ export function selectDailySpending(
   const totals = expenses.reduce<Map<ISODate, { actualPaise: number; expenseCount: number }>>(
     (result, expense) => {
       if (
+        expense.direction === "refund" ||
         !expense.date ||
         expense.actualPaise <= 0 ||
         (startDate && (expense.date < startDate || expense.date > today))

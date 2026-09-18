@@ -5,7 +5,7 @@ percentage. Keep dated results in the verification archive or a release-specific
 
 ## Automated coverage
 
-- Money parsing/formatting, date-only behavior, task ranking, budget selectors, spending trends,
+- Money parsing/formatting, refund/net totals and backup round trips, date-only behavior, task activity timestamps and ranking, budget selectors, spending trends,
   category grouping, and event/task progress.
 - Strict workspace validation and v1-v5 migration; starter-event/task deduplication; household RSVP
   derivation; backup limits; serialized persist-first writes; recovery; deletion tombstones; and
@@ -57,6 +57,7 @@ explicit approval, and never point these destructive-data flows at a valued work
   gestures, and Android hardware/predictive Back.
 - Test first and last form fields with the keyboard, multiline input, large text, pickers,
   attachment cancellation/denial/oversize/missing files, and share-sheet availability.
+- Verify contact picker denial/cancellation/multiple numbers/custom names, red debit and green refund signs, recent task order after relaunch, Inspire titles and Small/Medium/Big, collapsed settings/history, and the post-wedding card with Reduced Motion.
 - Cover 360dp Android, larger phone/tablet widths, compact-height landscape, 600/840dp expanded
   layouts, largest font size, both themes, hot theme switching, Reduced Motion, and TalkBack.
 - Test Inspire with 0, 1, 3, 20, and 200+ records, long images, missing files, permission denial,
