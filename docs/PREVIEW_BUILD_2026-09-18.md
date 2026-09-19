@@ -37,8 +37,17 @@
 
 ## Build handoff
 
-The active Expo account was verified as `thisissuman`. Submit the committed source using the Preview
-profile with `--no-wait --non-interactive`; record the returned source commit/build page below.
+The active Expo account was verified as `thisissuman`. Submission succeeded using the Preview
+profile with `--no-wait --non-interactive`.
+
+- Source commit: `3754cbb5b734186dc56789525b71609d3610b678`.
+- Branch: `codex/ux-simplification-visual-redesign`.
+- Build ID: `8f098943-e84b-44f6-916b-7b29dbd81816`.
+- [Build status and download when ready](https://expo.dev/accounts/thisissuman/projects/mangalya/builds/8f098943-e84b-44f6-916b-7b29dbd81816).
+- EAS accepted the source upload and reused the existing remote Android keystore.
+- Status at handoff: submitted; completion was deliberately not polled. No APK artifact URL,
+  checksum, signed-manifest result or device result is claimed yet.
+
 The Product Owner requested the status link and will monitor completion personally. Do not poll EAS
 or claim the APK passed installation/signing checks before actual evidence exists.
 
