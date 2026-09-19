@@ -91,10 +91,38 @@ describe("PlanScreen", () => {
       isError: false,
     } as ReturnType<typeof useWorkspace>);
     const screen = await render(<PlanScreen />);
-    await fireEvent.press(screen.getByRole("tab", { name: "Recently actioned" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Sort tasks" }));
     const rows = screen.getAllByRole("checkbox");
     expect(rows[0].props.accessibilityLabel).toContain("Recent completion");
     expect(rows[1].props.accessibilityLabel).toContain("Older action");
+    expect(screen.queryByRole("tab", { name: "Due date" })).toBeNull();
+    expect(screen.queryByText("Recently actioned")).toBeNull();
+    expect(screen.getByRole("button", { name: "Sort tasks" }).props.accessibilityValue.text).toBe(
+      "Recently actioned",
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Sort tasks" }));
+    expect(screen.getAllByRole("checkbox")[0].props.accessibilityLabel).toContain("Older action");
+    expect(screen.getByRole("button", { name: "Sort tasks" }).props.accessibilityValue.text).toBe(
+      "Due date",
+    );
+  });
+
+  it("keeps task identities and sort state stable over repeated Events/Tasks switches", async () => {
+    mockSearchParams = { view: "tasks" };
+    const screen = await render(<PlanScreen />);
+    await fireEvent.press(screen.getByRole("button", { name: "Sort tasks" }));
+    const initial = screen.getAllByRole("checkbox").map((row) => row.props.accessibilityLabel);
+    for (let index = 0; index < 3; index += 1) {
+      await fireEvent.press(screen.getByRole("tab", { name: "Events" }));
+      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+      await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
+      expect(screen.getAllByRole("checkbox").map((row) => row.props.accessibilityLabel)).toEqual(
+        initial,
+      );
+      expect(screen.getByRole("button", { name: "Sort tasks" }).props.accessibilityValue.text).toBe(
+        "Recently actioned",
+      );
+    }
   });
 
   it("waits for Plan to regain focus before completing the new-task breath", async () => {

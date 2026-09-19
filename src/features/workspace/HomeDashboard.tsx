@@ -181,7 +181,7 @@ export function HomeDashboard() {
   return (
     <Screen>
       <ScrollView
-        contentContainerClassName="gap-2xl px-md pt-xs"
+        contentContainerClassName="gap-lg px-md pt-xs"
         contentContainerStyle={{ paddingBottom: homeBottomClearance }}
         showsVerticalScrollIndicator={false}
         style={keepsakeFocused ? { filter: [{ blur: keepsakeBackgroundBlur }] } : undefined}
@@ -202,7 +202,7 @@ export function HomeDashboard() {
           weddingDate={data.wedding.date}
         />
 
-        <View className="gap-sm">
+        <View className="gap-2xs">
           <HomeSectionHeader
             actionLabel="View all tasks"
             onAction={() => router.navigate({ pathname: "/plan", params: { view: "tasks" } })}

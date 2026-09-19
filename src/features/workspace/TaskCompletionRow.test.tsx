@@ -25,6 +25,43 @@ describe("TaskCompletionRow", () => {
     useWindowDimensionsSpy.mockRestore();
   });
 
+  it("keeps Home rows compact without shrinking either touch target", async () => {
+    const screen = await render(
+      <TaskCompletionRow
+        onPress={jest.fn()}
+        onToggle={jest.fn()}
+        task={baseTask}
+        today="2026-07-17"
+        variant="compact"
+      />,
+    );
+    const checkbox = ReactNative.StyleSheet.flatten(screen.getByRole("checkbox").props.style);
+    const open = ReactNative.StyleSheet.flatten(
+      screen.getByTestId("task-open-button-task").props.style,
+    );
+    expect(checkbox.width).toBeGreaterThanOrEqual(48);
+    expect(checkbox.minHeight).toBe(56);
+    expect(open.minHeight).toBe(56);
+    const details = ReactNative.StyleSheet.flatten(
+      screen.getByTestId("task-detail-area").props.style,
+    );
+    expect(details.paddingTop).toBe(4);
+    expect(details.paddingBottom).toBe(4);
+  });
+
+  it("uses static two-line titles in recycled Plan rows", async () => {
+    const screen = await render(
+      <TaskCompletionRow
+        onPress={jest.fn()}
+        onToggle={jest.fn()}
+        task={baseTask}
+        today="2026-07-17"
+      />,
+    );
+    expect(screen.getByText(baseTask.title).props.numberOfLines).toBe(2);
+    expect(screen.getByText(baseTask.title).props.onLayout).toBeUndefined();
+  });
+
   it("exposes completion and reversible reopen states", async () => {
     const onToggle = jest.fn();
     const screen = await render(

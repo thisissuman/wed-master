@@ -1,18 +1,12 @@
-import {
-  type ComponentRef,
-  forwardRef,
-  type ReactElement,
-  useImperativeHandle,
-  useRef,
-} from "react";
-import { Pressable, useWindowDimensions, View, type ViewProps } from "react-native";
-import { FlashList, type FlashListRef } from "@shopify/flash-list";
+import { type ComponentRef, type ReactElement, useRef } from "react";
+import { Pressable, useWindowDimensions, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
+import ArrowDownUp from "lucide-react-native/icons/arrow-down-up";
 import CalendarDays from "lucide-react-native/icons/calendar-days";
 import CircleAlert from "lucide-react-native/icons/circle-alert";
 import CircleCheckBig from "lucide-react-native/icons/circle-check-big";
 import RotateCcw from "lucide-react-native/icons/rotate-ccw";
 import SlidersHorizontal from "lucide-react-native/icons/sliders-horizontal";
-import Animated from "react-native-reanimated";
 
 import {
   AppText,
@@ -21,11 +15,10 @@ import {
   FilterChip,
   FilterChoiceGroup,
   FilterPopover,
-  SegmentedControl,
+  Button,
 } from "@/components/ui";
 import { isLargeText } from "@/lib/responsive";
 import { tokens, useAppTheme } from "@/theme";
-import { stateLayoutTransition } from "@/theme/motion";
 
 import { type TaskFilterState } from "../selectors";
 import type { CreatedItemHighlight } from "../created-item-highlight";
@@ -156,19 +149,6 @@ export function TaskSummaryCard({ summary }: { summary: TaskSummary }) {
   );
 }
 
-type AnimatedCellProps = ViewProps & { index?: number };
-
-const AnimatedCellRenderer = forwardRef<View, AnimatedCellProps>(function AnimatedCellRenderer(
-  { index: _index, ...viewProps },
-  ref,
-) {
-  return <Animated.View {...viewProps} layout={stateLayoutTransition} ref={ref} />;
-});
-
-export type PlanTaskViewHandle = {
-  prepareForLayoutAnimation: () => void;
-};
-
 type PlanTaskViewProps = {
   sortOrder: "planned" | "recent";
   onSortChange: (value: "planned" | "recent") => void;
@@ -192,50 +172,33 @@ type PlanTaskViewProps = {
   onCreatedHighlightFinished: (nonce: number) => void;
 };
 
-export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(function PlanTaskView(
-  {
-    sortOrder,
-    onSortChange,
-    advancedFilterCount,
-    eventNameById,
-    filters,
-    hasAnyTasks,
-    mutationError,
-    mutationPending,
-    onClearFilters,
-    onFiltersChange,
-    onFiltersClose,
-    onFiltersOpen,
-    onTaskPress,
-    onTaskToggle,
-    summary,
-    tasks,
-    today,
-    filtersOpen,
-    createdHighlight,
-    onCreatedHighlightFinished,
-  },
-  ref,
-) {
-  const listRef = useRef<FlashListRef<Task>>(null);
+export function PlanTaskView({
+  sortOrder,
+  onSortChange,
+  advancedFilterCount,
+  eventNameById,
+  filters,
+  hasAnyTasks,
+  mutationError,
+  mutationPending,
+  onClearFilters,
+  onFiltersChange,
+  onFiltersClose,
+  onFiltersOpen,
+  onTaskPress,
+  onTaskToggle,
+  summary,
+  tasks,
+  today,
+  filtersOpen,
+  createdHighlight,
+  onCreatedHighlightFinished,
+}: PlanTaskViewProps) {
   const filterAnchorRef = useRef<ComponentRef<typeof Pressable>>(null);
-
-  useImperativeHandle(ref, () => ({
-    prepareForLayoutAnimation: () => listRef.current?.prepareForLayoutAnimationRender(),
-  }));
 
   const header = (
     <View className="gap-md pb-md">
       <TaskSummaryCard summary={summary} />
-      <SegmentedControl
-        accessibilityLabel="Sort tasks"
-        value={sortOrder}
-        onChange={onSortChange}
-        options={[
-          { label: "Due date", value: "planned" },
-          { label: "Recently actioned", value: "recent" },
-        ]}
-      />
       {mutationError ? (
         <View
           accessibilityRole="alert"
@@ -253,7 +216,7 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
           </AppText>
         </View>
       ) : null}
-      <View className="flex-row items-center justify-between gap-sm">
+      <View className="flex-row flex-wrap items-center justify-between gap-sm">
         <AppText
           accessibilityLiveRegion="polite"
           accessibilityRole="text"
@@ -262,6 +225,20 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
         >
           {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
         </AppText>
+        <Button
+          accessibilityLabel="Sort tasks"
+          accessibilityState={{ selected: sortOrder === "recent" }}
+          accessibilityValue={{ text: sortOrder === "planned" ? "Due date" : "Recently actioned" }}
+          accessibilityHint={
+            sortOrder === "planned"
+              ? "Switch to recently actioned first"
+              : "Switch to due date order"
+          }
+          icon={ArrowDownUp}
+          label="Sort"
+          onPress={() => onSortChange(sortOrder === "planned" ? "recent" : "planned")}
+          variant={sortOrder === "recent" ? "primary" : "secondary"}
+        />
         <FilterChip
           count={advancedFilterCount || undefined}
           icon={SlidersHorizontal}
@@ -277,13 +254,13 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
   return (
     <View className="flex-1">
       <FlashList
-        CellRendererComponent={AnimatedCellRenderer}
         contentContainerStyle={{
           paddingBottom: listFooterClearance,
           paddingHorizontal: contentPadding,
           paddingTop: contentPadding,
         }}
         data={tasks}
+        maintainVisibleContentPosition={{ disabled: true }}
         extraData={`${mutationPending}-${today}-${createdHighlight?.nonce ?? 0}`}
         ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
         keyExtractor={(task) => task.id}
@@ -297,7 +274,6 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
           />
         }
         ListHeaderComponent={header}
-        ref={listRef}
         renderItem={({ item }) => (
           <CreatedItemPulse
             active={Boolean(createdHighlight?.ids.includes(item.id))}
@@ -355,4 +331,4 @@ export const PlanTaskView = forwardRef<PlanTaskViewHandle, PlanTaskViewProps>(fu
       </FilterPopover>
     </View>
   );
-});
+}

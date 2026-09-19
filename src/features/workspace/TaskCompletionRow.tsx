@@ -25,7 +25,7 @@ import {
 import { isOverdue } from "./selectors";
 import type { Task } from "./types";
 
-const compactRowHeight = 72;
+const compactRowHeight = tokens.touchTarget + Number.parseInt(tokens.spacing.xs, 10);
 const detailedRowHeight = 88;
 const spacing2xs = Number.parseInt(tokens.spacing["2xs"], 10);
 const spacingXs = Number.parseInt(tokens.spacing.xs, 10);
@@ -77,6 +77,10 @@ const styles = StyleSheet.create({
     paddingLeft: spacing2xs,
     paddingRight: spacingXs,
     paddingTop: spacingSm,
+  },
+  detailAreaCompact: {
+    paddingBottom: spacing2xs,
+    paddingTop: spacing2xs,
   },
   detailAreaLargeText: {
     alignItems: "stretch",
@@ -249,7 +253,7 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
     <Animated.View
       entering={variant === "compact" ? stateEnteringTransition : undefined}
       exiting={variant === "compact" ? exitTransition : undefined}
-      layout={stateLayoutTransition}
+      layout={variant === "compact" ? stateLayoutTransition : undefined}
     >
       <View
         className={`relative flex-row items-stretch overflow-hidden rounded-card border ${
@@ -301,13 +305,16 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
             pointerEvents="none"
             style={styles.iconColumn}
           >
-            <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
+            <View
+              className={`${variant === "compact" ? "h-10 w-10" : "h-12 w-12"} items-center justify-center rounded-control bg-primarySoft`}
+            >
               <TaskCategoryIcon task={task} />
             </View>
           </View>
           <View
             style={[
               styles.detailArea,
+              variant === "compact" ? styles.detailAreaCompact : undefined,
               { minHeight: rowMinHeight },
               largeText ? styles.detailAreaLargeText : undefined,
             ]}
@@ -315,15 +322,24 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
           >
             <View style={styles.contentColumn}>
               <Animated.View style={[styles.content, contentStyle]}>
-                <OverflowMarqueeText
-                  accessible={false}
-                  fadeColor={
-                    variant === "compact" ? theme.colors.surfaceMuted : theme.colors.elevatedSurface
-                  }
-                  style={completed ? { textDecorationLine: "line-through" } : undefined}
-                  text={task.title}
-                  variant="label"
-                />
+                {variant === "compact" ? (
+                  <OverflowMarqueeText
+                    accessible={false}
+                    fadeColor={theme.colors.surfaceMuted}
+                    style={completed ? { textDecorationLine: "line-through" } : undefined}
+                    text={task.title}
+                    variant="label"
+                  />
+                ) : (
+                  <AppText
+                    accessible={false}
+                    numberOfLines={2}
+                    style={completed ? { textDecorationLine: "line-through" } : undefined}
+                    variant="label"
+                  >
+                    {task.title}
+                  </AppText>
+                )}
                 <View
                   style={[
                     styles.metadata,

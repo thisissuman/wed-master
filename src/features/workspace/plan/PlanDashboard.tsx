@@ -2,12 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import Plus from "lucide-react-native/icons/plus";
 import { router, useIsFocused, useLocalSearchParams } from "expo-router";
-import Animated from "react-native-reanimated";
 
 import { Button, ErrorState, LoadingState, Screen } from "@/components/ui";
 import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
-import { stateEnteringTransition } from "@/theme/motion";
 
 import { useCreatedItemHighlight } from "../created-item-highlight";
 import {
@@ -22,7 +20,7 @@ import { type ISODate, type Task, type WeddingEvent } from "../types";
 import { useWorkspace } from "../provider";
 import { useTaskStatusAction } from "../useTaskStatusAction";
 import { PlanEventView } from "./PlanEventView";
-import { PlanTaskView, type PlanTaskViewHandle } from "./PlanTaskView";
+import { PlanTaskView } from "./PlanTaskView";
 import { PlanHeader, type PlanView } from "./PlanShared";
 
 export type { EventTimelineCardProps } from "./PlanEventView";
@@ -55,10 +53,7 @@ export function PlanDashboard() {
   const workspace = useWorkspace();
   const createdHighlight = useCreatedItemHighlight((state) => state.current);
   const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
-  const taskListRef = useRef<PlanTaskViewHandle>(null);
-  const taskStatusAction = useTaskStatusAction({
-    onPersisted: () => taskListRef.current?.prepareForLayoutAnimation(),
-  });
+  const taskStatusAction = useTaskStatusAction();
 
   useEffect(() => {
     if (lastRouteViewParam.current === routeViewParam) return;
@@ -158,7 +153,7 @@ export function PlanDashboard() {
       <View className="px-md pt-md">
         <PlanHeader activeView={activeView} onViewChange={changeView} />
       </View>
-      <Animated.View className="flex-1" entering={stateEnteringTransition} key={activeView}>
+      <View className="flex-1">
         {activeView === "tasks" ? (
           <PlanTaskView
             sortOrder={sortOrder}
@@ -178,7 +173,6 @@ export function PlanDashboard() {
             onFiltersOpen={openFilters}
             onTaskPress={taskPress}
             onTaskToggle={toggleTask}
-            ref={taskListRef}
             summary={summary}
             tasks={tasks}
             today={today}
@@ -200,7 +194,7 @@ export function PlanDashboard() {
             onCreatedHighlightFinished={clearCreatedHighlight}
           />
         )}
-      </Animated.View>
+      </View>
 
       <View className="border-t border-borderSubtle bg-elevatedSurface p-md shadow-floating">
         <Button
