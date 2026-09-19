@@ -115,6 +115,11 @@ describe("PlanScreen", () => {
     for (let index = 0; index < 3; index += 1) {
       await fireEvent.press(screen.getByRole("tab", { name: "Events" }));
       expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+      expect(
+        screen
+          .getAllByRole("checkbox", { includeHiddenElements: true })
+          .map((row) => row.props.accessibilityLabel),
+      ).toEqual(initial);
       await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
       expect(screen.getAllByRole("checkbox").map((row) => row.props.accessibilityLabel)).toEqual(
         initial,

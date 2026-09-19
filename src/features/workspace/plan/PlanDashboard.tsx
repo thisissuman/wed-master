@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Plus from "lucide-react-native/icons/plus";
 import { router, useIsFocused, useLocalSearchParams } from "expo-router";
 
@@ -154,14 +154,19 @@ export function PlanDashboard() {
         <PlanHeader activeView={activeView} onViewChange={changeView} />
       </View>
       <View className="flex-1">
-        {activeView === "tasks" ? (
+        <View
+          style={[StyleSheet.absoluteFill, { opacity: activeView === "tasks" ? 1 : 0 }]}
+          pointerEvents={activeView === "tasks" ? "auto" : "none"}
+          accessibilityElementsHidden={activeView !== "tasks"}
+          importantForAccessibility={activeView === "tasks" ? "auto" : "no-hide-descendants"}
+        >
           <PlanTaskView
             sortOrder={sortOrder}
             onSortChange={setSortOrder}
             advancedFilterCount={taskFilterCount(filters)}
             eventNameById={eventNameForId}
             filters={filters}
-            filtersOpen={filtersOpen}
+            filtersOpen={activeView === "tasks" && filtersOpen}
             hasAnyTasks={workspace.data.tasks.length > 0}
             mutationError={
               taskStatusAction.isError ? toUserMessage(taskStatusAction.error) : undefined
@@ -177,11 +182,19 @@ export function PlanDashboard() {
             tasks={tasks}
             today={today}
             createdHighlight={
-              isScreenFocused && createdHighlight?.kind === "task" ? createdHighlight : undefined
+              isScreenFocused && activeView === "tasks" && createdHighlight?.kind === "task"
+                ? createdHighlight
+                : undefined
             }
             onCreatedHighlightFinished={clearCreatedHighlight}
           />
-        ) : (
+        </View>
+        <View
+          style={[StyleSheet.absoluteFill, { opacity: activeView === "events" ? 1 : 0 }]}
+          pointerEvents={activeView === "events" ? "auto" : "none"}
+          accessibilityElementsHidden={activeView !== "events"}
+          importantForAccessibility={activeView === "events" ? "auto" : "no-hide-descendants"}
+        >
           <PlanEventView
             events={events}
             onEdit={editEvent}
@@ -189,11 +202,13 @@ export function PlanDashboard() {
             progressForEvent={progressForEvent}
             weddingDate={workspace.data.wedding.date}
             createdHighlight={
-              isScreenFocused && createdHighlight?.kind === "event" ? createdHighlight : undefined
+              isScreenFocused && activeView === "events" && createdHighlight?.kind === "event"
+                ? createdHighlight
+                : undefined
             }
             onCreatedHighlightFinished={clearCreatedHighlight}
           />
-        )}
+        </View>
       </View>
 
       <View className="border-t border-borderSubtle bg-elevatedSurface p-md shadow-floating">

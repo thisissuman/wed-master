@@ -38,9 +38,40 @@
 
 ## Build handoff
 
-Expo account `thisissuman` was confirmed. Commit the exact source and submit Preview with
-`--no-wait --non-interactive`; record the source and returned build link here. The Product Owner
-will monitor completion; do not poll the build after handing over the link.
+Expo account `thisissuman` was confirmed. Prepared source commit:
+`237fccb7c128d0f2362ca769640ae169fb6c161c`.
+
+Submission was blocked by automatic approval review before the EAS command ran. The review
+requires explicit authorization to upload the app source/build files to Expo/EAS. No Preview 8
+build ID or status link exists yet. After authorization, submit with `--no-wait --non-interactive`
+and record the returned link. The Product Owner will monitor completion; do not poll the build.
+
+## Local emulator follow-up
+
+The Product Owner opened Pixel_8 (`emulator-5554`) for verification. Its installed development
+version 5 could not load `ExpoContacts`. Regenerated the ignored Android project and successfully
+built/updated `com.suman.mangalya.development` to version 8 without uninstalling or clearing data.
+Artifact: `android/app/build/outputs/apk/debug/app-debug.apk`; development scheme:
+`mangalya-development` (Expo launcher: `exp+mangalya`). Metro remained on port 8081.
+
+Observed two compact Focus today rows and Budget overview together on Home. Rapid Plan switches
+still exposed a blank mounting interval, so both virtualized lists now retain their measured
+viewport; the inactive list is invisible, untouchable and excluded from accessibility. This trades
+one extra virtualized viewport for avoiding repeated list mounting. Hidden views cannot consume
+creation highlights or show the task filter popover.
+
+The native Sort test exposed a navigation-context render error when changing the button from
+secondary to primary. Kept its secondary structure and use border/background styling for selection.
+After a clean restart, three Events/Tasks cycles showed populated, non-overlapping task rows, and
+three Sort taps alternated selected styling without another crash. Existing fixture tasks have
+matching dates/no activity differences, so sort ranking is covered by the focused automated test.
+No task data was changed. These are development-emulator observations, not release FPS or phone
+performance evidence. A separate Expo Router startup console warning about updating an unmounted
+`ContextNavigator` remains uninvestigated; it did not block the checked flows and was dismissed.
+
+After the follow-up changes, TypeScript, lint, formatting and all 425 tests/69 suites passed.
+The earlier production export predates this follow-up and must be rerun before cloud submission.
+Physical-phone, completed-task stress, large text, TalkBack and release timing remain pending.
 
 ## Phone acceptance
 

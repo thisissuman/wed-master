@@ -195,6 +195,7 @@ export function PlanTaskView({
   onCreatedHighlightFinished,
 }: PlanTaskViewProps) {
   const filterAnchorRef = useRef<ComponentRef<typeof Pressable>>(null);
+  const theme = useAppTheme();
 
   const header = (
     <View className="gap-md pb-md">
@@ -237,7 +238,12 @@ export function PlanTaskView({
           icon={ArrowDownUp}
           label="Sort"
           onPress={() => onSortChange(sortOrder === "planned" ? "recent" : "planned")}
-          variant={sortOrder === "recent" ? "primary" : "secondary"}
+          variant="secondary"
+          style={
+            sortOrder === "recent"
+              ? { backgroundColor: theme.colors.primarySoft, borderColor: theme.colors.primary }
+              : undefined
+          }
         />
         <FilterChip
           count={advancedFilterCount || undefined}
