@@ -95,7 +95,8 @@ push directly to `main`. Use the installed development client for ordinary sourc
 - `docs/RELEASE.md`: development, native build, Preview APK, and production release procedures.
 - `docs/NEXT_STEPS.md`: unfinished work and external blockers.
 - `docs/PREVIEW_BUILD_2026-09-11.md`: latest signed Android Preview evidence.
-- `docs/PREVIEW_BUILD_2026-09-18.md`: Preview 7 changes, checks and submitted build link; phone verification pending.
+- `docs/PREVIEW_BUILD_2026-09-18.md`: Preview 7 enhancements, build link and reported phone feedback.
+- `docs/PREVIEW_BUILD_2026-09-19.md`: Preview 8 compact Home and Plan list fixes; native verification pending.
 - `docs/archive/VERIFICATION_HISTORY_2026-09-05.md`: older dated verification evidence.
 - `docs/SECURITY_PERFORMANCE_AUDIT_2026-08-12.md`: local-first security/performance audit.
 - `docs/DECISIONS.md`: costly-to-reverse decisions only.

@@ -79,7 +79,7 @@ describe("Expo application variants", () => {
     ]);
     expect(config.android?.predictiveBackGestureEnabled).toBe(true);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
-    expect(config.android?.versionCode).toBe(7);
+    expect(config.android?.versionCode).toBe(8);
     expect(config.userInterfaceStyle).toBe("automatic");
     expect(config.android?.adaptiveIcon?.backgroundColor).toBe("#1D0B23");
     expect(config.plugins).toContainEqual([

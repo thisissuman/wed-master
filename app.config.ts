@@ -70,7 +70,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: `com.suman.mangalya${variantSuffix}`,
       permissions: ["android.permission.CAMERA"],
       softwareKeyboardLayoutMode: "resize",
-      versionCode: 7,
+      versionCode: 8,
       adaptiveIcon: {
         backgroundColor: defaultTheme.colors.canvas,
         backgroundImage: "./assets/images/android-icon-background.png",

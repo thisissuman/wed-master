@@ -58,3 +58,10 @@ including contact denial/cancel/multiple numbers/custom name, expense-to-refund 
 round-trip, task order after restart, all three photo sizes, and a past wedding date in both themes
 with large text and Reduced Motion. After the Product Owner confirms the phone result, continue
 with the open measured performance, tablet, cold deep-link and observability gates in NEXT_STEPS.md.
+
+## Product Owner feedback — 2026-09-19
+
+The Product Owner reported the seven changes working on their phone, then requested more compact
+Home focus rows and a smaller Sort control. They also supplied a screenshot showing overlapping
+Plan task rows and reported slower Events-to-Tasks switching. This feedback is not an instrumented
+performance pass or a complete release matrix. Preview 8 addresses those layout/rendering paths.

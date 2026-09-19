@@ -10,14 +10,14 @@ signed APK evidence is in [PREVIEW_BUILD_2026-09-11.md](./PREVIEW_BUILD_2026-09-
 Status values are `Pending`, `In progress`, and `Blocked`. Move completed work to the verification
 archive or a dated build record instead of growing this tracker.
 
-## Preview 7 phone check
+## Preview 8 phone check
 
-Preview 7 contains the requested contacts, Inspire, task sorting, refund, settings and celebration
-changes. The source and passing automated checks are recorded in
-[PREVIEW_BUILD_2026-09-18.md](./PREVIEW_BUILD_2026-09-18.md), including the EAS status link.
-The Product Owner will monitor the submitted build and report the phone result. Do not treat that
-result as passed, poll the cloud build, or start the next product slice before their feedback.
-After confirmation, continue with the remaining release gates below.
+The Product Owner reported Preview 7's seven requested enhancements working, then reported Plan
+row overlap/slow switching and requested more compact Home rows and a smaller Sort button.
+[PREVIEW_BUILD_2026-09-19.md](./PREVIEW_BUILD_2026-09-19.md) records Preview 8's targeted fixes and
+checks. The Product Owner will monitor its build and verify the native layout/switching result;
+no device performance pass is implied by the host tests. After confirmation, continue with the
+remaining release gates below.
 
 ## Local-beta release gates
 

@@ -7,7 +7,7 @@ unrelated work, and never push directly to `main`.
 
 - `app.config.ts` owns names, schemes, package/bundle IDs, icons, splash, orientation, marketing
   version, and platform build numbers. `eas.json` owns matching build profiles.
-- Version `0.1.0` currently uses Android version code `7` and iOS build number `1`.
+- Version `0.1.0` currently uses Android version code `8` and iOS build number `1`.
 - Development is `Mangalya Dev` / `com.suman.mangalya.development` /
   `mangalya-development`; Preview is `Mangalya Preview` / `com.suman.mangalya.preview` /
   `mangalya-preview`; production is `Mangalya` / `com.suman.mangalya` / `mangalya`.
