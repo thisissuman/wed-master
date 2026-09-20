@@ -38,13 +38,15 @@
 
 ## Build handoff
 
-Expo account `thisissuman` was confirmed. Prepared source commit:
-`237fccb7c128d0f2362ca769640ae169fb6c161c`.
+Expo account `thisissuman` was confirmed. Preview 8 was submitted from exact source commit
+`9c8a56def6a2dece1f761d08805ac6948343df49` with `--no-wait --non-interactive`.
 
-Submission was blocked by automatic approval review before the EAS command ran. The review
-requires explicit authorization to upload the app source/build files to Expo/EAS. No Preview 8
-build ID or status link exists yet. After authorization, submit with `--no-wait --non-interactive`
-and record the returned link. The Product Owner will monitor completion; do not poll the build.
+- EAS build ID: `7cc202df-e126-4502-87d6-b5ffaed85ae6`
+- Progress page:
+  <https://expo.dev/accounts/thisissuman/projects/mangalya/builds/7cc202df-e126-4502-87d6-b5ffaed85ae6>
+- Status recorded here: accepted by EAS; completion, APK artifact and signing inspection pending.
+
+The Product Owner will monitor completion; do not poll the build.
 
 ## Local emulator follow-up
 
@@ -69,9 +71,10 @@ No task data was changed. These are development-emulator observations, not relea
 performance evidence. A separate Expo Router startup console warning about updating an unmounted
 `ContextNavigator` remains uninvestigated; it did not block the checked flows and was dismissed.
 
-After the follow-up changes, TypeScript, lint, formatting and all 425 tests/69 suites passed.
-The earlier production export predates this follow-up and must be rerun before cloud submission.
-Physical-phone, completed-task stress, large text, TalkBack and release timing remain pending.
+After the follow-up changes, TypeScript, lint, formatting and all 425 tests/69 suites passed. The
+production Android export was rerun successfully from the submitted source before cloud
+submission. Physical-phone, completed-task stress, large text, TalkBack and release timing remain
+pending.
 
 ## Phone acceptance
 
