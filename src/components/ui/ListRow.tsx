@@ -1,15 +1,17 @@
 import { type ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
-import { tokens } from "@/theme";
+import { useAppTheme } from "@/theme";
 
 import { AppText } from "./AppText";
+import { MotionPressable } from "./MotionPressable";
 
 type ListRowProps = {
   accessory?: ReactNode;
   accessibilityLabel?: string;
   className?: string;
   description?: string;
+  disabled?: boolean;
   leading?: ReactNode;
   onPress?: () => void;
   title: string;
@@ -21,14 +23,16 @@ export function ListRow({
   accessibilityLabel,
   className = "",
   description,
+  disabled = false,
   leading,
   onPress,
   title,
   trailing,
 }: ListRowProps) {
+  const theme = useAppTheme();
   const ending = trailing ?? accessory;
   const content = (
-    <View className={`min-h-12 flex-row items-center gap-sm py-md ${className}`}>
+    <View className={`min-h-4xl flex-row items-center gap-sm py-md ${className}`}>
       {leading ? <View>{leading}</View> : null}
       <View className="flex-1 gap-2xs">
         <AppText variant="label">{title}</AppText>
@@ -43,14 +47,17 @@ export function ListRow({
   }
 
   return (
-    <Pressable
+    <MotionPressable
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.surfaceMuted }}
+      accessibilityState={{ disabled }}
+      android_ripple={{ color: theme.colors.surfaceMuted }}
       className="rounded-control active:bg-surfaceMuted"
+      disabled={disabled}
       onPress={onPress}
+      pressedScale={0.99}
     >
       {content}
-    </Pressable>
+    </MotionPressable>
   );
 }

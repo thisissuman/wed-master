@@ -1,6 +1,10 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
+import palettes from "./src/theme/palettes.json";
+
 type AppVariant = "development" | "preview" | "production";
+
+const defaultTheme = palettes.royalPlum;
 
 function resolveVariant(requestedVariant = process.env.APP_VARIANT): AppVariant {
   return requestedVariant === "preview" || requestedVariant === "production"
@@ -40,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     orientation: "default",
     icon: "./assets/images/icon.png",
     scheme,
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     ios: {
       supportsTablet: true,
       bundleIdentifier: `com.suman.mangalya${variantSuffix}`,
@@ -48,12 +52,27 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       allowBackup: false,
-      blockedPermissions: ["android.permission.SYSTEM_ALERT_WINDOW"],
+      blockedPermissions: [
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.WRITE_CONTACTS",
+      ],
       package: `com.suman.mangalya${variantSuffix}`,
+      permissions: ["android.permission.CAMERA"],
       softwareKeyboardLayoutMode: "resize",
-      versionCode: 4,
+      versionCode: 8,
       adaptiveIcon: {
-        backgroundColor: "#FBF7F4",
+        backgroundColor: defaultTheme.colors.canvas,
         backgroundImage: "./assets/images/android-icon-background.png",
         foregroundImage: "./assets/images/android-icon-foreground.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -66,26 +85,33 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-router",
+      ["expo-dev-client", { addGeneratedScheme: variant === "development" }],
       [
         "expo-splash-screen",
         {
-          backgroundColor: "#FBF7F4",
+          backgroundColor: defaultTheme.colors.canvas,
           image: "./assets/images/splash-icon.png",
           imageWidth: 200,
         },
       ],
+      ["expo-contacts", { contactsPermission: "Allow Mangalya to choose an emergency contact." }],
       "expo-image",
+      "expo-sharing",
       [
         "expo-image-picker",
         {
-          cameraPermission: false,
+          cameraPermission:
+            "Allow Mangalya to take photos for your private wedding inspiration board.",
           microphonePermission: false,
-          photosPermission: "Allow Mangalya to choose a wedding cover photo.",
+          photosPermission:
+            "Allow Mangalya to choose wedding photos and inspiration images from your library.",
         },
       ],
-      "expo-secure-store",
+      ["expo-secure-store", { configureAndroidBackup: false }],
       "@react-native-community/datetimepicker",
       "expo-font",
+      "expo-asset",
+      ["expo-navigation-bar", { enforceContrast: false, style: "light" }],
       ...sentryPlugins,
     ],
     experiments: {

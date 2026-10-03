@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { BackupFileTooLargeError, InvalidBackupError } from "@/lib/errors";
+import { utf8ByteLength } from "@/lib/storage/utf8-byte-length";
+
 import type { WorkspaceSnapshot } from "../types";
 import { createDataOnlySnapshot, parseOrMigrateWorkspaceSnapshot } from "../workspace-schema";
 
@@ -13,15 +16,6 @@ const backupEnvelopeSchema = z
     workspace: z.unknown(),
   })
   .strict();
-
-function utf8ByteLength(value: string): number {
-  let bytes = 0;
-  for (const character of value) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    bytes += codePoint <= 0x7f ? 1 : codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
-  }
-  return bytes;
-}
 
 export function serializeDataBackup(snapshot: WorkspaceSnapshot, exportedAt: string): string {
   return JSON.stringify(
@@ -38,29 +32,43 @@ export function serializeDataBackup(snapshot: WorkspaceSnapshot, exportedAt: str
 
 export function parseDataBackup(text: string): WorkspaceSnapshot {
   if (utf8ByteLength(text) > maximumBackupBytes) {
-    throw new Error("Mangalya backups must be 5 MB or smaller.");
+    throw new BackupFileTooLargeError();
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
-  } catch {
-    throw new Error("This file is not valid JSON.");
+  } catch (error) {
+    throw new InvalidBackupError(error);
   }
 
-  if (typeof parsed === "object" && parsed !== null && "workspace" in parsed) {
-    const envelope = backupEnvelopeSchema.safeParse(parsed);
-    if (!envelope.success) {
-      throw new Error("This backup is not a supported Mangalya workspace file.");
+  try {
+    if (typeof parsed === "object" && parsed !== null && "workspace" in parsed) {
+      const envelope = backupEnvelopeSchema.safeParse(parsed);
+      if (!envelope.success) throw new InvalidBackupError(envelope.error);
+      return createDataOnlySnapshot(parseOrMigrateWorkspaceSnapshot(envelope.data.workspace));
     }
-    return createDataOnlySnapshot(parseOrMigrateWorkspaceSnapshot(envelope.data.workspace));
+    return createDataOnlySnapshot(parseOrMigrateWorkspaceSnapshot(parsed));
+  } catch (error) {
+    if (error instanceof InvalidBackupError) throw error;
+    throw new InvalidBackupError(error);
   }
-  return createDataOnlySnapshot(parseOrMigrateWorkspaceSnapshot(parsed));
+}
+
+const LEADING_CONTROL_PATTERN =
+  /^[\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*[\u0000-\u001f\u007f-\u009f]/u;
+const FORMULA_PREFIX_PATTERN =
+  /^[\u0000-\u0020\u007f-\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*[=+\-@\uff0b\uff0d\uff1d\uff20]/u;
+
+export function neutralizeCsvFormula(value: string): string {
+  return LEADING_CONTROL_PATTERN.test(value) || FORMULA_PREFIX_PATTERN.test(value)
+    ? `'${value}`
+    : value;
 }
 
 function csvCell(value: string | number | undefined): string {
   const text = value === undefined ? "" : String(value);
-  return `"${text.replace(/"/g, '""')}"`;
+  return `"${neutralizeCsvFormula(text).replace(/"/g, '""')}"`;
 }
 
 function csvLine(values: (string | number | undefined)[]): string {
@@ -74,7 +82,15 @@ function rupees(paise?: number): string {
 export function expensesCsv(snapshot: WorkspaceSnapshot): string {
   const categories = new Map(snapshot.categories.map((category) => [category.id, category.name]));
   const rows = [
-    csvLine(["Title", "Category", "Amount INR", "Expense Date", "Notes", "Attachment Name"]),
+    csvLine([
+      "Title",
+      "Category",
+      "Amount INR",
+      "Expense Date",
+      "Notes",
+      "Attachment Name",
+      "Type",
+    ]),
     ...snapshot.expenses.map((expense) =>
       csvLine([
         expense.title,
@@ -83,6 +99,7 @@ export function expensesCsv(snapshot: WorkspaceSnapshot): string {
         expense.date,
         expense.notes,
         expense.receipt?.name,
+        expense.direction === "refund" ? "Got back" : "Expense",
       ]),
     ),
   ];

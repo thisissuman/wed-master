@@ -18,7 +18,7 @@
 - `src/theme/tokens.json` is the value source for both TypeScript and NativeWind. Do not add a second token map in a component or configuration file.
 - NativeWind class strings belong in primitives and feature components; extract a variant map before a class string becomes hard to read or is repeated.
 - Prefer summary surfaces and divider-based rows over feature-specific card variants. A `Card` is not a press target; use `ListRow` or a focused feature row for navigation.
-- A screen owns one clear primary action. Put advanced filtering in `FilterSheet`, optional form fields in `Disclosure`, and destructive work behind `ConfirmationDialog`.
+- A screen owns one clear primary action. Use the anchored filter popover for the compact task and guest filters, reserve `FilterSheet` for genuinely larger filter sets, put optional form fields in `Disclosure`, and keep destructive work behind `ConfirmationDialog`.
 - Empty lists use the shared compact `EmptyState` row. Make that row actionable only when no footer or FAB already creates the record; otherwise keep it neutral. Filtered-empty states reset filters or search instead of duplicating creation.
 - Use `src/lib/responsive.ts` for shared 600dp expanded-width, 1.3 large-text, and compact control-stacking decisions. Tablet layouts restructure navigation and content instead of stretching phone UI.
 - Keep tab routes thin. Domain presentation such as event timelines, task completion rows, expense rows, financial summaries, and direct creation actions belongs in `src/features/workspace`.
@@ -41,6 +41,28 @@
 
 A feature is complete when requested behavior, type safety, mobile interaction, focused tests, relevant loading/empty/error/permission states, accessibility basics, and documentation impact have all been reviewed. Verification must state what ran and what did not.
 
+## Git workflow
+
+- Keep `main` releasable. Never push directly to it.
+- Use short-lived branches with the repository conventions: `feat/...`, `fix/...`, `chore/...`, or
+  `refactor/...`. Codex-created branches use the `codex/` prefix unless the task specifies another
+  name.
+- Write imperative Conventional Commits such as `feat(tasks): add due-date filter` or
+  `fix(backup): reject oversized input`.
+- Keep commits focused. Do not combine unrelated styling, data, configuration, or documentation
+  work.
+- Rebase or merge `main` deliberately before review; never force-push a shared branch without the
+  owner's direction.
+- Use a pull request for structural or release work. Describe the problem, resulting behavior,
+  validation, data/privacy impact, screenshots for UI changes, and intentional follow-ups.
+- Self-review the complete diff before committing. Remove debugging output, commented-out code,
+  accidental generated files, and secrets.
+- Prefer squash-and-merge for feature branches so `main` receives one clear Conventional Commit.
+
+Pull-request checks are typecheck, lint, tests, formatting, and whitespace validation. Preview or
+development builds run after merge or when native validation is required. Maestro and signed-build
+checks belong to release acceptance; see [TESTING.md](./TESTING.md) and [RELEASE.md](./RELEASE.md).
+
 ## Quality commands
 
 - `npm run lint`
@@ -52,10 +74,20 @@ Use `npm run format` only for deliberate formatting changes. Do not run dependen
 
 # First local product slice
 
-Implemented routes are the four-tab workspace plus event, task, and expense detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-safe scrolling, progressive optional fields, and the native Android date picker. Expense creation alone uses a transparent route-backed overlay; expense editing remains a full modal. Budget-category management remains deferred beyond this first vertical slice.
+Implemented routes are the five-tab Home · Plan · Inspire · Money · More workspace plus event, task, expense, and inspiration detail/create/edit routes under `(app)`. Create/edit flows use Expo Router modal routes, React Hook Form, Zod, keyboard-controller-aware scrolling, measured keyboard-sticky actions, progressive optional fields, and the native Android date picker. Expense creation alone uses a transparent route-backed overlay; other create/edit routes use the reduced-motion modal contract. Web uses the regular scroll fallback, and the specialized quick-expense animation must not receive a second keyboard offset.
 
-The Plan tab uses one Tasks/Events segmented control. It changes a local `activeView` immediately; route parameters initialize deep links and respond to genuine external changes but are not written by taps. A shallow task summary and one active-count filter control replace the former metrics card and visible presets. Task filters for status, priority, event, due-this-week, and overdue state remain contained in one compact sheet with a one-tap reset. Event ordering remains persisted in the repository for compatibility, but earlier/later controls are intentionally not exposed. Form routes use `FormShell` and shared fields except for the purpose-built quick-expense overlay. Expense creation persists title, category, actual paise, local date, optional existing event relationship, and `createdAt` before optional date/note/attachment editing in the same overlay. The category picker is intentionally local UI: Other is first, while Task and Event reveal existing records and reuse the selected record name; no category-management dependency is introduced.
+The Plan tab keeps one mounted Tasks/Events header and segmented control while both virtualized lists remain mounted without a switch fade; the inactive list retains its measured viewport but is invisible and excluded from touch and accessibility. Task filters are limited to Status and Priority in an anchored, immediate popover with Reset. Event and task suggestions are onboarding-only; the final image-free task step offers ten optional starter tasks and includes the selected batch in the single workspace-creation snapshot. Stable keys and normalized exact aliases prevent duplicates. Form routes use the function-only `FormShell` and shared fields except for the purpose-built quick-expense overlay. A transient local highlight store drives one reduced-motion-safe pulse on newly created expense, task, event, household, gift, and contact rows. Passive success snackbars are intentionally absent; destructive Undo snackbars remain.
 
-Home exposes four compact direct actions plus a dedicated expense FAB. The `/budget` Money tab stays focused on the virtualized newest-created expense list. The drill-down `/budget/overview` route is the only budget-target editor and combines a shallow financial summary, highest-first category bars, pure date-range aggregations, and a responsive accessible custom SVG trend without adding a chart dependency. Home, More, and a separate Settings row open the overview route. More resets its nested stack to `index` whenever the tab loses focus. Guests retains name search and underlying household data while exposing one compact summary and one persistent creation FAB. Gifts currently surfaces and creates Received records only; legacy kinds stay readable in storage. Backup UI exposes structured export/import and expenses CSV only. Settings otherwise exposes one Wedding details editor and a separate Data & Privacy section. First-run setup writes the existing wedding contract with required names/date, optional paise budget/photo, and neutral compatibility defaults; it does not change the snapshot version. Detail routes use visible fallback-aware back actions and confirmation dialogs for deletion. Shared task rows clamp titles to two lines and stack status metadata at large text instead of nesting a horizontal scroller inside a vertical list.
+Inspire is an intentional feature-first exception to the monolithic workspace snapshot. Keep its versioned AsyncStorage document, TanStack Query hooks, media pipeline, demo seed, form orchestration, and UI under `src/features/inspire`; routes only pass IDs. The five zero-board examples are render-only bundled assets, not repository records. Metadata is committed only after both managed WebP derivatives exist. Close the source dialog fully before launching Gallery or Camera from `onAfterClose`. Failed saves retain the draft, discard removes it, destructive deletion defers file removal until Undo expires, and startup repairs orphan media. Never add Inspire to the data-only workspace backup or imply that Gallery/Camera files are cloud-backed.
+
+Home omits the compact Quick actions strip and owns the reusable 56dp circular Add expense FAB at the scene’s bottom-right. `/budget` uses the same safe-area-aware Add expense FAB, and both screens reserve matching scroll clearance. Guests and emergency contacts share that FAB plus adaptive one/two-column people cards; household detail preserves household-level editing and keeps deletion separated and confirmed. Gifts currently surfaces and creates Received records only; legacy kinds stay readable in storage. First-run setup writes the current v5 contract with required names/date, optional paise budget/photo/events/tasks, neutral compatibility defaults, and fixed artwork-only ink roles for user values. Detail routes use visible fallback-aware back actions and confirmation dialogs for deletion.
+
+The Home wedding hero also owns one dependency-free Reanimated keepsake interaction: tapping the unchanged summary opens an equal-size centred modal card over a blurred scrim, and a second tap flips to `wedding.keepsakeMessage`. The message is optional, bounded, editable in Wedding details, included in data-only backup, and falls back to product copy without forcing a snapshot-version migration. The card itself is the labelled control, outside tap and Android Back dismiss, and Reduce Motion replaces position/rotation with opacity.
 
 Do not bypass repository interfaces when adding a feature. Add a contract, local implementation, query hook/selector, focused tests, then UI.
+
+For recycled task lists, FlashList owns absolute cell positions. Do not put Reanimated layout
+transitions on its cell renderer or detailed task rows; measurement corrections can animate stale
+positions and overlap neighbouring rows. Do not call prepareForLayoutAnimationRender without an
+actual supported list animation, since it disables recycling. Explicit task sorting disables
+maintainVisibleContentPosition so the old visible record does not override the requested order.

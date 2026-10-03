@@ -1,49 +1,42 @@
+import { expenseAmountLabel } from "../expense-amount";
 import { FlashList } from "@shopify/flash-list";
-import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
-import {
-  CalendarDays,
-  ChartNoAxesCombined,
-  ChevronRight,
-  Pencil,
-  Plus,
-  ReceiptIndianRupee,
-  Target,
-  X,
-  type LucideIcon,
-} from "lucide-react-native";
-import { memo, useMemo, useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useReducedMotion } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useIsFocused } from "expo-router";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import ChartNoAxesCombined from "lucide-react-native/icons/chart-no-axes-combined";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import Pencil from "lucide-react-native/icons/pencil";
+import ReceiptIndianRupee from "lucide-react-native/icons/receipt-indian-rupee";
+import Target from "lucide-react-native/icons/target";
+import type { LucideIcon } from "lucide-react-native";
+import { memo, useMemo, useState } from "react";
+import { ScrollView, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { MangalyaHeader } from "@/components/brand";
 import {
+  AppBottomSheet,
   AppText,
   Button,
   Card,
+  CreatedItemPulse,
   EmptyState,
   ErrorState,
+  FloatingActionButton,
   IconButton,
   LoadingState,
   MotionPressable,
+  PageHeader,
   Screen,
   SegmentedControl,
   TextField,
 } from "@/components/ui";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
-import { formatDateOnly, todayDateOnly } from "@/lib/dates";
+import { formatDateOnly } from "@/lib/dates";
+import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 import { formatInr, formatInrCompact } from "@/lib/money";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { fromPaise, toPaise } from "../forms";
 import { useWorkspace, useWorkspaceMutation } from "../provider";
@@ -51,6 +44,7 @@ import {
   categorySpending,
   homeBudgetSummary,
   selectDailySpending,
+  selectExpenseDateGroups,
   selectRecentExpenses,
   selectSpendingTrend,
   type CategorySpending,
@@ -59,12 +53,14 @@ import {
 } from "../selectors";
 import type { BudgetCategory, Expense } from "../types";
 import { DetailHeader } from "../ui";
-import { ExpenseCategoryIcon, expenseCategoryPresentation } from "./ExpenseCategoryIcon";
+import { useCreatedItemHighlight } from "../created-item-highlight";
+import { ExpenseCategoryIcon, useExpenseCategoryPresentation } from "./ExpenseCategoryIcon";
 import { SpendingTrendChart } from "./SpendingTrendChart";
 
 const contentPadding = Number.parseInt(tokens.spacing.md, 10);
 const itemGap = Number.parseInt(tokens.spacing.sm, 10);
-const listFooterClearance = tokens.touchTarget + Number.parseInt(tokens.spacing["2xl"], 10) * 2;
+const fabInset = Number.parseInt(tokens.spacing.md, 10);
+const listBottomPadding = tokens.touchTarget + Number.parseInt(tokens.spacing["4xl"], 10);
 
 const trendRangeOptions: { label: string; value: SpendingTrendRange }[] = [
   { label: "30 days", value: "30d" },
@@ -99,13 +95,13 @@ function MoneyMetric({
       accessibilityLabel={`${label}: ${accessibilityValue}`}
       className={`min-w-0 ${
         stacked
-          ? `min-h-12 flex-row items-center justify-between gap-sm py-xs ${
-              divider ? "border-b border-borderSubtle" : ""
+          ? `min-h-4xl flex-row items-center justify-between gap-sm py-xs ${
+              divider ? "border-b border-nightBorder" : ""
             }`
-          : `flex-1 gap-2xs px-xs ${divider ? "border-r border-borderSubtle" : ""}`
+          : `flex-1 gap-2xs px-xs ${divider ? "border-r border-nightBorder" : ""}`
       }`}
     >
-      <AppText tone="muted" variant="caption">
+      <AppText tone="onNightMuted" variant="caption">
         {label}
       </AppText>
       <AppText
@@ -113,7 +109,7 @@ function MoneyMetric({
         minimumFontScale={0.72}
         numberOfLines={1}
         style={{ fontVariant: ["tabular-nums"] }}
-        tone={tone === "default" ? undefined : tone}
+        tone={tone === "danger" ? "nightAccent" : tone === "primary" ? "nightAccent" : "onNight"}
         variant="heading"
       >
         {value}
@@ -123,15 +119,20 @@ function MoneyMetric({
 }
 
 function BudgetPosition({
-  onEditTarget,
+  actionIcon: ActionIcon,
+  actionLabel,
+  onAction,
   summary,
 }: {
-  onEditTarget: () => void;
+  actionIcon?: LucideIcon;
+  actionLabel?: string;
+  onAction: () => void;
   summary: ReturnType<typeof homeBudgetSummary>;
 }) {
+  const theme = useAppTheme();
   const hasTarget = summary.targetPaise !== undefined;
   const overBudget = summary.overBudgetPaise > 0;
-  const remainingLabel = overBudget ? "Over by" : "Pending";
+  const remainingLabel = overBudget ? "Over by" : "Remaining";
   const remainingValue = overBudget
     ? formatInrCompact(summary.overBudgetPaise)
     : summary.remainingPaise === undefined
@@ -139,60 +140,83 @@ function BudgetPosition({
       : formatInrCompact(summary.remainingPaise);
   const { fontScale } = useWindowDimensions();
   const stacked = isLargeText(fontScale);
+  const ResolvedActionIcon = ActionIcon ?? (hasTarget ? Pencil : Target);
+  const resolvedActionLabel = actionLabel ?? (hasTarget ? "Edit target" : "Set target");
+  const leadValue = overBudget
+    ? `${formatInr(summary.overBudgetPaise)} over target`
+    : hasTarget
+      ? `${formatInr(summary.remainingPaise ?? 0)} remaining`
+      : "Set a shared spending target";
 
   return (
-    <View
-      className="rounded-card border border-borderSubtle bg-elevatedSurface p-sm shadow-card"
-      testID="budget-summary"
-    >
+    <View className="overflow-hidden rounded-hero bg-nightSurface" testID="budget-summary">
+      <LinearGradient
+        colors={[
+          theme.gradients.weddingNight[0],
+          theme.gradients.weddingNight[1],
+          theme.gradients.weddingNight[2],
+        ]}
+        end={{ x: 1, y: 1 }}
+        pointerEvents="none"
+        start={{ x: 0, y: 0 }}
+        style={{ bottom: 0, left: 0, opacity: 0.94, position: "absolute", right: 0, top: 0 }}
+      />
+      <View className="flex-row items-start gap-sm px-md pb-sm pt-md">
+        <View className="min-w-0 flex-1 gap-2xs">
+          <AppText tone="onNightMuted" variant="caption">
+            Budget position
+          </AppText>
+          <AppText
+            numberOfLines={2}
+            style={{ fontVariant: ["tabular-nums"] }}
+            tone="onNight"
+            variant="heading"
+          >
+            {leadValue}
+          </AppText>
+        </View>
+        <IconButton
+          accessibilityLabel={resolvedActionLabel}
+          icon={ResolvedActionIcon}
+          onPress={onAction}
+          variant="night"
+        />
+      </View>
       <View
-        className="gap-xs"
+        className="gap-xs border-t border-nightBorder bg-nightSoft p-sm"
         style={{
           flexDirection: stacked ? "column" : "row",
         }}
         testID="budget-summary-layout"
       >
-        <View
-          className="min-w-0 flex-1"
-          style={{ flexDirection: stacked ? "column" : "row" }}
-          testID="budget-summary-metrics"
-        >
-          <MoneyMetric
-            accessibilityValue={hasTarget ? formatInr(summary.targetPaise ?? 0) : "Not set"}
-            divider
-            label="Target"
-            stacked={stacked}
-            value={hasTarget ? formatInrCompact(summary.targetPaise ?? 0) : "Not set"}
-          />
-          <MoneyMetric
-            accessibilityValue={formatInr(summary.spentPaise)}
-            divider
-            label="Spent"
-            stacked={stacked}
-            tone="primary"
-            value={formatInrCompact(summary.spentPaise)}
-          />
-          <MoneyMetric
-            accessibilityValue={
-              overBudget
-                ? formatInr(summary.overBudgetPaise)
-                : summary.remainingPaise === undefined
-                  ? "Not available"
-                  : formatInr(summary.remainingPaise)
-            }
-            divider={false}
-            label={remainingLabel}
-            stacked={stacked}
-            tone={overBudget ? "danger" : "primary"}
-            value={remainingValue}
-          />
-        </View>
-        <IconButton
-          accessibilityLabel={hasTarget ? "Edit target" : "Set target"}
-          className={stacked ? "self-end" : "self-center"}
-          icon={hasTarget ? Pencil : Target}
-          onPress={onEditTarget}
-          variant="subtle"
+        <MoneyMetric
+          accessibilityValue={hasTarget ? formatInr(summary.targetPaise ?? 0) : "Not set"}
+          divider
+          label="Target"
+          stacked={stacked}
+          value={hasTarget ? formatInrCompact(summary.targetPaise ?? 0) : "Not set"}
+        />
+        <MoneyMetric
+          accessibilityValue={formatInr(summary.spentPaise)}
+          divider
+          label="Net spent"
+          stacked={stacked}
+          tone="primary"
+          value={formatInrCompact(summary.spentPaise)}
+        />
+        <MoneyMetric
+          accessibilityValue={
+            overBudget
+              ? formatInr(summary.overBudgetPaise)
+              : summary.remainingPaise === undefined
+                ? "Not available"
+                : formatInr(summary.remainingPaise)
+          }
+          divider={false}
+          label={remainingLabel}
+          stacked={stacked}
+          tone={overBudget ? "danger" : "primary"}
+          value={remainingValue}
         />
       </View>
     </View>
@@ -210,6 +234,8 @@ function InsightRow({
   label: string;
   value: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View
       accessible
@@ -217,7 +243,7 @@ function InsightRow({
       className="min-h-20 flex-row items-center gap-sm border-b border-borderSubtle py-sm last:border-b-0"
     >
       <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.md} />
+        <Icon color={theme.colors.primary} size={tokens.iconSize.md} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText tone="muted" variant="caption">
@@ -243,6 +269,7 @@ function AllTimeInsights({
   latestExpense?: Expense;
   peak?: SpendingTrendPoint;
 }) {
+  const expenseCategoryPresentation = useExpenseCategoryPresentation();
   const topCategory = breakdown[0];
   const topPresentation = topCategory
     ? expenseCategoryPresentation[topCategory.iconKey]
@@ -251,7 +278,7 @@ function AllTimeInsights({
   return (
     <View className="gap-md">
       <View className="gap-2xs">
-        <AppText tone="primary" variant="title">
+        <AppText accessibilityRole="header" variant="heading">
           All-time insights
         </AppText>
         <AppText tone="muted" variant="caption">
@@ -290,7 +317,7 @@ function AllTimeInsights({
         <InsightRow
           detail={
             latestExpense
-              ? `${formatInr(latestExpense.actualPaise)} most recently added`
+              ? `${expenseAmountLabel(latestExpense)} most recently added`
               : "Add an expense to start the timeline"
           }
           icon={ReceiptIndianRupee}
@@ -311,12 +338,9 @@ function BudgetTargetEditor({
   onClose: () => void;
   visible: boolean;
 }) {
-  const reduceMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
   const mutation = useWorkspaceMutation();
   const workspace = useWorkspace();
-  const showFeedback = useFeedbackStore((state) => state.show);
-  const submissionInFlight = useRef(false);
   const [value, setValue] = useState(() => fromPaise(currentTarget));
   const [error, setError] = useState<string>();
   const stackActions = isLargeText(fontScale);
@@ -326,8 +350,7 @@ function BudgetTargetEditor({
     setError(undefined);
     onClose();
   };
-  const save = async () => {
-    if (submissionInFlight.current) return;
+  const save = useSingleFlightSubmission(async () => {
     const trimmed = value.trim();
     if (trimmed && !/^\d+(\.\d{1,2})?$/.test(trimmed)) {
       setError("Enter a valid non-negative amount.");
@@ -339,7 +362,6 @@ function BudgetTargetEditor({
     }
     const wedding = workspace.data?.wedding;
     if (!wedding) return;
-    submissionInFlight.current = true;
     setError(undefined);
     try {
       await mutation.mutateAsync((repositories) =>
@@ -350,76 +372,55 @@ function BudgetTargetEditor({
       );
     } catch {
       return;
-    } finally {
-      submissionInFlight.current = false;
     }
-    showFeedback({ message: trimmed ? "Budget target updated" : "Budget target cleared" });
     onClose();
-  };
+  });
 
   return (
-    <Modal
-      animationType={reduceMotion ? "none" : "slide"}
-      onRequestClose={close}
-      transparent
+    <AppBottomSheet
+      closeLabel="Close budget target editor"
+      description="Use the total amount your family wants to stay within."
+      footer={
+        <View
+          className="gap-sm"
+          style={{ flexDirection: stackActions ? "column" : "row" }}
+          testID="budget-target-actions"
+        >
+          <Button
+            className={stackActions ? "w-full" : "flex-1"}
+            label="Cancel"
+            onPress={close}
+            variant="secondary"
+          />
+          <Button
+            className={stackActions ? "w-full" : "flex-1"}
+            label="Save target"
+            loading={mutation.isPending}
+            onPress={() => void save()}
+          />
+        </View>
+      }
+      icon={Target}
+      onClose={close}
+      title="Budget target"
       visible={visible}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 justify-end bg-overlay"
-      >
-        <SafeAreaView
-          accessibilityViewIsModal
-          edges={["bottom"]}
-          className="gap-lg rounded-t-sheet border border-borderSubtle bg-elevatedSurface p-lg shadow-elevated"
-        >
-          <View className="flex-row items-center gap-sm">
-            <View className="min-w-0 flex-1 gap-2xs">
-              <AppText accessibilityRole="header" tone="primary" variant="heading">
-                Budget target
-              </AppText>
-              <AppText tone="muted" variant="caption">
-                Use the total amount your family wants to stay within.
-              </AppText>
-            </View>
-            <IconButton accessibilityLabel="Close budget target editor" icon={X} onPress={close} />
-          </View>
-          <TextField
-            autoFocus
-            error={error}
-            icon={Target}
-            keyboardType="decimal-pad"
-            label="Target amount (₹)"
-            onChangeText={setValue}
-            placeholder="Leave empty to clear"
-            value={value}
-          />
-          {mutation.error ? (
-            <AppText accessibilityRole="alert" tone="danger" variant="caption">
-              {toUserMessage(mutation.error)}
-            </AppText>
-          ) : null}
-          <View
-            className="gap-sm"
-            style={{ flexDirection: stackActions ? "column" : "row" }}
-            testID="budget-target-actions"
-          >
-            <Button
-              className={stackActions ? "w-full" : "flex-1"}
-              label="Cancel"
-              onPress={close}
-              variant="secondary"
-            />
-            <Button
-              className={stackActions ? "w-full" : "flex-1"}
-              label="Save target"
-              loading={mutation.isPending}
-              onPress={() => void save()}
-            />
-          </View>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </Modal>
+      <TextField
+        autoFocus
+        error={error}
+        icon={Target}
+        keyboardType="decimal-pad"
+        label="Target amount (₹)"
+        onChangeText={setValue}
+        placeholder="Empty clears target"
+        value={value}
+      />
+      {mutation.error ? (
+        <AppText accessibilityRole="alert" tone="danger" variant="caption">
+          {toUserMessage(mutation.error)}
+        </AppText>
+      ) : null}
+    </AppBottomSheet>
   );
 }
 
@@ -434,11 +435,11 @@ export const ExpenseCard = memo(function ExpenseCard({
   expense,
   onPress,
 }: ExpenseCardProps) {
-  const presentation = expenseCategoryPresentation[category?.iconKey ?? "other"];
+  const theme = useAppTheme();
   const amountRecorded = expense.actualPaise > 0;
   const { fontScale } = useWindowDimensions();
   const stacked = isLargeText(fontScale);
-  const amountLabel = amountRecorded ? formatInr(expense.actualPaise) : "Amount not recorded";
+  const amountLabel = amountRecorded ? expenseAmountLabel(expense) : "Amount not recorded";
   const categoryLabel = category?.name ?? "Other";
   const dateLabel = expense.date
     ? `Expense date ${formatDateOnly(expense.date)}`
@@ -451,83 +452,58 @@ export const ExpenseCard = memo(function ExpenseCard({
       accessibilityHint={amountRecorded ? "Opens expense details" : "Opens amount editing"}
       accessibilityLabel={`${actionLabel}: ${expense.title}. ${amountLabel}. ${categoryLabel}. ${dateLabel}. ${attachmentLabel}.`}
       accessibilityRole="button"
-      android_ripple={{ color: tokens.colors.surfaceMuted }}
-      className="overflow-hidden rounded-card bg-elevatedSurface shadow-card active:opacity-90"
+      android_ripple={{ color: theme.colors.surfaceMuted }}
+      className="min-h-16 overflow-hidden rounded-control border border-borderSubtle bg-elevatedSurface active:bg-surfaceMuted"
       onPress={onPress}
       pressedScale={0.99}
     >
-      <View className="gap-sm p-md">
-        <View className="flex-row items-start gap-sm">
-          <ExpenseCategoryIcon iconKey={category?.iconKey ?? "other"} />
+      <View className="flex-row items-center gap-sm px-sm py-xs">
+        <ExpenseCategoryIcon iconKey={category?.iconKey ?? "other"} size="sm" />
+        <View
+          className="min-w-0 flex-1 gap-xs"
+          style={{ flexDirection: stacked ? "column" : "row" }}
+          testID={`expense-card-heading-${expense.id}`}
+        >
           <View className="min-w-0 flex-1 gap-2xs">
-            <View
-              className="self-start rounded-control px-xs py-2xs"
-              style={{ backgroundColor: presentation.softColor }}
-            >
-              <AppText style={{ color: presentation.color }} variant="caption">
-                {categoryLabel}
-              </AppText>
-            </View>
-            <AppText numberOfLines={2} variant="heading">
+            <AppText numberOfLines={2} variant="label">
               {expense.title}
             </AppText>
-          </View>
-          <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-        </View>
-        <View className="border-t border-dashed border-borderStrong pt-sm">
-          <View
-            className="gap-2xs"
-            style={{
-              alignItems: stacked ? "stretch" : "center",
-              flexDirection: stacked ? "column" : "row",
-            }}
-            testID={`expense-card-heading-${expense.id}`}
-          >
-            <View className="min-w-0 flex-1 flex-row flex-wrap items-center gap-xs">
-              {expense.date ? (
-                <AppText tone="muted" variant="caption">
-                  {formatDateOnly(expense.date)}
-                </AppText>
-              ) : (
-                <AppText tone="muted" variant="caption">
-                  Date not recorded
-                </AppText>
-              )}
-              {expense.receipt ? (
-                <View className="rounded-control bg-surfaceMuted px-xs py-2xs">
-                  <AppText tone="muted" variant="caption">
-                    Receipt attached
-                  </AppText>
-                </View>
-              ) : null}
-            </View>
-            <AppText
-              className={stacked ? "self-start" : "shrink-0 text-right"}
-              style={{ fontVariant: ["tabular-nums"] }}
-              tone={amountRecorded ? "primary" : "warning"}
-              variant="title"
-            >
-              {amountLabel}
+            <AppText numberOfLines={1} tone="muted" variant="metadata">
+              {categoryLabel}
+              {expense.receipt ? " · Receipt" : ""}
             </AppText>
           </View>
+          <AppText
+            className={stacked ? "self-start" : "shrink-0 text-right"}
+            numberOfLines={stacked ? undefined : 1}
+            style={{ fontVariant: ["tabular-nums"] }}
+            tone={
+              amountRecorded ? (expense.direction === "refund" ? "success" : "danger") : "warning"
+            }
+            variant="heading"
+          >
+            {amountLabel}
+          </AppText>
         </View>
+        <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
       </View>
     </MotionPressable>
   );
 });
 
 function CategoryBreakdown({ items }: { items: CategorySpending[] }) {
+  const expenseCategoryPresentation = useExpenseCategoryPresentation();
   const { fontScale } = useWindowDimensions();
   const stacked = isLargeText(fontScale);
 
   return (
     <View className="gap-md">
       <View className="gap-2xs">
-        <AppText accessibilityRole="header" tone="primary" variant="title">
+        <AppText accessibilityRole="header" variant="heading">
           Where money went
         </AppText>
         <AppText tone="muted" variant="caption">
-          Categories ranked by actual recorded spending
+          Spending before refunds, by category
         </AppText>
       </View>
       {items.length ? (
@@ -590,7 +566,7 @@ export function BudgetOverviewDashboard() {
   const workspace = useWorkspace();
   const [targetEditorOpen, setTargetEditorOpen] = useState(false);
   const [trendRange, setTrendRange] = useState<SpendingTrendRange>("30d");
-  const [today] = useState(() => todayDateOnly());
+  const today = useTodayDateOnly();
 
   const data = workspace.data;
   const recentExpenses = useMemo(
@@ -654,28 +630,20 @@ export function BudgetOverviewDashboard() {
         contentContainerClassName="gap-xl p-md pb-2xl"
         showsVerticalScrollIndicator={false}
       >
-        <MangalyaHeader />
         <DetailHeader fallback="/budget" title="Budget & expenses" />
-        <BudgetPosition
-          onEditTarget={() => setTargetEditorOpen(true)}
-          summary={analytics.summary}
-        />
+        <BudgetPosition onAction={() => setTargetEditorOpen(true)} summary={analytics.summary} />
         <View className="gap-md">
           <View className="gap-2xs">
-            <AppText accessibilityRole="header" tone="primary" variant="title">
+            <AppText accessibilityRole="header" variant="heading">
               Spending trend
             </AppText>
             <AppText tone="muted" variant="caption">
-              See how recorded spending changed over time
+              Spending before refunds over time
             </AppText>
           </View>
           <SegmentedControl
             accessibilityLabel="Spending range"
-            onChange={(value) => {
-              if (value === trendRange) return;
-              setTrendRange(value);
-              void Haptics.selectionAsync();
-            }}
+            onChange={setTrendRange}
             options={trendRangeOptions}
             value={trendRange}
           />
@@ -708,20 +676,47 @@ export function BudgetOverviewDashboard() {
 }
 
 export function ExpensesDashboard() {
+  const insets = useSafeAreaInsets();
+  const isScreenFocused = useIsFocused();
   const workspace = useWorkspace();
   const { fontScale } = useWindowDimensions();
+  const largeText = isLargeText(fontScale);
   const data = workspace.data;
   const categoriesById = useMemo(
     () => new Map((data?.categories ?? []).map((category) => [category.id, category])),
     [data?.categories],
   );
-  const recentExpenses = useMemo(
-    () => selectRecentExpenses(data?.expenses ?? []),
+  const expenseGroups = useMemo(
+    () => selectExpenseDateGroups(data?.expenses ?? []),
     [data?.expenses],
   );
-  const stackedHeader = isLargeText(fontScale);
+  const recentExpenses = useMemo(
+    () => expenseGroups.flatMap((group) => group.expenses),
+    [expenseGroups],
+  );
+  const expenseListEntries = useMemo(
+    () =>
+      expenseGroups.flatMap((group) => [
+        {
+          count: group.expenses.length,
+          date: group.date,
+          key: `date-${group.date ?? "undated"}`,
+          type: "date" as const,
+        },
+        ...group.expenses.map((expense, index) => ({
+          expense,
+          key: expense.id,
+          lastInGroup: index === group.expenses.length - 1,
+          type: "expense" as const,
+        })),
+      ]),
+    [expenseGroups],
+  );
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
+  const budgetSummary = useMemo(() => (data ? homeBudgetSummary(data) : undefined), [data]);
 
-  if (workspace.isLoading || !data) {
+  if (workspace.isLoading || !data || !budgetSummary) {
     if (workspace.isError) {
       return (
         <Screen className="justify-center p-md">
@@ -742,29 +737,23 @@ export function ExpensesDashboard() {
 
   const header = (
     <View className="gap-lg pb-md">
-      <MangalyaHeader />
+      <PageHeader heartAccent title="Money" />
+      <BudgetPosition
+        actionIcon={ChartNoAxesCombined}
+        actionLabel="Open budget overview"
+        onAction={() => router.navigate("/budget/overview")}
+        summary={budgetSummary}
+      />
       <View
-        className="gap-sm"
+        className="gap-xs"
         style={{
-          alignItems: stackedHeader ? "stretch" : "center",
-          flexDirection: stackedHeader ? "column" : "row",
+          alignItems: largeText ? "flex-start" : "center",
+          flexDirection: largeText ? "column" : "row",
+          justifyContent: "space-between",
         }}
+        testID="money-recent-heading-layout"
       >
-        <View className="min-w-0 flex-1 gap-2xs">
-          <AppText accessibilityRole="header" tone="primary" variant="display">
-            Money
-          </AppText>
-        </View>
-        <Button
-          className={stackedHeader ? "self-start" : ""}
-          icon={ChartNoAxesCombined}
-          label="Budget overview"
-          onPress={() => router.navigate("/budget/overview")}
-          variant="ghost"
-        />
-      </View>
-      <View className="flex-row items-center justify-between gap-sm">
-        <AppText accessibilityRole="header" tone="primary" variant="title">
+        <AppText accessibilityRole="header" variant="heading">
           Recent expenses
         </AppText>
         <AppText
@@ -784,35 +773,65 @@ export function ExpensesDashboard() {
   return (
     <Screen>
       <FlashList
+        testID="money-expense-list"
         contentContainerStyle={{
-          paddingBottom: listFooterClearance,
+          paddingBottom: listBottomPadding,
           paddingHorizontal: contentPadding,
           paddingTop: contentPadding,
         }}
-        data={recentExpenses}
-        ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
-        keyExtractor={(expense) => expense.id}
+        data={expenseListEntries}
+        extraData={`${isScreenFocused}-${createdHighlight?.nonce ?? 0}`}
+        getItemType={(item) => item.type}
+        keyExtractor={(item) => item.key}
         ListEmptyComponent={<EmptyState title="No expenses yet" />}
         ListHeaderComponent={header}
-        renderItem={({ item }) => (
-          <ExpenseCard
-            category={categoriesById.get(item.categoryId)}
-            expense={item}
-            onPress={() =>
-              item.actualPaise > 0
-                ? router.navigate(`/expenses/${item.id}`)
-                : router.navigate({ pathname: "/expenses/edit", params: { id: item.id } })
-            }
-          />
-        )}
+        renderItem={({ item }) =>
+          item.type === "date" ? (
+            <View className="flex-row items-center justify-between gap-sm px-2xs pb-xs pt-sm">
+              <AppText accessibilityRole="header" variant="label">
+                {item.date ? formatDateOnly(item.date) : "Date not recorded"}
+              </AppText>
+              <AppText tone="muted" variant="metadata">
+                {item.count} {item.count === 1 ? "expense" : "expenses"}
+              </AppText>
+            </View>
+          ) : (
+            <View style={{ paddingBottom: item.lastInGroup ? itemGap : 4 }}>
+              <CreatedItemPulse
+                active={Boolean(
+                  isScreenFocused &&
+                  createdHighlight?.kind === "expense" &&
+                  createdHighlight.ids.includes(item.expense.id),
+                )}
+                onFinished={() => {
+                  if (createdHighlight) clearCreatedHighlight(createdHighlight.nonce);
+                }}
+              >
+                <ExpenseCard
+                  category={categoriesById.get(item.expense.categoryId)}
+                  expense={item.expense}
+                  onPress={() =>
+                    item.expense.actualPaise > 0
+                      ? router.navigate(`/expenses/${item.expense.id}`)
+                      : router.navigate({
+                          pathname: "/expenses/edit",
+                          params: { id: item.expense.id },
+                        })
+                  }
+                />
+              </CreatedItemPulse>
+            </View>
+          )
+        }
         showsVerticalScrollIndicator={false}
       />
-      <View
-        className="border-t border-borderSubtle bg-elevatedSurface p-md shadow-floating"
-        testID="money-action-footer"
-      >
-        <Button icon={Plus} label="Add expense" onPress={() => router.navigate("/expenses/new")} />
-      </View>
+      <FloatingActionButton
+        accessibilityHint="Opens the expense form"
+        accessibilityLabel="Add expense"
+        bottomInset={insets.bottom + fabInset}
+        onPress={() => router.navigate("/expenses/new")}
+        testID="money-add-expense-fab"
+      />
     </Screen>
   );
 }

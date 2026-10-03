@@ -1,6 +1,10 @@
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
-import { ArrowDownUp, Gift, IndianRupee, Plus, Users } from "lucide-react-native";
+import ArrowDownUp from "lucide-react-native/icons/arrow-down-up";
+import Gift from "lucide-react-native/icons/gift";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import Plus from "lucide-react-native/icons/plus";
+import Users from "lucide-react-native/icons/users";
 import { useMemo, useState } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
 
@@ -8,6 +12,7 @@ import {
   AppText,
   Button,
   Card,
+  CreatedItemPulse,
   EmptyState,
   ErrorState,
   FilterSheet,
@@ -19,9 +24,10 @@ import {
 import { toUserMessage } from "@/lib/errors";
 import { formatInr, formatInrCompact } from "@/lib/money";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import { useWorkspace } from "../provider";
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import type { GiftRecord } from "../types";
 import { MoreScreenHeader } from "../more/MoreScreenHeader";
 
@@ -42,20 +48,22 @@ function Metric({
   stacked: boolean;
   value: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View
       accessible
       accessibilityLabel={`${label}: ${accessibilityValue}`}
       className={`min-w-0 ${
         stacked
-          ? `min-h-12 flex-row items-center justify-between gap-sm py-xs ${
+          ? `min-h-4xl flex-row items-center justify-between gap-sm py-xs ${
               divider ? "border-b border-borderSubtle" : ""
             }`
           : `flex-1 items-center gap-2xs px-xs ${divider ? "border-r border-borderSubtle" : ""}`
       }`}
     >
       <View className="flex-row items-center gap-2xs">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.sm} />
+        <Icon color={theme.colors.primary} size={tokens.iconSize.sm} />
         <AppText tone="muted" variant="caption">
           {label}
         </AppText>
@@ -75,6 +83,8 @@ function Metric({
 }
 
 function GiftCard({ gift }: { gift: GiftRecord }) {
+  const theme = useAppTheme();
+
   return (
     <Pressable
       accessibilityLabel={`Edit gift from ${gift.personName}`}
@@ -83,7 +93,7 @@ function GiftCard({ gift }: { gift: GiftRecord }) {
       onPress={() => router.navigate({ pathname: "/more/gifts/edit", params: { id: gift.id } })}
     >
       <View className="h-12 w-12 items-center justify-center rounded-control bg-elevatedSurface">
-        <Gift color={tokens.colors.accent} size={tokens.iconSize.md} />
+        <Gift color={theme.colors.accent} size={tokens.iconSize.md} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText numberOfLines={2} variant="heading">
@@ -108,6 +118,8 @@ function GiftCard({ gift }: { gift: GiftRecord }) {
 
 export function GiftsDashboard() {
   const workspace = useWorkspace();
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
   const { fontScale } = useWindowDimensions();
   const [sort, setSort] = useState<GiftSort>("recent");
   const [sortOpen, setSortOpen] = useState(false);
@@ -196,7 +208,18 @@ export function GiftsDashboard() {
           />
         }
         ListHeaderComponent={header}
-        renderItem={({ item }) => <GiftCard gift={item} />}
+        renderItem={({ item }) => (
+          <CreatedItemPulse
+            active={Boolean(
+              createdHighlight?.kind === "gift" && createdHighlight.ids.includes(item.id),
+            )}
+            onFinished={() => {
+              if (createdHighlight) clearCreatedHighlight(createdHighlight.nonce);
+            }}
+          >
+            <GiftCard gift={item} />
+          </CreatedItemPulse>
+        )}
         showsVerticalScrollIndicator={false}
       />
       {gifts.length ? (

@@ -1,34 +1,25 @@
 import { Pressable, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { memo } from "react";
-import {
-  CalendarHeart,
-  Diamond,
-  Flame,
-  Flower2,
-  Hand,
-  HeartHandshake,
-  House,
-  Music2,
-  Pencil,
-} from "lucide-react-native";
+import CalendarHeart from "lucide-react-native/icons/calendar-heart";
+import Diamond from "lucide-react-native/icons/diamond";
+import Flame from "lucide-react-native/icons/flame";
+import Flower2 from "lucide-react-native/icons/flower-2";
+import Hand from "lucide-react-native/icons/hand";
+import HeartHandshake from "lucide-react-native/icons/heart-handshake";
+import House from "lucide-react-native/icons/house";
+import Music2 from "lucide-react-native/icons/music-2";
+import Pencil from "lucide-react-native/icons/pencil";
 
-import { AppText, EmptyState, IconButton } from "@/components/ui";
-import { tokens } from "@/theme";
+import { AppText, CreatedItemPulse, EmptyState, IconButton } from "@/components/ui";
+import { tokens, useAppTheme } from "@/theme";
 
 import type { EventIconKey, WeddingEvent } from "../types";
-import { PlanHeader, type PlanView } from "./PlanShared";
+import type { CreatedItemHighlight } from "../created-item-highlight";
 
 const contentPadding = Number.parseInt(tokens.spacing.md, 10);
 const itemGap = Number.parseInt(tokens.spacing.sm, 10);
 const listFooterClearance = tokens.touchTarget + Number.parseInt(tokens.spacing["2xl"], 10) * 2;
-
-const eventColorByKey = {
-  botanical: { color: tokens.colors.primary, soft: tokens.colors.primarySoft },
-  gold: { color: tokens.colors.warning, soft: tokens.colors.accentSoft },
-  terracotta: { color: tokens.colors.danger, soft: tokens.colors.dangerSoft },
-  sage: { color: tokens.colors.success, soft: tokens.colors.successSoft },
-} as const;
 
 function iconKeyForEvent(event: WeddingEvent): EventIconKey {
   if (event.iconKey) return event.iconKey;
@@ -98,6 +89,13 @@ export const EventTimelineCard = memo(function EventTimelineCard({
   onPress,
   progress,
 }: EventTimelineCardProps) {
+  const theme = useAppTheme();
+  const eventColorByKey = {
+    botanical: { color: theme.colors.primary, soft: theme.colors.primarySoft },
+    gold: { color: theme.colors.warning, soft: theme.colors.accentSoft },
+    terracotta: { color: theme.colors.danger, soft: theme.colors.dangerSoft },
+    sage: { color: theme.colors.success, soft: theme.colors.successSoft },
+  } as const;
   const eventColor = eventColorByKey[event.colorToken ?? "gold"];
   const date = eventDateParts(event.date);
   const progressLabel = progress.total
@@ -117,17 +115,17 @@ export const EventTimelineCard = memo(function EventTimelineCard({
         />
       </View>
       <View
-        className={`ml-2xs flex-1 overflow-hidden rounded-card border bg-elevatedSurface shadow-card ${
+        className={`ml-2xs flex-1 overflow-hidden rounded-card border bg-elevatedSurface ${
           highlighted ? "border-primary" : "border-borderSubtle"
         }`}
       >
-        <View className="flex-row items-center gap-xs p-xs">
+        <View className="flex-row items-center gap-sm p-md">
           <View
             className="h-10 w-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: highlighted ? tokens.colors.primarySoft : eventColor.soft }}
+            style={{ backgroundColor: highlighted ? theme.colors.primarySoft : eventColor.soft }}
           >
             <EventIcon
-              color={highlighted ? tokens.colors.primary : eventColor.color}
+              color={highlighted ? theme.colors.primary : eventColor.color}
               event={event}
             />
           </View>
@@ -135,29 +133,23 @@ export const EventTimelineCard = memo(function EventTimelineCard({
             accessibilityHint={`${date.weekday}, ${date.spokenDate}. ${statusLabel}`}
             accessibilityLabel={`Open event: ${event.name}`}
             accessibilityRole="button"
-            android_ripple={{ color: tokens.colors.surfaceMuted }}
-            className="min-h-14 min-w-0 flex-1 flex-row items-center gap-xs rounded-control active:bg-surfaceMuted"
+            android_ripple={{ color: theme.colors.surfaceMuted }}
+            className="min-h-14 min-w-0 flex-1 rounded-control active:bg-surfaceMuted"
             onPress={onPress}
           >
-            <View className="w-14 items-center rounded-control bg-surfaceMuted px-2xs py-xs">
-              <AppText tone="primary" variant="caption">
-                {date.weekday}
-              </AppText>
-              <AppText tone="primary" variant="title">
-                {date.day}
-              </AppText>
-              <AppText numberOfLines={1} variant="caption">
-                {date.month}
-              </AppText>
-            </View>
-            <View className="min-w-0 flex-1 gap-xs py-xs">
+            <View className="min-w-0 flex-1 gap-xs py-2xs">
               <AppText numberOfLines={2} tone="primary" variant="heading">
                 {event.name}
               </AppText>
-              <View className="max-w-full self-start rounded-control bg-primarySoft px-xs py-2xs">
-                <AppText tone={highlighted ? "primary" : "muted"} variant="caption">
-                  {statusLabel}
+              <View className="flex-row flex-wrap items-center gap-xs">
+                <AppText tone="muted" variant="caption">
+                  {date.weekday}, {date.day} {date.month}
                 </AppText>
+                <View className="max-w-full rounded-control bg-primarySoft px-xs py-2xs">
+                  <AppText tone={highlighted ? "primary" : "muted"} variant="caption">
+                    {statusLabel}
+                  </AppText>
+                </View>
               </View>
             </View>
           </Pressable>
@@ -177,21 +169,22 @@ export function PlanEventView({
   events,
   onEdit,
   onEventPress,
-  onViewChange,
   progressForEvent,
   weddingDate,
+  createdHighlight,
+  onCreatedHighlightFinished,
 }: {
   events: WeddingEvent[];
   onEdit: (event: WeddingEvent) => void;
   onEventPress: (event: WeddingEvent) => void;
-  onViewChange: (view: PlanView) => void;
   progressForEvent: (id: string) => { completed: number; total: number };
   weddingDate: string;
+  createdHighlight?: CreatedItemHighlight;
+  onCreatedHighlightFinished: (nonce: number) => void;
 }) {
   const header = (
-    <View className="gap-lg pb-md">
-      <PlanHeader activeView="events" onViewChange={onViewChange} />
-      <AppText tone="primary" variant="title">
+    <View className="gap-md pb-md">
+      <AppText accessibilityRole="header" variant="heading">
         Your wedding events
       </AppText>
     </View>
@@ -205,20 +198,28 @@ export function PlanEventView({
         paddingTop: contentPadding,
       }}
       data={events}
+      extraData={createdHighlight?.nonce}
       ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
       keyExtractor={(event) => event.id}
       ListEmptyComponent={<EmptyState title="No events yet" />}
       ListHeaderComponent={header}
       renderItem={({ index, item }) => (
-        <EventTimelineCard
-          event={item}
-          highlighted={item.date === weddingDate}
-          isFirst={index === 0}
-          isLast={index === events.length - 1}
-          onEdit={() => onEdit(item)}
-          onPress={() => onEventPress(item)}
-          progress={progressForEvent(item.id)}
-        />
+        <CreatedItemPulse
+          active={Boolean(createdHighlight?.ids.includes(item.id))}
+          onFinished={() => {
+            if (createdHighlight) onCreatedHighlightFinished(createdHighlight.nonce);
+          }}
+        >
+          <EventTimelineCard
+            event={item}
+            highlighted={item.date === weddingDate}
+            isFirst={index === 0}
+            isLast={index === events.length - 1}
+            onEdit={() => onEdit(item)}
+            onPress={() => onEventPress(item)}
+            progress={progressForEvent(item.id)}
+          />
+        </CreatedItemPulse>
       )}
       showsVerticalScrollIndicator={false}
     />

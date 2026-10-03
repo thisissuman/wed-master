@@ -7,6 +7,6 @@ appId: com.suman.mangalya.development
 - stopApp
 - openLink: "exp+mangalya://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
 - extendedWaitUntil:
-    visible: "Asha and Dev"
+    visible: "Asha & Dev"
     timeout: 30000
 - assertVisible: "Home"

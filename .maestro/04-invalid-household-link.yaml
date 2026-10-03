@@ -4,6 +4,9 @@ appId: com.suman.mangalya.development
     file: subflows/open-development-app.yaml
 - runFlow:
     file: subflows/create-workspace.yaml
+- tapOn: "More"
+- tapOn: "Open Guests"
+- assertVisible: "Guests and households"
 - openLink: "mangalya-development://more/guests/missing-household"
 - assertVisible: "Household not found"
 - tapOn: "Go back"

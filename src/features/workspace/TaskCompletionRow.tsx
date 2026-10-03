@@ -1,22 +1,20 @@
 import { memo, useEffect, useRef } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
-import {
-  Camera,
-  Car,
-  Check,
-  ChevronRight,
-  Gift,
-  Landmark,
-  ListChecks,
-  Mail,
-  UtensilsCrossed,
-} from "lucide-react-native";
+import Camera from "lucide-react-native/icons/camera";
+import Car from "lucide-react-native/icons/car";
+import Check from "lucide-react-native/icons/check";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import Gift from "lucide-react-native/icons/gift";
+import Landmark from "lucide-react-native/icons/landmark";
+import ListChecks from "lucide-react-native/icons/list-checks";
+import Mail from "lucide-react-native/icons/mail";
+import UtensilsCrossed from "lucide-react-native/icons/utensils-crossed";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
-import { AppText, StatusBadge } from "@/components/ui";
+import { AppText, MotionPressable, OverflowMarqueeText, StatusBadge } from "@/components/ui";
 import { formatDateOnly, formatShortDateOnly } from "@/lib/dates";
 import { isLargeText } from "@/lib/responsive";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 import {
   exitTransition,
   motionTiming,
@@ -27,20 +25,13 @@ import {
 import { isOverdue } from "./selectors";
 import type { Task } from "./types";
 
-const compactRowHeight = 84;
+const compactRowHeight = tokens.touchTarget + Number.parseInt(tokens.spacing.xs, 10);
 const detailedRowHeight = 88;
 const spacing2xs = Number.parseInt(tokens.spacing["2xs"], 10);
 const spacingXs = Number.parseInt(tokens.spacing.xs, 10);
 const spacingSm = Number.parseInt(tokens.spacing.sm, 10);
 
 const styles = StyleSheet.create({
-  accentRail: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    top: 0,
-    width: spacing2xs,
-  },
   badgeContainer: {
     alignItems: "center",
     flexShrink: 0,
@@ -87,6 +78,10 @@ const styles = StyleSheet.create({
     paddingRight: spacingXs,
     paddingTop: spacingSm,
   },
+  detailAreaCompact: {
+    paddingBottom: spacing2xs,
+    paddingTop: spacing2xs,
+  },
   detailAreaLargeText: {
     alignItems: "stretch",
     flexDirection: "column",
@@ -101,6 +96,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: tokens.touchTarget,
   },
+  mainButton: {
+    alignItems: "stretch",
+    alignSelf: "stretch",
+    flex: 1,
+    flexDirection: "row",
+    minWidth: 0,
+    overflow: "hidden",
+  },
   metadata: {
     alignItems: "center",
     columnGap: spacing2xs,
@@ -108,27 +111,29 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     rowGap: spacing2xs,
   },
+  metadataCompact: {
+    flexWrap: "nowrap",
+    overflow: "hidden",
+  },
+  eventMetadataItem: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   metadataItem: {
     alignItems: "center",
     columnGap: spacing2xs,
     flexDirection: "row",
   },
-  openButton: {
+  trailing: {
     alignItems: "center",
     alignSelf: "center",
     flexDirection: "row",
     flexShrink: 0,
-    minHeight: tokens.touchTarget,
   },
-  openButtonLargeText: {
+  trailingLargeText: {
     alignSelf: "stretch",
     justifyContent: "space-between",
     paddingTop: spacingXs,
-  },
-  titleButton: {
-    alignSelf: "stretch",
-    minWidth: 0,
-    paddingRight: spacingXs,
   },
 });
 
@@ -161,9 +166,10 @@ const visibleTaskDueLabel = (task: Task, today: string, overdue: boolean) => {
 };
 
 function TaskCategoryIcon({ task }: { task: Task }) {
+  const theme = useAppTheme();
   const context = `${task.category ?? ""} ${task.title}`.toLowerCase();
   const iconProps = {
-    color: tokens.colors.primary,
+    color: theme.colors.primary,
     size: tokens.iconSize.md,
     strokeWidth: 1.8,
   };
@@ -196,6 +202,7 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
   today,
   variant = "detailed",
 }: TaskCompletionRowProps) {
+  const theme = useAppTheme();
   const { fontScale } = useWindowDimensions();
   const completed = task.status === "Completed";
   const overdue = !completed && task.status !== "Cancelled" && isOverdue(task.dueDate, today);
@@ -246,28 +253,21 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
     <Animated.View
       entering={variant === "compact" ? stateEnteringTransition : undefined}
       exiting={variant === "compact" ? exitTransition : undefined}
-      layout={stateLayoutTransition}
+      layout={variant === "compact" ? stateLayoutTransition : undefined}
     >
       <View
-        className={`relative flex-row items-stretch overflow-hidden rounded-card border shadow-card ${
+        className={`relative flex-row items-stretch overflow-hidden rounded-card border ${
           variant === "compact"
-            ? "border-translucentBorder bg-translucentSurface"
+            ? "border-transparent bg-surfaceMuted"
             : "border-borderSubtle bg-elevatedSurface"
         }`}
         style={styles.card}
       >
-        <View
-          accessibilityElementsHidden
-          className="bg-primary"
-          importantForAccessibility="no-hide-descendants"
-          pointerEvents="none"
-          style={styles.accentRail}
-        />
         <Pressable
           accessibilityLabel={`${completed ? "Reopen" : "Mark complete"}: ${task.title}`}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: completed, disabled }}
-          android_ripple={{ color: tokens.colors.primarySoft }}
+          android_ripple={{ color: theme.colors.primarySoft }}
           disabled={disabled}
           onPress={onToggle}
           style={[
@@ -283,95 +283,106 @@ export const TaskCompletionRow = memo(function TaskCompletionRow({
               </View>
             </Animated.View>
             <Animated.View style={[{ position: "absolute" }, completedIconStyle]}>
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary shadow-card">
-                <Check
-                  color={tokens.colors.onPrimary}
-                  size={tokens.iconSize.sm}
-                  strokeWidth={2.4}
-                />
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
+                <Check color={theme.colors.onPrimary} size={tokens.iconSize.sm} strokeWidth={2.4} />
               </View>
             </Animated.View>
           </View>
         </Pressable>
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          pointerEvents="none"
-          style={styles.iconColumn}
+        <MotionPressable
+          accessibilityHint={accessibilityHint}
+          accessibilityLabel={`Open task: ${task.title}`}
+          accessibilityRole="button"
+          android_ripple={{ color: theme.colors.primarySoft }}
+          onPress={onPress}
+          pressedScale={0.995}
+          style={[styles.mainButton, { minHeight: rowMinHeight }]}
+          testID={`task-open-button-${task.id}`}
         >
-          <View className="h-12 w-12 items-center justify-center rounded-control border border-translucentBorder bg-primarySoft shadow-card">
-            <TaskCategoryIcon task={task} />
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            pointerEvents="none"
+            style={styles.iconColumn}
+          >
+            <View
+              className={`${variant === "compact" ? "h-10 w-10" : "h-12 w-12"} items-center justify-center rounded-control bg-primarySoft`}
+            >
+              <TaskCategoryIcon task={task} />
+            </View>
           </View>
-        </View>
-        <View
-          style={[
-            styles.detailArea,
-            { minHeight: rowMinHeight },
-            largeText ? styles.detailAreaLargeText : undefined,
-          ]}
-          testID="task-detail-area"
-        >
-          <View style={styles.contentColumn}>
-            <Animated.View style={[styles.content, contentStyle]}>
-              <Pressable
-                accessible={false}
-                onPress={onPress}
-                style={styles.titleButton}
-                testID={`task-title-button-${task.id}`}
-              >
-                <AppText
-                  accessible={false}
-                  numberOfLines={2}
-                  style={completed ? { textDecorationLine: "line-through" } : undefined}
-                  variant="label"
+          <View
+            style={[
+              styles.detailArea,
+              variant === "compact" ? styles.detailAreaCompact : undefined,
+              { minHeight: rowMinHeight },
+              largeText ? styles.detailAreaLargeText : undefined,
+            ]}
+            testID="task-detail-area"
+          >
+            <View style={styles.contentColumn}>
+              <Animated.View style={[styles.content, contentStyle]}>
+                {variant === "compact" ? (
+                  <OverflowMarqueeText
+                    accessible={false}
+                    fadeColor={theme.colors.surfaceMuted}
+                    style={completed ? { textDecorationLine: "line-through" } : undefined}
+                    text={task.title}
+                    variant="label"
+                  />
+                ) : (
+                  <AppText
+                    accessible={false}
+                    numberOfLines={2}
+                    style={completed ? { textDecorationLine: "line-through" } : undefined}
+                    variant="label"
+                  >
+                    {task.title}
+                  </AppText>
+                )}
+                <View
+                  style={[
+                    styles.metadata,
+                    variant === "compact" ? styles.metadataCompact : undefined,
+                  ]}
                 >
-                  {task.title}
-                </AppText>
-              </Pressable>
-              <View style={styles.metadata}>
-                {eventName ? (
-                  <View style={styles.metadataItem}>
-                    <View className="h-2xs w-2xs rounded-full bg-borderStrong" />
-                    <AppText tone="muted" variant="caption">
-                      {eventName}
-                    </AppText>
-                  </View>
-                ) : null}
-                {eventName ? (
-                  <View style={styles.metadataItem}>
-                    <View className="h-2xs w-2xs rounded-full bg-borderStrong" />
+                  {eventName ? (
+                    <View style={[styles.metadataItem, styles.eventMetadataItem]}>
+                      <View className="h-2xs w-2xs rounded-full bg-borderStrong" />
+                      <AppText numberOfLines={1} tone="muted" variant="caption">
+                        {eventName}
+                      </AppText>
+                    </View>
+                  ) : null}
+                  {eventName ? (
+                    <View style={styles.metadataItem}>
+                      <View className="h-2xs w-2xs rounded-full bg-borderStrong" />
+                      <AppText tone={overdue ? "danger" : "primary"} variant="caption">
+                        {visibleDueLabel}
+                      </AppText>
+                    </View>
+                  ) : (
                     <AppText tone={overdue ? "danger" : "primary"} variant="caption">
                       {visibleDueLabel}
                     </AppText>
-                  </View>
-                ) : (
-                  <AppText tone={overdue ? "danger" : "primary"} variant="caption">
-                    {visibleDueLabel}
-                  </AppText>
-                )}
+                  )}
+                </View>
+              </Animated.View>
+            </View>
+            <View style={[styles.trailing, largeText ? styles.trailingLargeText : undefined]}>
+              <View style={styles.badgeContainer}>
+                <StatusBadge label={visibleBadge.label} tone={visibleBadge.tone} />
               </View>
-            </Animated.View>
+              <View style={styles.chevronContainer}>
+                <ChevronRight
+                  color={theme.colors.secondary}
+                  size={tokens.iconSize.sm}
+                  strokeWidth={1.9}
+                />
+              </View>
+            </View>
           </View>
-          <Pressable
-            accessibilityHint={accessibilityHint}
-            accessibilityLabel={`Open task: ${task.title}`}
-            accessibilityRole="button"
-            android_ripple={{ color: tokens.colors.primarySoft }}
-            onPress={onPress}
-            style={[styles.openButton, largeText ? styles.openButtonLargeText : undefined]}
-          >
-            <View style={styles.badgeContainer}>
-              <StatusBadge label={visibleBadge.label} tone={visibleBadge.tone} />
-            </View>
-            <View style={styles.chevronContainer}>
-              <ChevronRight
-                color={tokens.colors.secondary}
-                size={tokens.iconSize.sm}
-                strokeWidth={1.9}
-              />
-            </View>
-          </Pressable>
-        </View>
+        </MotionPressable>
       </View>
     </Animated.View>
   );

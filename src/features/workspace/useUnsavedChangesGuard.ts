@@ -5,35 +5,45 @@ import { Alert } from "react-native";
 type UnsavedChangesGuardOptions = {
   isDirty: boolean;
   isSubmitting: boolean;
+  onDiscard?: () => Promise<unknown> | void;
 };
 
-export function useUnsavedChangesGuard({ isDirty, isSubmitting }: UnsavedChangesGuardOptions) {
+export function useUnsavedChangesGuard({
+  isDirty,
+  isSubmitting,
+  onDiscard,
+}: UnsavedChangesGuardOptions) {
   const navigation = useNavigation();
   const allowNextNavigation = useRef(false);
   const promptOpen = useRef(false);
 
-  const confirmDiscard = useCallback((proceed: () => void) => {
-    if (promptOpen.current) return;
-    promptOpen.current = true;
-    Alert.alert("Discard unsaved changes?", "Your changes on this form have not been saved.", [
-      {
-        text: "Keep editing",
-        style: "cancel",
-        onPress: () => {
-          promptOpen.current = false;
+  const confirmDiscard = useCallback(
+    (proceed: () => void) => {
+      if (promptOpen.current) return;
+      promptOpen.current = true;
+      Alert.alert("Discard unsaved changes?", "Your changes on this form have not been saved.", [
+        {
+          text: "Keep editing",
+          style: "cancel",
+          onPress: () => {
+            promptOpen.current = false;
+          },
         },
-      },
-      {
-        text: "Discard",
-        style: "destructive",
-        onPress: () => {
-          promptOpen.current = false;
-          allowNextNavigation.current = true;
-          proceed();
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            promptOpen.current = false;
+            allowNextNavigation.current = true;
+            void Promise.resolve()
+              .then(() => onDiscard?.())
+              .finally(proceed);
+          },
         },
-      },
-    ]);
-  }, []);
+      ]);
+    },
+    [onDiscard],
+  );
 
   useEffect(
     () =>
@@ -85,5 +95,10 @@ export function useUnsavedChangesGuard({ isDirty, isSubmitting }: UnsavedChanges
     router.replace(href);
   }, []);
 
-  return { exitAfterSave, exitAfterSaveTo, requestExit, requestExitTo };
+  const exitAfterSaveDismissTo = useCallback((href: Href) => {
+    allowNextNavigation.current = true;
+    router.dismissTo(href);
+  }, []);
+
+  return { exitAfterSave, exitAfterSaveDismissTo, exitAfterSaveTo, requestExit, requestExitTo };
 }

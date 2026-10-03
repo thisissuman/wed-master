@@ -1,8 +1,25 @@
-- assertVisible: "Set up Mangalya"
-- tapOn: "Couple names"
-- inputText: "Asha and Dev"
-- hideKeyboard
+appId: com.suman.mangalya.development
+---
+- assertVisible: "Mangalya introduction|Next"
+- tapOn: "Next"
+- tapOn: "Next"
+- tapOn: "Get started"
+- assertVisible: "Your name"
+- tapOn: "Your name"
+- inputText: "Asha"
+- pressKey: Enter
+- tapOn: "Partner’s name"
+- inputText: "Dev"
+- pressKey: Enter
+- tapOn: "Next"
 - tapOn: "Wedding date: Select date"
 - tapOn: "OK"
-- tapOn: "Create private workspace"
-- assertVisible: "Asha and Dev"
+- tapOn: "Next"
+- assertVisible: "Choose wedding photo"
+- tapOn: "Next"
+- assertVisible: "What are you planning?"
+- tapOn: "Next"
+- tapOn: "Review my planner"
+- assertVisible: "Everything looks lovely"
+- tapOn: "Build my planner"
+- assertVisible: "Asha & Dev"

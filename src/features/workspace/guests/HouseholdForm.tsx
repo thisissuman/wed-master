@@ -1,19 +1,16 @@
-import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
-import {
-  BedDouble,
-  CheckCircle2,
-  Clock3,
-  HeartHandshake,
-  Mail,
-  MailCheck,
-  NotebookPen,
-  Send,
-  TramFront,
-  UserRound,
-  UsersRound,
-  XCircle,
-} from "lucide-react-native";
+import BedDouble from "lucide-react-native/icons/bed-double";
+import CheckCircle2 from "lucide-react-native/icons/circle-check";
+import Clock3 from "lucide-react-native/icons/clock-3";
+import HeartHandshake from "lucide-react-native/icons/heart-handshake";
+import Mail from "lucide-react-native/icons/mail";
+import MailCheck from "lucide-react-native/icons/mail-check";
+import NotebookPen from "lucide-react-native/icons/notebook-pen";
+import Send from "lucide-react-native/icons/send";
+import TramFront from "lucide-react-native/icons/tram-front";
+import UserRound from "lucide-react-native/icons/user-round";
+import UsersRound from "lucide-react-native/icons/users-round";
+import XCircle from "lucide-react-native/icons/circle-x";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -26,10 +23,12 @@ import {
   TextField,
 } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import { householdFormSchema, type HouseholdFormValues } from "../forms";
-import { useWorkspaceMutation } from "../provider";
+import { useWorkspace, useWorkspaceMutation } from "../provider";
 import { invitationStatuses, rsvpStatuses, serviceStatuses, type Household } from "../types";
 import { FormShell } from "../ui";
 import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
@@ -57,8 +56,9 @@ const serviceTone = (value: string): SelectOption["tone"] =>
   value === "Booked" ? "success" : value === "Needed" ? "warning" : "muted";
 
 export function HouseholdForm({ household }: { household?: Household }) {
+  const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const {
     control,
     handleSubmit,
@@ -93,7 +93,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
     isSubmitting: isSubmitting || mutation.isPending,
   });
 
-  const save = handleSubmit(async (values) => {
+  const saveValues = useSingleFlightSubmission(async (values: HouseholdFormValues) => {
     const record = {
       name: values.name,
       side: values.side,
@@ -105,15 +105,19 @@ export function HouseholdForm({ household }: { household?: Household }) {
       notes: values.notes || undefined,
       guests: household?.guests ?? [],
     };
-    await mutation.mutateAsync((repositories) =>
+    const snapshot = await mutation.mutateAsync((repositories) =>
       household
         ? repositories.households.updateHousehold({ ...record, id: household.id })
         : repositories.households.createHousehold(record),
     );
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showFeedback({ message: household ? "Household updated" : "Household added" });
+    if (!household) {
+      const existingIds = new Set(workspace.data?.households.map((item) => item.id) ?? []);
+      const created = snapshot.households.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("household", [created.id]);
+    }
     exitAfterSave();
   });
+  const save = handleSubmit(saveValues);
 
   const text = (
     name: "name" | "notes",
@@ -139,6 +143,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
           helperText={options?.helperText}
           icon={icon}
           label={label}
+          maxLength={name === "notes" ? uiFieldLimits.longText : uiFieldLimits.shortText}
           multiline={options?.multiline}
           onBlur={field.onBlur}
           onChangeText={field.onChange}
@@ -157,7 +162,11 @@ export function HouseholdForm({ household }: { household?: Household }) {
     label: string,
     icon: LucideIcon,
     options: SelectOption[],
-    fieldOptions?: { optional?: boolean; required?: boolean },
+    fieldOptions?: {
+      optional?: boolean;
+      presentation?: "dialog" | "sheet";
+      required?: boolean;
+    },
   ) => (
     <Controller
       control={control}
@@ -170,6 +179,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
           onChange={field.onChange}
           optional={fieldOptions?.optional}
           options={options}
+          presentation={fieldOptions?.presentation}
           required={fieldOptions?.required}
           value={field.value}
         />
@@ -188,7 +198,6 @@ export function HouseholdForm({ household }: { household?: Household }) {
   return (
     <Screen>
       <FormShell
-        description="Invite a household and add only the planning details you need."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={requestExit}
         onSubmit={save}
@@ -197,10 +206,13 @@ export function HouseholdForm({ household }: { household?: Household }) {
         title={household ? "Edit household" : "Add household"}
       >
         {text("name", "Household or guest name", UsersRound, {
-          placeholder: "e.g. Mishra family",
+          placeholder: "Mishra family",
           required: true,
         })}
-        {select("side", "Wedding side", HeartHandshake, sideOptions, { required: true })}
+        {select("side", "Wedding side", HeartHandshake, sideOptions, {
+          presentation: "dialog",
+          required: true,
+        })}
         <Controller
           control={control}
           name="guestCount"
@@ -270,7 +282,7 @@ export function HouseholdForm({ household }: { household?: Household }) {
           {text("notes", "Notes", NotebookPen, {
             multiline: true,
             optional: true,
-            placeholder: "Meal, accessibility, or travel notes",
+            placeholder: "Meal or travel notes",
           })}
         </Disclosure>
       </FormShell>

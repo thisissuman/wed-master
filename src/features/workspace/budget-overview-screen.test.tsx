@@ -62,12 +62,13 @@ describe("BudgetOverviewDashboard", () => {
     const screen = await render(<BudgetOverviewScreen />);
 
     expect(screen.getByText("Budget & expenses")).toBeTruthy();
-    expect(screen.queryByText("Budget position")).toBeNull();
+    expect(screen.getByText("Budget position")).toBeTruthy();
     expect(screen.queryByText("Target compared with actual recorded spending")).toBeNull();
     expect(screen.queryByText("Target, spending trends, and category insights.")).toBeNull();
     expect(screen.getByText("Target")).toBeTruthy();
-    expect(screen.getByText("Spent")).toBeTruthy();
-    expect(screen.getByText("Pending")).toBeTruthy();
+    expect(screen.getByText("Net spent")).toBeTruthy();
+    expect(screen.getByText("Remaining")).toBeTruthy();
+    expect(screen.queryByText("Pending")).toBeNull();
     expect(screen.getByTestId("budget-summary")).toBeTruthy();
     expect(screen.getByText("Spending trend")).toBeTruthy();
     expect(screen.getByText("All-time insights")).toBeTruthy();
@@ -99,7 +100,7 @@ describe("BudgetOverviewDashboard", () => {
     const screen = await render(<BudgetOverviewScreen />);
 
     expect(screen.getByText("Not set")).toBeTruthy();
-    expect(screen.getByText("Spent")).toBeTruthy();
+    expect(screen.getByText("Net spent")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Set target" })).toBeTruthy();
     expect(screen.queryByText(/of target spent/)).toBeNull();
   });
@@ -140,7 +141,6 @@ describe("BudgetOverviewDashboard", () => {
     const screen = await render(<BudgetOverviewScreen />);
 
     expect(screen.getByTestId("budget-summary-layout").props.style.flexDirection).toBe("column");
-    expect(screen.getByTestId("budget-summary-metrics").props.style.flexDirection).toBe("column");
     expect(screen.getByTestId("spending-trend-header").props.style.flexDirection).toBe("column");
     expect(screen.getByTestId("category-breakdown-heading-event").props.style.flexDirection).toBe(
       "column",

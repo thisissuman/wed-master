@@ -1,7 +1,7 @@
 import type { Href } from "expo-router";
 import { router } from "expo-router";
 
-const rootTabPaths = new Set(["/", "/plan", "/budget", "/more"]);
+const rootTabPaths = new Set(["/", "/plan", "/inspire", "/budget", "/more"]);
 
 export const moreTabResetOptions = { popToTopOnBlur: true } as const;
 

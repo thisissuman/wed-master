@@ -1,13 +1,16 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 import PlanScreen from "@/app/(app)/(tabs)/plan";
 import { demoWorkspace } from "@/features/workspace/seed";
+import { motionDurations } from "@/theme";
 
+import { useCreatedItemHighlight } from "./created-item-highlight";
 import { useWorkspace, useWorkspaceMutation } from "./provider";
 
 let mockSearchParams: Record<string, string | undefined> = {};
+let mockIsFocused = true;
 
 jest.mock("expo-router", () => ({
   router: {
@@ -19,6 +22,7 @@ jest.mock("expo-router", () => ({
       mockSearchParams = { ...mockSearchParams, ...params };
     }),
   },
+  useIsFocused: () => mockIsFocused,
   useLocalSearchParams: () => mockSearchParams,
 }));
 
@@ -39,11 +43,15 @@ const mockUseWorkspace = jest.mocked(useWorkspace);
 const mockUseWorkspaceMutation = jest.mocked(useWorkspaceMutation);
 const mockRouter = jest.mocked(router);
 const mockMutate = jest.fn();
+const mockMutateAsync = jest.fn();
 
 describe("PlanScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
+    mockIsFocused = true;
     mockSearchParams = {};
+    useCreatedItemHighlight.setState({ current: undefined });
     mockUseWorkspace.mockReturnValue({
       data: demoWorkspace,
       isError: false,
@@ -52,7 +60,98 @@ describe("PlanScreen", () => {
     mockUseWorkspaceMutation.mockReturnValue({
       isPending: false,
       mutate: mockMutate,
+      mutateAsync: mockMutateAsync,
     } as unknown as ReturnType<typeof useWorkspaceMutation>);
+    mockMutateAsync.mockResolvedValue(demoWorkspace);
+  });
+
+  it("sorts recently actioned tasks ahead of due dates and completion", async () => {
+    mockSearchParams = { view: "tasks" };
+    mockUseWorkspace.mockReturnValue({
+      data: {
+        ...demoWorkspace,
+        tasks: [
+          {
+            ...demoWorkspace.tasks[0],
+            id: "older",
+            title: "Older action",
+            status: "Not Started",
+            updatedAt: "2026-09-17T12:00:00.000Z",
+          },
+          {
+            ...demoWorkspace.tasks[0],
+            id: "recent",
+            title: "Recent completion",
+            status: "Completed",
+            updatedAt: "2026-09-18T12:00:00.000Z",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useWorkspace>);
+    const screen = await render(<PlanScreen />);
+    await fireEvent.press(screen.getByRole("button", { name: "Sort tasks" }));
+    const rows = screen.getAllByRole("checkbox");
+    expect(rows[0].props.accessibilityLabel).toContain("Recent completion");
+    expect(rows[1].props.accessibilityLabel).toContain("Older action");
+    expect(screen.queryByRole("tab", { name: "Due date" })).toBeNull();
+    expect(screen.queryByText("Recently actioned")).toBeNull();
+    expect(screen.getByRole("button", { name: "Sort tasks" }).props.accessibilityValue.text).toBe(
+      "Recently actioned",
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Sort tasks" }));
+    expect(screen.getAllByRole("checkbox")[0].props.accessibilityLabel).toContain("Older action");
+    expect(screen.getByRole("button", { name: "Sort tasks" }).props.accessibilityValue.text).toBe(
+      "Due date",
+    );
+  });
+
+  it("keeps task identities and sort state stable over repeated Events/Tasks switches", async () => {
+    mockSearchParams = { view: "tasks" };
+    const screen = await render(<PlanScreen />);
+    await fireEvent.press(screen.getByRole("button", { name: "Sort tasks" }));
+    const initial = screen.getAllByRole("checkbox").map((row) => row.props.accessibilityLabel);
+    for (let index = 0; index < 3; index += 1) {
+      await fireEvent.press(screen.getByRole("tab", { name: "Events" }));
+      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+      expect(
+        screen
+          .getAllByRole("checkbox", { includeHiddenElements: true })
+          .map((row) => row.props.accessibilityLabel),
+      ).toEqual(initial);
+      await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
+      expect(screen.getAllByRole("checkbox").map((row) => row.props.accessibilityLabel)).toEqual(
+        initial,
+      );
+      expect(screen.getByRole("button", { name: "Sort tasks" }).props.accessibilityValue.text).toBe(
+        "Recently actioned",
+      );
+    }
+  });
+
+  it("waits for Plan to regain focus before completing the new-task breath", async () => {
+    jest.useFakeTimers();
+    const task = demoWorkspace.tasks[0];
+    useCreatedItemHighlight.getState().mark("task", [task.id]);
+    mockIsFocused = false;
+    mockSearchParams = { view: "tasks" };
+
+    const screen = await render(<PlanScreen />);
+    const completedBreathDuration =
+      motionDurations.fast +
+      (motionDurations.state + motionDurations.press) * 2 +
+      motionDurations.press;
+
+    await act(async () => jest.advanceTimersByTime(completedBreathDuration));
+    expect(useCreatedItemHighlight.getState().current?.ids).toContain(task.id);
+
+    mockIsFocused = true;
+    await screen.rerender(<PlanScreen />);
+    await act(async () => jest.advanceTimersByTime(completedBreathDuration));
+
+    expect(useCreatedItemHighlight.getState().current).toBeUndefined();
+    jest.useRealTimers();
   });
 
   it("starts on events and switches views immediately without route writes", async () => {
@@ -78,6 +177,30 @@ describe("PlanScreen", () => {
     expect(mockRouter.setParams).not.toHaveBeenCalled();
   });
 
+  it("keeps the segmented indicator mounted while switching views", async () => {
+    const screen = await render(<PlanScreen />);
+    const control = screen.getByLabelText("Plan view");
+    const indicator = screen.getByTestId("segmented-control-indicator", {
+      includeHiddenElements: true,
+    });
+
+    await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
+
+    expect(screen.getByLabelText("Plan view")).toBe(control);
+    expect(
+      screen.getAllByTestId("segmented-control-indicator", { includeHiddenElements: true })[0],
+    ).toBe(indicator);
+  });
+
+  it("keeps event and task suggestions out of the live Plan workspace", async () => {
+    const screen = await render(<PlanScreen />);
+
+    expect(screen.queryByRole("button", { name: "Suggestions" })).toBeNull();
+    await fireEvent.press(screen.getByRole("tab", { name: "Tasks" }));
+    expect(screen.queryByRole("button", { name: "Suggestions" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Add task" })).toBeTruthy();
+  });
+
   it("syncs external view parameters without haptic feedback", async () => {
     const screen = await render(<PlanScreen />);
 
@@ -90,7 +213,7 @@ describe("PlanScreen", () => {
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
   });
 
-  it("keeps every task filter behind one compact control", async () => {
+  it("keeps only status and priority in one anchored filter popover", async () => {
     mockSearchParams = { view: "tasks" };
     const screen = await render(<PlanScreen />);
 
@@ -98,22 +221,12 @@ describe("PlanScreen", () => {
     expect(screen.queryByRole("button", { name: "All" })).toBeNull();
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
-    expect(screen.getByRole("button", { name: "Status: All statuses" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Priority: All priorities" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Related event: All events" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Due date: Any due date" })).toBeTruthy();
-
-    await fireEvent.press(screen.getByRole("button", { name: "Related event: All events" }));
-    expect(screen.queryByText("Choose one option")).toBeNull();
-    await fireEvent.press(await screen.findByRole("radio", { name: "Wedding" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
-
-    expect(screen.getByText("Confirm catering menu")).toBeTruthy();
-    expect(
-      screen.getByText("Confirm the final family transport and accommodation pickup schedule"),
-    ).toBeTruthy();
-    expect(screen.queryByText("Collect invitation proof")).toBeNull();
-    expect(screen.getByRole("button", { name: "Filters, 1 active" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "All statuses" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "All priorities" })).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "All events" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Any due date" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show results" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
   });
 
   it("keeps one creation affordance when the task list is empty", async () => {
@@ -135,20 +248,20 @@ describe("PlanScreen", () => {
     const screen = await render(<PlanScreen />);
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Status: All statuses" }));
-    await fireEvent.press(await screen.findByRole("radio", { name: "Completed" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "Completed" }));
 
     await waitFor(() => {
       expect(screen.getByText("Book bridal mehendi artist")).toBeTruthy();
       expect(screen.queryByText("Confirm catering menu")).toBeNull();
     });
 
-    await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
     const activeFilters = screen.getByRole("button", { name: "Filters, 1 active" });
     expect(activeFilters.props.accessibilityState.selected).toBe(true);
 
     await fireEvent.press(activeFilters);
-    await fireEvent.press(screen.getByRole("button", { name: "Clear filters" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Reset filters" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
 
     await waitFor(() => {
       expect(screen.getByText("Confirm catering menu")).toBeTruthy();
@@ -161,9 +274,8 @@ describe("PlanScreen", () => {
     const screen = await render(<PlanScreen />);
 
     await fireEvent.press(screen.getByRole("button", { name: "Filters" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Status: All statuses" }));
-    await fireEvent.press(await screen.findByRole("radio", { name: "Cancelled" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Show results" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "Cancelled" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Close filters" }));
 
     expect(await screen.findByText("No matching tasks")).toBeTruthy();
     expect(screen.getAllByRole("button", { name: "Add task" })).toHaveLength(1);
@@ -179,16 +291,8 @@ describe("PlanScreen", () => {
       screen.getByRole("checkbox", { name: "Mark complete: Confirm catering menu" }),
     );
 
-    expect(mockMutate).toHaveBeenCalledTimes(1);
-    expect(Haptics.impactAsync).not.toHaveBeenCalled();
-
-    const [, mutationOptions] = mockMutate.mock.calls[0] as unknown as [
-      unknown,
-      { onSuccess: () => void },
-    ];
-    mutationOptions.onSuccess();
-
-    expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
+    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it("keeps task metadata available to assistive technology", async () => {
@@ -224,9 +328,7 @@ describe("PlanScreen", () => {
 
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.getByText("Task update failed")).toBeTruthy();
-    expect(
-      screen.getByText("We could not reach the service. Check your connection and try again."),
-    ).toBeTruthy();
+    expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
   });
 
   it("opens task detail and creation routes", async () => {

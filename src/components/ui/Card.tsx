@@ -2,11 +2,17 @@ import { type PropsWithChildren } from "react";
 import { View, type ViewProps } from "react-native";
 
 type CardProps = PropsWithChildren<
-  ViewProps & { className?: string; variant?: "default" | "subtle" }
+  ViewProps & {
+    className?: string;
+    variant?: "default" | "elevated" | "night" | "outlined" | "subtle";
+  }
 >;
 
 const variantClassNames = {
   default: "border border-borderSubtle bg-elevatedSurface",
+  elevated: "bg-elevatedSurface shadow-card",
+  night: "bg-nightSurface",
+  outlined: "border border-borderSubtle bg-elevatedSurface",
   subtle: "bg-surfaceMuted",
 } as const;
 

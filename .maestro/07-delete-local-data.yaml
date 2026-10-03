@@ -6,9 +6,14 @@ appId: com.suman.mangalya.development
     file: subflows/create-workspace.yaml
 - tapOn: "More"
 - tapOn: "Open Settings"
+- scrollUntilVisible:
+    element:
+      text: "Delete local data"
+    direction: DOWN
+    timeout: 30000
 - tapOn: "Delete local data"
 - tapOn: "Confirmation"
 - inputText: "DELETE"
 - hideKeyboard
 - tapOn: "Delete data"
-- assertVisible: "Set up Mangalya"
+- assertVisible: "Mangalya introduction|Next"

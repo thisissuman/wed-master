@@ -1,5 +1,9 @@
 import { router } from "expo-router";
-import { CalendarDays, Check, ClipboardList, Tag, UserRound } from "lucide-react-native";
+import CalendarDays from "lucide-react-native/icons/calendar-days";
+import Check from "lucide-react-native/icons/check";
+import ClipboardList from "lucide-react-native/icons/clipboard-list";
+import Tag from "lucide-react-native/icons/tag";
+import UserRound from "lucide-react-native/icons/user-round";
 import { ScrollView, View } from "react-native";
 
 import {
@@ -13,10 +17,10 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
-import { useWorkspace, useWorkspaceMutation } from "../provider";
-import type { Task } from "../types";
+import { useWorkspace } from "../provider";
+import { useTaskStatusAction } from "../useTaskStatusAction";
 import { DetailHeader, formatDate } from "../ui";
 
 function MetaRow({
@@ -28,10 +32,12 @@ function MetaRow({
   label: string;
   value: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View className="flex-row items-center gap-sm border-b border-borderSubtle py-sm last:border-b-0">
       <View className="h-10 w-10 items-center justify-center rounded-control bg-primarySoft">
-        <Icon color={tokens.colors.primary} size={tokens.iconSize.sm} />
+        <Icon color={theme.colors.primary} size={tokens.iconSize.sm} />
       </View>
       <View className="min-w-0 flex-1 gap-2xs">
         <AppText tone="muted" variant="caption">
@@ -44,8 +50,9 @@ function MetaRow({
 }
 
 export function TaskDetailDashboard({ taskId }: { taskId: string }) {
+  const theme = useAppTheme();
   const workspace = useWorkspace();
-  const mutation = useWorkspaceMutation();
+  const taskStatusAction = useTaskStatusAction();
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -77,10 +84,6 @@ export function TaskDetailDashboard({ taskId }: { taskId: string }) {
 
   const event = workspace.data.events.find((item) => item.id === task.eventId);
   const completed = task.status === "Completed";
-  const updateTask = (next: Task) => {
-    if (mutation.isPending) return;
-    mutation.mutate((repositories) => repositories.tasks.updateTask(next));
-  };
 
   return (
     <Screen edges={["top", "right", "bottom", "left"]}>
@@ -93,12 +96,10 @@ export function TaskDetailDashboard({ taskId }: { taskId: string }) {
         <View className="gap-sm rounded-card bg-primarySoft p-md">
           <View className="flex-row items-start gap-sm">
             <View className="h-12 w-12 items-center justify-center rounded-control bg-elevatedSurface">
-              <ClipboardList color={tokens.colors.primary} size={tokens.iconSize.md} />
+              <ClipboardList color={theme.colors.primary} size={tokens.iconSize.md} />
             </View>
             <View className="min-w-0 flex-1 gap-xs">
-              <AppText tone="primary" variant="title">
-                {task.title}
-              </AppText>
+              <AppText variant="title">{task.title}</AppText>
               <View className="flex-row flex-wrap gap-xs">
                 <StatusBadge
                   label={`${task.priority} priority`}
@@ -140,8 +141,8 @@ export function TaskDetailDashboard({ taskId }: { taskId: string }) {
             className="flex-1"
             icon={Check}
             label={completed ? "Reopen task" : "Mark complete"}
-            loading={mutation.isPending}
-            onPress={() => updateTask({ ...task, status: completed ? "Not Started" : "Completed" })}
+            loading={taskStatusAction.isPending}
+            onPress={() => taskStatusAction.toggleTaskStatus(task)}
           />
           <Button
             className="flex-1"

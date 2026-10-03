@@ -1,3 +1,4 @@
+import { expenseAmountLabel } from "../expense-amount";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
@@ -12,7 +13,6 @@ import {
   SectionHeader,
 } from "@/components/ui";
 import { feedbackDurationMilliseconds, useFeedbackStore } from "@/features/feedback/feedback-store";
-import { formatInr } from "@/lib/money";
 
 import { removeWorkspaceAttachment } from "../files/workspace-files";
 import { ExpenseCategoryIcon } from "../money/ExpenseCategoryIcon";
@@ -72,11 +72,14 @@ export function ExpenseDetailDashboard({ expenseId }: { expenseId: string }) {
             {category ? <ExpenseCategoryIcon iconKey={category.iconKey} /> : null}
             <View className="min-w-0 flex-1 gap-2xs">
               <AppText tone="muted" variant="caption">
-                Amount spent
+                {expense.direction === "refund" ? "Money got back" : "Amount spent"}
               </AppText>
               {expense.actualPaise > 0 ? (
-                <AppText tone="primary" variant="display">
-                  {formatInr(expense.actualPaise)}
+                <AppText
+                  tone={expense.direction === "refund" ? "success" : "danger"}
+                  variant="display"
+                >
+                  {expenseAmountLabel(expense)}
                 </AppText>
               ) : (
                 <AppText tone="warning" variant="heading">

@@ -6,16 +6,21 @@ import type { TextInput } from "react-native";
 import { Button, ConfirmationDialog, Disclosure, Screen, TextField } from "@/components/ui";
 import { useFeedbackStore } from "@/features/feedback/feedback-store";
 import { toUserMessage } from "@/lib/errors";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
 
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import { fromPaise, giftFormSchema, toPaise, type GiftFormValues } from "../forms";
-import { useWorkspaceMutation } from "../provider";
+import { useWorkspace, useWorkspaceMutation } from "../provider";
 import type { GiftRecord } from "../types";
 import { FormShell } from "../ui";
 import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
 
 export function GiftForm({ gift }: { gift?: GiftRecord }) {
+  const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
   const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const valueInputRef = useRef<TextInput>(null);
   const relationshipInputRef = useRef<TextInput>(null);
@@ -39,7 +44,7 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
     isSubmitting: isSubmitting || mutation.isPending,
   });
 
-  const save = handleSubmit(async (values) => {
+  const saveValues = useSingleFlightSubmission(async (values: GiftFormValues) => {
     const record = {
       ...(gift ?? {}),
       personName: values.personName,
@@ -47,14 +52,19 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
       itemName: values.itemName || undefined,
       valuePaise: values.value ? toPaise(values.value) : undefined,
     };
-    await mutation.mutateAsync((repositories) =>
+    const snapshot = await mutation.mutateAsync((repositories) =>
       gift
         ? repositories.gifts.updateGift({ ...record, id: gift.id })
         : repositories.gifts.createGift(record),
     );
-    showFeedback({ message: gift ? "Gift updated" : "Gift added" });
+    if (!gift) {
+      const existingIds = new Set(workspace.data?.gifts.map((item) => item.id) ?? []);
+      const created = snapshot.gifts.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("gift", [created.id]);
+    }
     exitAfterSave();
   });
+  const save = handleSubmit(saveValues);
 
   const text = (
     name: "itemName" | "personName" | "relationship" | "value",
@@ -72,6 +82,13 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
           error={errors[name]?.message}
           keyboardType={options?.keyboardType}
           label={label}
+          maxLength={
+            name === "value"
+              ? uiFieldLimits.currency
+              : name === "itemName"
+                ? uiFieldLimits.giftDescription
+                : uiFieldLimits.shortText
+          }
           onBlur={field.onBlur}
           onChangeText={field.onChange}
           onSubmitEditing={
@@ -102,7 +119,6 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
   return (
     <Screen>
       <FormShell
-        description="Record a received gift without unnecessary follow-up fields."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={requestExit}
         onSubmit={save}
@@ -119,11 +135,11 @@ export function GiftForm({ gift }: { gift?: GiftRecord }) {
         >
           {text("relationship", "Relationship", {
             optional: true,
-            placeholder: "e.g. Cousin or family friend",
+            placeholder: "Cousin or friend",
           })}
           {text("itemName", "Gift description", {
             optional: true,
-            placeholder: "e.g. Silver dinner set",
+            placeholder: "Silver dinner set",
           })}
         </Disclosure>
         {gift ? (

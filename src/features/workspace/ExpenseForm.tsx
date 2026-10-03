@@ -1,15 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Haptics from "expo-haptics";
 import { FlashList } from "@shopify/flash-list";
-import {
-  ArrowLeft,
-  Check,
-  ChevronRight,
-  IndianRupee,
-  Plus,
-  Sparkles,
-  X,
-} from "lucide-react-native";
+import ArrowLeft from "lucide-react-native/icons/arrow-left";
+import Check from "lucide-react-native/icons/check";
+import ChevronRight from "lucide-react-native/icons/chevron-right";
+import IndianRupee from "lucide-react-native/icons/indian-rupee";
+import X from "lucide-react-native/icons/x";
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import {
@@ -32,7 +28,6 @@ import Animated, {
 import {
   AppText,
   Button,
-  Card,
   DateField,
   IconButton,
   MotionPressable,
@@ -41,37 +36,34 @@ import {
 } from "@/components/ui";
 import { formatShortDateOnly, todayDateOnly } from "@/lib/dates";
 import { toUserMessage } from "@/lib/errors";
-import { formatInr } from "@/lib/money";
-import { tokens } from "@/theme";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
+import { runNonCriticalNativeEffect } from "@/lib/native-effects";
+import { tokens, useAppTheme } from "@/theme";
 import { sheetEnteringTransition } from "@/theme/motion";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
-import { selectableBudgetCategories } from "./expense-categories";
+import {
+  refundCategory,
+  selectableBudgetCategories,
+  withRefundCategory,
+} from "./expense-categories";
 import { AttachmentField } from "./files/AttachmentField";
 import { pickWorkspaceAttachment, removeWorkspaceAttachment } from "./files/workspace-files";
 import {
-  expenseDetailsFormSchema,
   expenseFormSchema,
   fromPaise,
   quickExpenseFormSchema,
   toPaise,
-  type ExpenseDetailsFormValues,
   type ExpenseFormValues,
   type QuickExpenseFormValues,
 } from "./forms";
 import { ExpenseCategoryIcon } from "./money/ExpenseCategoryIcon";
 import { useCreateExpenseMutation, useWorkspace, useWorkspaceMutation } from "./provider";
 import { selectExpenseTitleSuggestions } from "./selectors";
-import type {
-  AttachmentRef,
-  BudgetCategory,
-  CreateExpenseResult,
-  Expense,
-  Task,
-  WeddingEvent,
-} from "./types";
+import type { AttachmentRef, BudgetCategory, Expense, Task, WeddingEvent } from "./types";
 import { FormShell } from "./ui";
 import { useUnsavedChangesGuard } from "./useUnsavedChangesGuard";
+import { useCreatedItemHighlight } from "./created-item-highlight";
 
 type PendingReceipt = {
   attachment: AttachmentRef;
@@ -189,10 +181,7 @@ function QuickExpenseSheet({
           edges={["bottom"]}
           style={{ maxHeight: "100%" }}
         >
-          <View className="min-h-12 flex-row items-center justify-end px-md">
-            <View className="absolute inset-x-0 items-center">
-              <View className="h-1 w-12 rounded-full bg-borderStrong" />
-            </View>
+          <View className="min-h-4xl flex-row items-center justify-end px-md">
             <IconButton accessibilityLabel="Close expense form" icon={X} onPress={onCancel} />
           </View>
           <ScrollView
@@ -235,6 +224,7 @@ function CategoryPickerPanel({
   selectedId,
   tasks,
 }: CategoryPickerProps) {
+  const theme = useAppTheme();
   const [activeView, setActiveView] = useState<CategoryPickerView>("categories");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("en-IN"));
@@ -291,7 +281,6 @@ function CategoryPickerPanel({
       edges={["bottom"]}
       className="min-h-0 flex-1 gap-sm px-md pb-md pt-xs"
     >
-      <View className="self-center h-1 w-12 rounded-full bg-borderStrong" />
       <View className="flex-row items-center gap-sm">
         {activeView !== "categories" ? (
           <IconButton
@@ -328,7 +317,7 @@ function CategoryPickerPanel({
                 }
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                android_ripple={{ color: tokens.colors.primarySoft }}
+                android_ripple={{ color: theme.colors.primarySoft }}
                 className={`min-h-14 flex-row items-center gap-sm rounded-control border px-sm py-xs active:opacity-80 ${
                   selected ? "border-primary bg-primarySoft" : "border-borderSubtle bg-canvas"
                 }`}
@@ -349,11 +338,11 @@ function CategoryPickerPanel({
                 >
                   {category.name}
                 </AppText>
-                {selected && !opensItems ? (
-                  <Check color={tokens.colors.primary} size={tokens.iconSize.sm} />
-                ) : (
-                  <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
-                )}
+                {opensItems ? (
+                  <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
+                ) : selected ? (
+                  <Check color={theme.colors.primary} size={tokens.iconSize.sm} />
+                ) : null}
               </MotionPressable>
             );
           })}
@@ -364,7 +353,7 @@ function CategoryPickerPanel({
             autoCapitalize="none"
             label="Search events"
             onChangeText={setQuery}
-            placeholder="Type an event name"
+            placeholder="Event name"
             value={query}
           />
           {filteredEvents.length && eventCategory ? (
@@ -378,7 +367,7 @@ function CategoryPickerPanel({
                 <MotionPressable
                   accessibilityLabel={`Event: ${event.name}`}
                   accessibilityRole="button"
-                  android_ripple={{ color: tokens.colors.primarySoft }}
+                  android_ripple={{ color: theme.colors.primarySoft }}
                   className="min-h-16 flex-row items-center gap-sm rounded-control border border-borderSubtle bg-canvas px-sm py-xs active:bg-primarySoft"
                   key={event.id}
                   onPress={() =>
@@ -400,7 +389,7 @@ function CategoryPickerPanel({
                       {event.location ? ` · ${event.location}` : ""}
                     </AppText>
                   </View>
-                  <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+                  <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
                 </MotionPressable>
               )}
               showsVerticalScrollIndicator={false}
@@ -417,7 +406,7 @@ function CategoryPickerPanel({
             autoCapitalize="none"
             label="Search tasks"
             onChangeText={setQuery}
-            placeholder="Type a task title"
+            placeholder="Task title"
             value={query}
           />
           {filteredTasks.length && taskCategory ? (
@@ -433,7 +422,7 @@ function CategoryPickerPanel({
                   <MotionPressable
                     accessibilityLabel={`Task: ${task.title}`}
                     accessibilityRole="button"
-                    android_ripple={{ color: tokens.colors.primarySoft }}
+                    android_ripple={{ color: theme.colors.primarySoft }}
                     className="min-h-16 flex-row items-center gap-sm rounded-control border border-borderSubtle bg-canvas px-sm py-xs active:bg-primarySoft"
                     key={task.id}
                     onPress={() =>
@@ -455,7 +444,7 @@ function CategoryPickerPanel({
                         {linkedEvent ? ` · ${linkedEvent.name}` : ""}
                       </AppText>
                     </View>
-                    <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+                    <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
                   </MotionPressable>
                 );
               }}
@@ -524,6 +513,7 @@ function CategoryField({
   onPress: () => void;
   relatedLabel?: string;
 }) {
+  const theme = useAppTheme();
   return (
     <View className="gap-2xs">
       <View className="flex-row items-center gap-2xs">
@@ -539,7 +529,7 @@ function CategoryField({
             : "Select category, required"
         }
         accessibilityRole="button"
-        android_ripple={{ color: tokens.colors.primarySoft }}
+        android_ripple={{ color: theme.colors.primarySoft }}
         className={`min-h-14 flex-row items-center gap-sm rounded-control border bg-elevatedSurface px-sm active:bg-primarySoft ${
           error ? "border-danger" : "border-borderStrong"
         }`}
@@ -556,7 +546,7 @@ function CategoryField({
             ? `${category.name}${relatedLabel ? ` · ${relatedLabel}` : ""}`
             : "Select category"}
         </AppText>
-        <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.md} />
+        <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.md} />
       </MotionPressable>
       {error ? (
         <AppText accessibilityRole="alert" tone="danger" variant="caption">
@@ -578,6 +568,7 @@ function ExpenseTitleSuggestions({
   onSelect: (title: string, categoryId: string) => void;
   query: string;
 }) {
+  const theme = useAppTheme();
   const suggestions = useMemo(
     () => selectExpenseTitleSuggestions(expenses, query),
     [expenses, query],
@@ -603,7 +594,7 @@ function ExpenseTitleSuggestions({
             accessibilityHint="Reuses its category and moves to amount"
             accessibilityLabel={`Use expense title: ${suggestion.title}`}
             accessibilityRole="button"
-            android_ripple={{ color: tokens.colors.primarySoft }}
+            android_ripple={{ color: theme.colors.primarySoft }}
             className="min-h-14 flex-row items-center gap-sm border-b border-borderSubtle px-md py-xs last:border-b-0 active:bg-primarySoft"
             key={`${suggestion.categoryId}-${suggestion.title}`}
             onPress={() => onSelect(suggestion.title, suggestion.categoryId)}
@@ -617,7 +608,7 @@ function ExpenseTitleSuggestions({
                 {category?.name ?? "Saved category"}
               </AppText>
             </View>
-            <ChevronRight color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+            <ChevronRight color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
           </Pressable>
         );
       })}
@@ -625,193 +616,10 @@ function ExpenseTitleSuggestions({
   );
 }
 
-function CreatedExpenseDetails({
-  category,
-  expense,
-  onAddAnother,
-}: {
-  category?: BudgetCategory;
-  expense: Expense;
-  onAddAnother: () => void;
-}) {
-  const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
-  const submissionInFlight = useRef(false);
-  const [receipt, setReceipt] = useState(expense.receipt);
-  const [pendingReceipt, setPendingReceipt] = useState<PendingReceipt>();
-  const [attachmentError, setAttachmentError] = useState<string>();
-  const [pickingAttachment, setPickingAttachment] = useState(false);
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isDirty, isSubmitting },
-  } = useForm<ExpenseDetailsFormValues>({
-    defaultValues: {
-      date: expense.date ?? todayDateOnly(),
-      notes: expense.notes ?? "",
-    },
-    mode: "onTouched",
-    resolver: zodResolver(expenseDetailsFormSchema),
-  });
-  const receiptDirty = receipt?.id !== expense.receipt?.id;
-  const dirty = isDirty || receiptDirty;
-  const busy = isSubmitting || mutation.isPending || pickingAttachment;
-  const { exitAfterSave, requestExit } = useUnsavedChangesGuard({
-    isDirty: dirty,
-    isSubmitting: busy,
-  });
-
-  useEffect(
-    () => () => {
-      pendingReceipt?.remove();
-    },
-    [pendingReceipt],
-  );
-
-  const pickReceipt = async () => {
-    if (pickingAttachment) return;
-    setPickingAttachment(true);
-    setAttachmentError(undefined);
-    try {
-      const picked = await pickWorkspaceAttachment();
-      if (!picked) return;
-      pendingReceipt?.remove();
-      setPendingReceipt(createPendingReceipt(picked));
-      setReceipt(picked);
-    } catch (error) {
-      setAttachmentError(toUserMessage(error));
-    } finally {
-      setPickingAttachment(false);
-    }
-  };
-
-  const finish = (next: "another" | "close") =>
-    handleSubmit(async (values) => {
-      if (submissionInFlight.current) return;
-      submissionInFlight.current = true;
-      try {
-        if (dirty) {
-          await mutation.mutateAsync((repositories) =>
-            repositories.expenses.updateExpense({
-              ...expense,
-              date: values.date as Expense["date"],
-              notes: values.notes || undefined,
-              receipt,
-            }),
-          );
-          pendingReceipt?.preserve();
-          if (expense.receipt && expense.receipt.id !== receipt?.id) {
-            removeWorkspaceAttachment(expense.receipt);
-          }
-          showFeedback({ message: "Expense details saved" });
-        }
-
-        if (next === "another") {
-          onAddAnother();
-        } else {
-          exitAfterSave();
-        }
-      } catch {
-        return;
-      } finally {
-        submissionInFlight.current = false;
-      }
-    })();
-
-  const footer = (
-    <View className="gap-xs">
-      <Button
-        icon={dirty ? Sparkles : Check}
-        label={dirty ? "Save details" : "Done"}
-        loading={busy}
-        onPress={() => void finish("close")}
-      />
-      <Button
-        disabled={busy}
-        icon={Plus}
-        label="Add another expense"
-        onPress={() => void finish("another")}
-        variant="secondary"
-      />
-    </View>
-  );
-
-  return (
-    <QuickExpenseSheet accessibilityLabel="Expense added" footer={footer} onCancel={requestExit}>
-      <Card className="gap-md" variant="subtle">
-        <View className="flex-row items-center gap-sm">
-          {category ? <ExpenseCategoryIcon iconKey={category.iconKey} /> : null}
-          <View className="min-w-0 flex-1 gap-2xs">
-            <AppText numberOfLines={2} variant="heading">
-              {expense.title}
-            </AppText>
-            <AppText tone="muted" variant="caption">
-              {category?.name ?? "Expense"}
-            </AppText>
-          </View>
-          <AppText tone="primary" variant="title">
-            {formatInr(expense.actualPaise)}
-          </AppText>
-        </View>
-      </Card>
-      <AppText tone="primary" variant="label">
-        Optional details
-      </AppText>
-      <Controller
-        control={control}
-        name="date"
-        render={({ field }) => (
-          <DateField
-            error={errors.date?.message}
-            label="Expense date"
-            onChange={field.onChange}
-            value={field.value}
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="notes"
-        render={({ field }) => (
-          <TextField
-            error={errors.notes?.message}
-            label="Note"
-            multiline
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            optional
-            placeholder="Add a reminder or useful context"
-            value={field.value}
-          />
-        )}
-      />
-      <AttachmentField
-        attachment={receipt}
-        error={attachmentError}
-        label="Attachment or receipt"
-        loading={pickingAttachment}
-        onPick={() => void pickReceipt()}
-        onRemove={() => {
-          pendingReceipt?.remove();
-          setPendingReceipt(undefined);
-          setReceipt(undefined);
-        }}
-      />
-      {mutation.error ? (
-        <AppText accessibilityRole="alert" tone="danger" variant="caption">
-          The expense is still saved. {toUserMessage(mutation.error)} Try saving these details
-          again.
-        </AppText>
-      ) : null}
-    </QuickExpenseSheet>
-  );
-}
-
 function CreateExpenseForm() {
   const workspace = useWorkspace();
   const createMutation = useCreateExpenseMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
-  const [createdExpense, setCreatedExpense] = useState<Expense>();
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [relatedSelection, setRelatedSelection] = useState<{
     eventId?: string;
@@ -829,12 +637,10 @@ function CreateExpenseForm() {
   >(undefined);
   const titleFocusFrameRef = useRef<number | undefined>(undefined);
   const titleFocusInnerFrameRef = useRef<number | undefined>(undefined);
-  const submissionInFlight = useRef(false);
   const {
     control,
     getValues,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors, isDirty, isSubmitting, isValid },
   } = useForm<QuickExpenseFormValues>({
@@ -844,11 +650,17 @@ function CreateExpenseForm() {
   });
   const title = useWatch({ control, name: "title" });
   const categoryId = useWatch({ control, name: "categoryId" });
-  const categories = useMemo(() => workspace.data?.categories ?? [], [workspace.data?.categories]);
+  const categories = useMemo(
+    () => withRefundCategory(workspace.data?.categories ?? []),
+    [workspace.data?.categories],
+  );
   const selectableCategories = useMemo(() => selectableBudgetCategories(categories), [categories]);
   const selectedCategory = categories.find((category) => category.id === categoryId);
   const busy = isSubmitting || createMutation.isPending;
-  const { requestExit } = useUnsavedChangesGuard({ isDirty, isSubmitting: busy });
+  const { exitAfterSaveDismissTo, requestExit } = useUnsavedChangesGuard({
+    isDirty,
+    isSubmitting: busy,
+  });
 
   useEffect(() => {
     titleFocusFrameRef.current = requestAnimationFrame(() => {
@@ -921,7 +733,7 @@ function CreateExpenseForm() {
     setRelatedSelection(relatedLabel ? { eventId, label: relatedLabel } : undefined);
     setCategoryPickerOpen(false);
     setSuggestionsOpen(false);
-    void Haptics.selectionAsync();
+    runNonCriticalNativeEffect(() => Haptics.selectionAsync());
     focusAmount();
   };
   const selectSuggestion = (nextTitle: string, nextCategoryId: string) => {
@@ -929,53 +741,32 @@ function CreateExpenseForm() {
     setValue("categoryId", nextCategoryId, { shouldDirty: true, shouldValidate: true });
     setRelatedSelection(undefined);
     setSuggestionsOpen(false);
-    void Haptics.selectionAsync();
+    runNonCriticalNativeEffect(() => Haptics.selectionAsync());
     focusAmount();
   };
-  const save = () =>
-    handleSubmit(async (values) => {
-      if (submissionInFlight.current) return;
-      submissionInFlight.current = true;
-      setSuggestionsOpen(false);
-      let result: CreateExpenseResult;
-      try {
-        result = await createMutation.mutateAsync({
-          actualPaise: toPaise(values.amount),
-          categoryId: values.categoryId,
-          date: todayDateOnly() as Expense["date"],
-          ...(relatedSelection?.eventId ? { eventId: relatedSelection.eventId } : {}),
-          title: values.title,
-        });
-      } catch {
-        return;
-      } finally {
-        submissionInFlight.current = false;
-      }
-      reset({ amount: "", categoryId: "", title: "" });
-      setRelatedSelection(undefined);
-      setCreatedExpense(result.expense);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showFeedback({ message: "Expense added" });
-    })();
-
-  if (createdExpense) {
-    return (
-      <CreatedExpenseDetails
-        category={categories.find((category) => category.id === createdExpense.categoryId)}
-        expense={createdExpense}
-        onAddAnother={() => setCreatedExpense(undefined)}
-      />
-    );
-  }
+  const submitValues = useSingleFlightSubmission(async (values: QuickExpenseFormValues) => {
+    setSuggestionsOpen(false);
+    let createdExpense: Expense;
+    try {
+      const result = await createMutation.mutateAsync({
+        actualPaise: toPaise(values.amount),
+        direction: values.categoryId === refundCategory.id ? "refund" : "expense",
+        categoryId: values.categoryId,
+        date: todayDateOnly() as Expense["date"],
+        ...(relatedSelection?.eventId ? { eventId: relatedSelection.eventId } : {}),
+        title: values.title,
+      });
+      createdExpense = result.expense;
+    } catch {
+      return;
+    }
+    markCreatedItem("expense", [createdExpense.id]);
+    exitAfterSaveDismissTo("/budget");
+  });
+  const save = () => void handleSubmit(submitValues)();
 
   const footer = (
-    <Button
-      disabled={!isValid || busy}
-      icon={Sparkles}
-      label="Add expense"
-      loading={busy}
-      onPress={save}
-    />
+    <Button disabled={!isValid || busy} label="Add expense" loading={busy} onPress={save} />
   );
 
   return (
@@ -999,6 +790,7 @@ function CreateExpenseForm() {
                 autoComplete="off"
                 error={errors.title?.message}
                 label="Expense title"
+                maxLength={uiFieldLimits.shortText}
                 onBlur={field.onBlur}
                 onChangeText={(value) => {
                   field.onChange(value);
@@ -1010,7 +802,7 @@ function CreateExpenseForm() {
                   if (getValues("categoryId")) focusAmount();
                   else openCategoryPicker();
                 }}
-                placeholder="e.g. Venue advance"
+                placeholder="Venue advance"
                 ref={titleInputRef}
                 required
                 returnKeyType="next"
@@ -1043,6 +835,7 @@ function CreateExpenseForm() {
                   icon={IndianRupee}
                   keyboardType="decimal-pad"
                   label="Amount"
+                  maxLength={uiFieldLimits.currency}
                   onBlur={field.onBlur}
                   onChangeText={field.onChange}
                   placeholder="0.00"
@@ -1074,13 +867,11 @@ function CreateExpenseForm() {
 function EditExpenseForm({ expense }: { expense: Expense }) {
   const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [receipt, setReceipt] = useState(expense.receipt);
   const [pendingReceipt, setPendingReceipt] = useState<PendingReceipt>();
   const [attachmentError, setAttachmentError] = useState<string>();
   const [pickingAttachment, setPickingAttachment] = useState(false);
-  const submissionInFlight = useRef(false);
   const {
     control,
     handleSubmit,
@@ -1098,7 +889,10 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
     resolver: zodResolver(expenseFormSchema),
   });
   const categoryId = useWatch({ control, name: "categoryId" });
-  const categories = useMemo(() => workspace.data?.categories ?? [], [workspace.data?.categories]);
+  const categories = useMemo(
+    () => withRefundCategory(workspace.data?.categories ?? []),
+    [workspace.data?.categories],
+  );
   const currentCategory = categories.find((category) => category.id === categoryId);
   const selectableCategories = useMemo(() => {
     const active = selectableBudgetCategories(categories);
@@ -1138,40 +932,34 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
     }
   };
 
-  const save = () =>
-    handleSubmit(async (values) => {
-      if (submissionInFlight.current) return;
-      submissionInFlight.current = true;
-      try {
-        await mutation.mutateAsync((repositories) =>
-          repositories.expenses.updateExpense({
-            ...expense,
-            actualPaise: toPaise(values.amount),
-            categoryId: values.categoryId,
-            date: values.date as Expense["date"],
-            notes: values.notes || undefined,
-            receipt,
-            title: values.title,
-          }),
-        );
-      } catch {
-        return;
-      } finally {
-        submissionInFlight.current = false;
-      }
-      pendingReceipt?.preserve();
-      if (expense.receipt && expense.receipt.id !== receipt?.id) {
-        removeWorkspaceAttachment(expense.receipt);
-      }
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showFeedback({ message: "Expense updated" });
-      exitAfterSave();
-    })();
+  const submitValues = useSingleFlightSubmission(async (values: ExpenseFormValues) => {
+    try {
+      await mutation.mutateAsync((repositories) =>
+        repositories.expenses.updateExpense({
+          ...expense,
+          actualPaise: toPaise(values.amount),
+          direction: values.categoryId === refundCategory.id ? "refund" : "expense",
+          categoryId: values.categoryId,
+          date: values.date as Expense["date"],
+          notes: values.notes || undefined,
+          receipt,
+          title: values.title,
+        }),
+      );
+    } catch {
+      return;
+    }
+    pendingReceipt?.preserve();
+    if (expense.receipt && expense.receipt.id !== receipt?.id) {
+      removeWorkspaceAttachment(expense.receipt);
+    }
+    exitAfterSave();
+  });
+  const save = () => void handleSubmit(submitValues)();
 
   return (
     <Screen>
       <FormShell
-        description="Update the cost and any useful details."
         isSubmitting={busy}
         onCancel={requestExit}
         onSubmit={save}
@@ -1188,6 +976,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
               autoFocus
               error={errors.title?.message}
               label="Expense title"
+              maxLength={uiFieldLimits.shortText}
               onBlur={field.onBlur}
               onChangeText={field.onChange}
               required
@@ -1212,6 +1001,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
               icon={IndianRupee}
               keyboardType="decimal-pad"
               label="Amount"
+              maxLength={uiFieldLimits.currency}
               onBlur={field.onBlur}
               onChangeText={field.onChange}
               required
@@ -1238,6 +1028,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
             <TextField
               error={errors.notes?.message}
               label="Note"
+              maxLength={uiFieldLimits.longText}
               multiline
               onBlur={field.onBlur}
               onChangeText={field.onChange}
@@ -1264,7 +1055,7 @@ function EditExpenseForm({ expense }: { expense: Expense }) {
           onSelect={({ category }) => {
             setValue("categoryId", category.id, { shouldDirty: true, shouldValidate: true });
             setCategoryPickerOpen(false);
-            void Haptics.selectionAsync();
+            runNonCriticalNativeEffect(() => Haptics.selectionAsync());
           }}
           selectedId={categoryId}
           visible={categoryPickerOpen}

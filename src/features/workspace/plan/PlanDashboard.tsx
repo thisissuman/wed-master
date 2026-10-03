@@ -1,23 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View } from "react-native";
-import { Plus, Sparkles } from "lucide-react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import * as Haptics from "expo-haptics";
-import Animated from "react-native-reanimated";
+import { StyleSheet, View } from "react-native";
+import Plus from "lucide-react-native/icons/plus";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
 
-import {
-  Button,
-  ErrorState,
-  FilterSheet,
-  LoadingState,
-  Screen,
-  SelectField,
-} from "@/components/ui";
-import { todayDateOnly } from "@/lib/dates";
+import { Button, ErrorState, LoadingState, Screen } from "@/components/ui";
+import { useTodayDateOnly } from "@/lib/dates/useTodayDateOnly";
 import { toUserMessage } from "@/lib/errors";
-import { stateEnteringTransition } from "@/theme/motion";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
 
+import { useCreatedItemHighlight } from "../created-item-highlight";
 import {
   emptyTaskFilters,
   filterTasks,
@@ -26,19 +16,12 @@ import {
   taskSummary,
   type TaskFilterState,
 } from "../selectors";
-import {
-  taskPriorities,
-  taskStatuses,
-  type StarterEventKey,
-  type Task,
-  type WeddingEvent,
-} from "../types";
-import { useWorkspace, useWorkspaceMutation } from "../provider";
-import { createSuggestedEvents, missingSuggestedEvents } from "../seed";
-import { SuggestedEventsSheet } from "../SuggestedEventsSheet";
+import { type ISODate, type Task, type WeddingEvent } from "../types";
+import { useWorkspace } from "../provider";
+import { useTaskStatusAction } from "../useTaskStatusAction";
 import { PlanEventView } from "./PlanEventView";
-import { PlanTaskView, type PlanTaskViewHandle } from "./PlanTaskView";
-import type { PlanView } from "./PlanShared";
+import { PlanTaskView } from "./PlanTaskView";
+import { PlanHeader, type PlanView } from "./PlanShared";
 
 export type { EventTimelineCardProps } from "./PlanEventView";
 export type { TaskSummary } from "./PlanTaskView";
@@ -51,31 +34,6 @@ const priorityOrder: Record<Task["priority"], number> = {
 };
 const undatedTaskSortValue = "9999-12-31";
 
-function taskStatusFilter(value: string): TaskFilterState["status"] {
-  if (
-    value === "Not Started" ||
-    value === "In Progress" ||
-    value === "Completed" ||
-    value === "Cancelled"
-  ) {
-    return value;
-  }
-  return "All";
-}
-
-function taskPriorityFilter(value: string): TaskFilterState["priority"] {
-  if (
-    value === "Low" ||
-    value === "Medium" ||
-    value === "High" ||
-    value === "Critical" ||
-    value === "Urgent"
-  ) {
-    return value;
-  }
-  return "All";
-}
-
 const viewFromParam = (view: string | string[] | undefined): PlanView => {
   const value = Array.isArray(view) ? view[0] : view;
   return value === "tasks" ? "tasks" : "events";
@@ -83,19 +41,19 @@ const viewFromParam = (view: string | string[] | undefined): PlanView => {
 
 export function PlanDashboard() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const isScreenFocused = useIsFocused();
   const routeViewParam = Array.isArray(params.view) ? params.view[0] : params.view;
   const requestedView = viewFromParam(routeViewParam);
   const lastRouteViewParam = useRef(routeViewParam);
   const [activeView, setActiveView] = useState<PlanView>(() => requestedView);
-  const [today] = useState(() => todayDateOnly());
+  const today = useTodayDateOnly() as ISODate;
   const [filters, setFilters] = useState<TaskFilterState>(() => emptyTaskFilters());
+  const [sortOrder, setSortOrder] = useState<"planned" | "recent">("planned");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [suggestedSelection, setSuggestedSelection] = useState<StarterEventKey[]>([]);
   const workspace = useWorkspace();
-  const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
-  const taskListRef = useRef<PlanTaskViewHandle>(null);
+  const createdHighlight = useCreatedItemHighlight((state) => state.current);
+  const clearCreatedHighlight = useCreatedItemHighlight((state) => state.clear);
+  const taskStatusAction = useTaskStatusAction();
 
   useEffect(() => {
     if (lastRouteViewParam.current === routeViewParam) return;
@@ -113,7 +71,11 @@ export function PlanDashboard() {
   );
   const tasks = useMemo(
     () =>
-      filterTasks(data?.tasks ?? [], filters, today).sort((left, right) => {
+      filterTasks(data?.tasks ?? [], filters).sort((left, right) => {
+        if (sortOrder === "recent") {
+          const recentDifference = (right.updatedAt ?? "").localeCompare(left.updatedAt ?? "");
+          if (recentDifference) return recentDifference;
+        }
         const completionDifference =
           Number(left.status === "Completed") - Number(right.status === "Completed");
         if (completionDifference) return completionDifference;
@@ -123,7 +85,7 @@ export function PlanDashboard() {
         if (dueDateDifference) return dueDateDifference;
         return priorityOrder[left.priority] - priorityOrder[right.priority];
       }),
-    [data?.tasks, filters, today],
+    [data?.tasks, filters, sortOrder],
   );
   const progressByEvent = useMemo(() => taskProgressByEvent(data?.tasks ?? []), [data?.tasks]);
   const eventNameById = useMemo(
@@ -135,16 +97,11 @@ export function PlanDashboard() {
     [eventNameById],
   );
   const summary = useMemo(() => taskSummary(data?.tasks ?? [], today), [data?.tasks, today]);
-  const availableSuggestions = useMemo(
-    () => missingSuggestedEvents(data?.events ?? []),
-    [data?.events],
-  );
 
   const changeView = useCallback(
     (view: PlanView) => {
       if (view === activeView) return;
       setActiveView(view);
-      void Haptics.selectionAsync();
     },
     [activeView],
   );
@@ -153,26 +110,8 @@ export function PlanDashboard() {
   }, []);
   const clearFilters = useCallback(() => setFilters(emptyTaskFilters()), []);
   const toggleTask = useCallback(
-    (task: Task) => {
-      if (mutation.isPending) return;
-      const nextStatus = task.status === "Completed" ? "Not Started" : "Completed";
-      mutation.mutate(
-        async (repositories) => {
-          const snapshot = await repositories.tasks.updateTask({
-            ...task,
-            status: nextStatus,
-          });
-          taskListRef.current?.prepareForLayoutAnimation();
-          return snapshot;
-        },
-        {
-          onSuccess: () => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        },
-      );
-    },
-    [mutation],
+    (task: Task) => taskStatusAction.toggleTaskStatus(task),
+    [taskStatusAction],
   );
   const progressForEvent = useCallback(
     (eventId: string) => progressByEvent.get(eventId) ?? { completed: 0, total: 0 },
@@ -189,29 +128,6 @@ export function PlanDashboard() {
     [],
   );
   const openFilters = useCallback(() => setFiltersOpen(true), []);
-  const openSuggestions = useCallback(() => {
-    setSuggestedSelection([]);
-    setSuggestionsOpen(true);
-  }, []);
-  const addSuggestedEvents = useCallback(async () => {
-    if (!data || !suggestedSelection.length) return;
-    const created = createSuggestedEvents(data.wedding.date, suggestedSelection, data.events);
-    if (!created.length) {
-      setSuggestionsOpen(false);
-      return;
-    }
-    await mutation.mutateAsync((repositories) =>
-      repositories.workspace.replaceSnapshot({
-        ...data,
-        events: [...data.events, ...created],
-      }),
-    );
-    setSuggestionsOpen(false);
-    setSuggestedSelection([]);
-    showFeedback({
-      message: `${created.length} ${created.length === 1 ? "event" : "events"} added`,
-    });
-  }, [data, mutation, showFeedback, suggestedSelection]);
 
   if (workspace.isLoading || !workspace.data) {
     if (workspace.isError) {
@@ -234,126 +150,75 @@ export function PlanDashboard() {
 
   return (
     <Screen>
-      <Animated.View className="flex-1" entering={stateEnteringTransition} key={activeView}>
-        {activeView === "tasks" ? (
+      <View className="px-md pt-md">
+        <PlanHeader activeView={activeView} onViewChange={changeView} />
+      </View>
+      <View className="flex-1">
+        <View
+          style={[StyleSheet.absoluteFill, { opacity: activeView === "tasks" ? 1 : 0 }]}
+          pointerEvents={activeView === "tasks" ? "auto" : "none"}
+          accessibilityElementsHidden={activeView !== "tasks"}
+          importantForAccessibility={activeView === "tasks" ? "auto" : "no-hide-descendants"}
+        >
           <PlanTaskView
+            sortOrder={sortOrder}
+            onSortChange={setSortOrder}
             advancedFilterCount={taskFilterCount(filters)}
             eventNameById={eventNameForId}
             filters={filters}
+            filtersOpen={activeView === "tasks" && filtersOpen}
             hasAnyTasks={workspace.data.tasks.length > 0}
-            mutationError={mutation.isError ? toUserMessage(mutation.error) : undefined}
-            mutationPending={mutation.isPending}
+            mutationError={
+              taskStatusAction.isError ? toUserMessage(taskStatusAction.error) : undefined
+            }
+            mutationPending={taskStatusAction.isPending}
             onClearFilters={clearFilters}
+            onFiltersChange={setCustomFilter}
+            onFiltersClose={() => setFiltersOpen(false)}
             onFiltersOpen={openFilters}
             onTaskPress={taskPress}
             onTaskToggle={toggleTask}
-            onViewChange={changeView}
-            ref={taskListRef}
             summary={summary}
             tasks={tasks}
             today={today}
+            createdHighlight={
+              isScreenFocused && activeView === "tasks" && createdHighlight?.kind === "task"
+                ? createdHighlight
+                : undefined
+            }
+            onCreatedHighlightFinished={clearCreatedHighlight}
           />
-        ) : (
+        </View>
+        <View
+          style={[StyleSheet.absoluteFill, { opacity: activeView === "events" ? 1 : 0 }]}
+          pointerEvents={activeView === "events" ? "auto" : "none"}
+          accessibilityElementsHidden={activeView !== "events"}
+          importantForAccessibility={activeView === "events" ? "auto" : "no-hide-descendants"}
+        >
           <PlanEventView
             events={events}
             onEdit={editEvent}
             onEventPress={eventPress}
-            onViewChange={changeView}
             progressForEvent={progressForEvent}
             weddingDate={workspace.data.wedding.date}
-          />
-        )}
-      </Animated.View>
-
-      <View className="border-t border-borderSubtle bg-elevatedSurface p-md shadow-floating">
-        <View className="flex-row gap-sm">
-          {activeView === "events" && availableSuggestions.length ? (
-            <Button
-              className="flex-1"
-              icon={Sparkles}
-              label="Suggestions"
-              onPress={openSuggestions}
-              variant="secondary"
-            />
-          ) : null}
-          <Button
-            className="flex-1"
-            icon={Plus}
-            label={activeView === "events" ? "Add event" : "Add task"}
-            onPress={() => router.navigate(activeView === "events" ? "/events/new" : "/tasks/new")}
-            variant="primary"
+            createdHighlight={
+              isScreenFocused && activeView === "events" && createdHighlight?.kind === "event"
+                ? createdHighlight
+                : undefined
+            }
+            onCreatedHighlightFinished={clearCreatedHighlight}
           />
         </View>
       </View>
 
-      <SuggestedEventsSheet
-        availableEvents={availableSuggestions}
-        onChange={setSuggestedSelection}
-        onClose={() => setSuggestionsOpen(false)}
-        onConfirm={() => void addSuggestedEvents()}
-        pending={mutation.isPending}
-        selectedKeys={suggestedSelection}
-        visible={suggestionsOpen}
-      />
-
-      <FilterSheet
-        onClear={clearFilters}
-        onClose={() => setFiltersOpen(false)}
-        title="Filter tasks"
-        visible={filtersOpen}
-      >
-        <SelectField
-          compact
-          label="Status"
-          onChange={(status) => setCustomFilter({ status: taskStatusFilter(status) })}
-          options={[
-            { label: "All statuses", value: "All" },
-            ...taskStatuses.map((value) => ({ label: value, value })),
-          ]}
-          value={filters.status}
+      <View className="border-t border-borderSubtle bg-elevatedSurface p-md shadow-floating">
+        <Button
+          icon={Plus}
+          label={activeView === "events" ? "Add event" : "Add task"}
+          onPress={() => router.navigate(activeView === "events" ? "/events/new" : "/tasks/new")}
+          variant="primary"
         />
-        <SelectField
-          compact
-          label="Priority"
-          onChange={(priority) => setCustomFilter({ priority: taskPriorityFilter(priority) })}
-          options={[
-            { label: "All priorities", value: "All" },
-            { label: "High or critical", value: "Urgent" },
-            ...taskPriorities.map((value) => ({ label: value, value })),
-          ]}
-          value={filters.priority}
-        />
-        <SelectField
-          compact
-          label="Related event"
-          onChange={(eventId) => setCustomFilter({ eventId })}
-          options={[
-            { label: "All events", value: "All" },
-            { label: "General tasks", value: "" },
-            ...events.map((event) => ({ label: event.name, value: event.id })),
-          ]}
-          value={filters.eventId}
-        />
-        <SelectField
-          compact
-          label="Due date"
-          onChange={(value) => {
-            if (value === "Overdue") {
-              setCustomFilter({ dueWindow: "All", overdueOnly: true });
-            } else if (value === "This Week") {
-              setCustomFilter({ dueWindow: "This Week", overdueOnly: false });
-            } else {
-              setCustomFilter({ dueWindow: "All", overdueOnly: false });
-            }
-          }}
-          options={[
-            { label: "Any due date", value: "All" },
-            { label: "Due this week", value: "This Week" },
-            { label: "Overdue only", value: "Overdue" },
-          ]}
-          value={filters.overdueOnly ? "Overdue" : filters.dueWindow}
-        />
-      </FilterSheet>
+      </View>
     </Screen>
   );
 }

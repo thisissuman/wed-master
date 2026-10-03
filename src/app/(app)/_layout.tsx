@@ -10,10 +10,11 @@ import { useWorkspace } from "@/features/workspace/provider";
 import { WorkspaceRecoveryScreen } from "@/features/workspace/recovery/WorkspaceRecoveryScreen";
 import { toUserMessage } from "@/lib/errors";
 import { expenseCreationNavigationOptions } from "@/lib/navigation";
-import { tokens } from "@/theme";
+import { useAppTheme } from "@/theme";
 
 export default function AppLayout() {
   const reduceMotion = useReducedMotion();
+  const theme = useAppTheme();
   const workspace = useWorkspace();
   const detailAnimation = reduceMotion ? "none" : "default";
   const modalAnimation = reduceMotion ? "none" : "slide_from_bottom";
@@ -50,9 +51,9 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         animation: detailAnimation,
-        contentStyle: { backgroundColor: tokens.colors.canvas },
+        contentStyle: { backgroundColor: theme.colors.canvas },
         headerShown: false,
-        statusBarStyle: "dark",
+        statusBarStyle: theme.colorScheme === "dark" ? "light" : "dark",
       }}
     >
       <Stack.Screen name="(tabs)" />
@@ -79,6 +80,15 @@ export default function AppLayout() {
       <Stack.Screen name="expenses/new" options={expenseCreationNavigationOptions(reduceMotion)} />
       <Stack.Screen
         name="expenses/edit"
+        options={{ animation: modalAnimation, presentation: "modal" }}
+      />
+      <Stack.Screen name="inspire/[id]" />
+      <Stack.Screen
+        name="inspire/new"
+        options={{ animation: modalAnimation, presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="inspire/edit"
         options={{ animation: modalAnimation, presentation: "modal" }}
       />
     </Stack>

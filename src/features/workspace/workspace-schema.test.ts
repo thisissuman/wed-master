@@ -2,7 +2,12 @@ import { demoWorkspace } from "./seed";
 import { createDataOnlySnapshot, parseOrMigrateWorkspaceSnapshot } from "./workspace-schema";
 import { coreBudgetCategories } from "./expense-categories";
 import { selectRecentExpenses } from "./selectors";
-import type { WorkspaceSnapshotV1, WorkspaceSnapshotV2, WorkspaceSnapshotV3 } from "./types";
+import type {
+  WorkspaceSnapshotV1,
+  WorkspaceSnapshotV2,
+  WorkspaceSnapshotV3,
+  WorkspaceSnapshotV4,
+} from "./types";
 
 function workspaceV2(): WorkspaceSnapshotV2 {
   return {
@@ -31,7 +36,7 @@ function workspaceV2(): WorkspaceSnapshotV2 {
   };
 }
 
-describe("workspace snapshot v4", () => {
+describe("workspace snapshot v5", () => {
   it("migrates v1 records without changing existing values", () => {
     const legacy: WorkspaceSnapshotV1 = {
       version: 1,
@@ -60,7 +65,7 @@ describe("workspace snapshot v4", () => {
 
     const migrated = parseOrMigrateWorkspaceSnapshot(legacy);
 
-    expect(migrated.version).toBe(4);
+    expect(migrated.version).toBe(5);
     expect(migrated.tasks[0]?.title).toBe("Confirm dinner");
     expect(migrated.tasks[0]?.checklist).toEqual([]);
     expect(migrated.events[0]?.requiredItems).toEqual([]);
@@ -80,7 +85,7 @@ describe("workspace snapshot v4", () => {
     const previous = workspaceV2();
     const migrated = parseOrMigrateWorkspaceSnapshot(previous);
 
-    expect(migrated.version).toBe(4);
+    expect(migrated.version).toBe(5);
     expect(migrated.categories.filter((category) => !category.archived)).toHaveLength(7);
     expect(migrated.expenses.map((expense) => expense.createdAt)).toEqual(
       previous.expenses.map((_, index) => new Date(index).toISOString()),
@@ -106,7 +111,7 @@ describe("workspace snapshot v4", () => {
 
     const migrated = parseOrMigrateWorkspaceSnapshot(previous);
 
-    expect(migrated.version).toBe(4);
+    expect(migrated.version).toBe(5);
     expect(migrated.households.map((household) => household.rsvpStatus)).toEqual([
       "Pending",
       "Confirmed",
@@ -116,6 +121,47 @@ describe("workspace snapshot v4", () => {
     expect(migrated.events.find((event) => event.name === "Mehendi")?.requiredItems).not.toEqual(
       [],
     );
+  });
+
+  it("migrates v4 task aliases to stable starter keys", () => {
+    const previous: WorkspaceSnapshotV4 = {
+      ...structuredClone(demoWorkspace),
+      version: 4,
+      tasks: structuredClone(demoWorkspace.tasks),
+    };
+    previous.tasks.push({
+      attachments: [],
+      checklist: [],
+      id: "legacy-venue-task",
+      priority: "Medium",
+      status: "Not Started",
+      title: "Book venue",
+    });
+    previous.tasks.push({
+      attachments: [],
+      checklist: [],
+      id: "custom-task",
+      notes: "Keep this note",
+      priority: "High",
+      status: "In Progress",
+      title: "Discuss venue ideas with family",
+    });
+
+    const migrated = parseOrMigrateWorkspaceSnapshot(previous);
+
+    expect(migrated.version).toBe(5);
+    expect(migrated.tasks.find((task) => task.id === "legacy-venue-task")?.starterTaskKey).toBe(
+      "venue",
+    );
+    expect(migrated.tasks.find((task) => task.id === "custom-task")).toEqual({
+      attachments: [],
+      checklist: [],
+      id: "custom-task",
+      notes: "Keep this note",
+      priority: "High",
+      status: "In Progress",
+      title: "Discuss venue ideas with family",
+    });
   });
 
   it("accepts an optional local cover URI without requiring a snapshot migration", () => {
@@ -135,6 +181,18 @@ describe("workspace snapshot v4", () => {
     expect(parseOrMigrateWorkspaceSnapshot(snapshot).wedding.coverPhotoUri).toBeUndefined();
   });
 
+  it("accepts an optional wedding keepsake message while older data remains valid", () => {
+    const snapshot = structuredClone(demoWorkspace);
+    snapshot.wedding.keepsakeMessage = "The beginning of our forever.";
+
+    expect(parseOrMigrateWorkspaceSnapshot(snapshot).wedding.keepsakeMessage).toBe(
+      "The beginning of our forever.",
+    );
+
+    delete snapshot.wedding.keepsakeMessage;
+    expect(parseOrMigrateWorkspaceSnapshot(snapshot).wedding.keepsakeMessage).toBeUndefined();
+  });
+
   it("keeps hidden legacy guest names without blocking a smaller household count", () => {
     const snapshot = structuredClone(demoWorkspace);
     if (snapshot.households[0]) snapshot.households[0].guestCount = 1;
@@ -147,6 +205,7 @@ describe("workspace snapshot v4", () => {
 
   it("excludes local media references and history from data-only backups", () => {
     const snapshot = structuredClone(demoWorkspace);
+    snapshot.wedding.keepsakeMessage = "Always, together.";
     snapshot.wedding.coverPhotoUri = "file:///documents/mangalya/cover-photos/cover.jpg";
     if (snapshot.events[0]) {
       snapshot.events[0].coverPhotoUri = "file:///documents/mangalya/cover-photos/event-cover.jpg";
@@ -161,13 +220,14 @@ describe("workspace snapshot v4", () => {
     });
     const exported = createDataOnlySnapshot(snapshot);
     expect(exported.wedding.coverPhotoUri).toBeUndefined();
+    expect(exported.wedding.keepsakeMessage).toBe("Always, together.");
     expect(exported.events[0]?.coverPhotoUri).toBeUndefined();
     expect(exported.tasks[0]?.attachments).toEqual([]);
     expect(exported.backupHistory).toEqual([]);
   });
 
   it("rejects unsupported future versions", () => {
-    expect(() => parseOrMigrateWorkspaceSnapshot({ ...demoWorkspace, version: 5 })).toThrow(
+    expect(() => parseOrMigrateWorkspaceSnapshot({ ...demoWorkspace, version: 6 })).toThrow(
       "not a supported Mangalya workspace file",
     );
   });

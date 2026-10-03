@@ -41,4 +41,23 @@ describe("useUnsavedChangesGuard", () => {
     expect(alert).not.toHaveBeenCalled();
     alert.mockRestore();
   });
+
+  it("runs form cleanup before leaving after a confirmed discard", async () => {
+    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
+    const onDiscard = jest.fn(async () => undefined);
+    const { result } = await renderHook(() =>
+      useUnsavedChangesGuard({ isDirty: true, isSubmitting: false, onDiscard }),
+    );
+
+    await act(() => result.current.requestExit());
+    const actions = alert.mock.calls[0]?.[2];
+    await act(async () => {
+      actions?.find((action) => action.text === "Discard")?.onPress?.();
+      await Promise.resolve();
+    });
+
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+    expect(router.back).toHaveBeenCalledTimes(1);
+    alert.mockRestore();
+  });
 });

@@ -25,6 +25,43 @@ describe("TaskCompletionRow", () => {
     useWindowDimensionsSpy.mockRestore();
   });
 
+  it("keeps Home rows compact without shrinking either touch target", async () => {
+    const screen = await render(
+      <TaskCompletionRow
+        onPress={jest.fn()}
+        onToggle={jest.fn()}
+        task={baseTask}
+        today="2026-07-17"
+        variant="compact"
+      />,
+    );
+    const checkbox = ReactNative.StyleSheet.flatten(screen.getByRole("checkbox").props.style);
+    const open = ReactNative.StyleSheet.flatten(
+      screen.getByTestId("task-open-button-task").props.style,
+    );
+    expect(checkbox.width).toBeGreaterThanOrEqual(48);
+    expect(checkbox.minHeight).toBe(56);
+    expect(open.minHeight).toBe(56);
+    const details = ReactNative.StyleSheet.flatten(
+      screen.getByTestId("task-detail-area").props.style,
+    );
+    expect(details.paddingTop).toBe(4);
+    expect(details.paddingBottom).toBe(4);
+  });
+
+  it("uses static two-line titles in recycled Plan rows", async () => {
+    const screen = await render(
+      <TaskCompletionRow
+        onPress={jest.fn()}
+        onToggle={jest.fn()}
+        task={baseTask}
+        today="2026-07-17"
+      />,
+    );
+    expect(screen.getByText(baseTask.title).props.numberOfLines).toBe(2);
+    expect(screen.getByText(baseTask.title).props.onLayout).toBeUndefined();
+  });
+
   it("exposes completion and reversible reopen states", async () => {
     const onToggle = jest.fn();
     const screen = await render(
@@ -79,7 +116,7 @@ describe("TaskCompletionRow", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps long titles and metadata visible in the shared aligned card", async () => {
+  it("uses one full remaining-row target for long-title task navigation", async () => {
     const title = "Confirm the final family transport and accommodation pickup schedule";
     const onPress = jest.fn();
     const screen = await render(
@@ -92,17 +129,15 @@ describe("TaskCompletionRow", () => {
       />,
     );
 
-    const titleButton = screen.getByTestId("task-title-button-task");
-    expect(screen.getByText(title).props.numberOfLines).toBe(2);
+    const openButton = screen.getByTestId("task-open-button-task");
+    expect(screen.getByText(title)).toBeTruthy();
     expect(screen.getByText("Wedding")).toBeTruthy();
     expect(screen.getByText("Today")).toBeTruthy();
     expect(screen.getByText("High")).toBeTruthy();
 
-    await fireEvent.press(titleButton);
+    await fireEvent.press(openButton);
     expect(onPress).toHaveBeenCalledTimes(1);
-
-    await fireEvent.press(screen.getByRole("button", { name: `Open task: ${title}` }));
-    expect(onPress).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByRole("button", { name: `Open task: ${title}` })).toHaveLength(1);
   });
 
   it("stacks task metadata and the status action at large text sizes", async () => {

@@ -1,6 +1,6 @@
 import { Alert, Linking } from "react-native";
 import * as ReactNative from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 
@@ -63,55 +63,69 @@ describe("HomeDashboard", () => {
     mockMutateAsync.mockResolvedValue(demoWorkspace);
   });
 
-  it("renders the reference sections, two focus tasks, and primary navigation actions", async () => {
+  it("renders the core sections, two focus tasks, and primary navigation actions", async () => {
     const screen = await render(<HomeDashboard />);
 
-    expect(screen.getByText(demoWorkspace.wedding.name)).toBeTruthy();
+    expect(screen.getByRole("header", { name: demoWorkspace.wedding.name })).toBeTruthy();
     expect(screen.getByText("Focus today")).toBeTruthy();
     expect(screen.getByText("Budget overview")).toBeTruthy();
-    expect(screen.getByText("Quick actions")).toBeTruthy();
     expect(screen.getByRole("header", { name: "Focus today" })).toBeTruthy();
     expect(screen.getByRole("header", { name: "Budget overview" })).toBeTruthy();
-    expect(screen.getByRole("header", { name: "Quick actions" })).toBeTruthy();
+    expect(screen.queryByRole("header", { name: "Quick actions" })).toBeNull();
+    expect(screen.getByTestId("wedding-hero")).toBeTruthy();
     expect(
-      screen.getByTestId("home-hearts-background", { includeHiddenElements: true }),
-    ).toBeTruthy();
+      screen.queryByTestId("home-hearts-background", { includeHiddenElements: true }),
+    ).toBeNull();
     expect(screen.getAllByRole("checkbox")).toHaveLength(2);
     expect(screen.queryByText(demoWorkspace.wedding.location)).toBeNull();
     expect(screen.queryByRole("button", { name: "Add a task, expense, or event" })).toBeNull();
 
-    await fireEvent.press(screen.getByRole("button", { name: "View all" }));
+    await fireEvent.press(screen.getByRole("button", { name: "View all tasks" }));
     expect(mockRouter.navigate).toHaveBeenCalledWith({
       params: { view: "tasks" },
       pathname: "/plan",
     });
     await fireEvent.press(screen.getByRole("button", { name: /Open Budget & expenses/ }));
     expect(mockRouter.navigate).toHaveBeenCalledWith("/budget/overview");
+    expect(
+      screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLabel,
+    ).toContain("remaining");
+    expect(
+      screen.getByRole("button", { name: /Open Budget & expenses/ }).props.accessibilityLabel,
+    ).not.toContain("pending");
   });
 
-  it("opens all direct quick actions and the expense FAB", async () => {
+  it("blurs Home while the same-size wedding card is centred", async () => {
     const screen = await render(<HomeDashboard />);
 
-    for (const [label, route] of [
-      ["Add task", "/tasks/new"],
-      ["Add event", "/events/new"],
-      ["Add guest", "/more/guests/new"],
-    ] as const) {
-      await fireEvent.press(screen.getByRole("button", { name: label }));
-      expect(mockRouter.navigate).toHaveBeenLastCalledWith(route);
-    }
+    await fireEvent.press(
+      screen.getByRole("button", { name: `Wedding card for ${demoWorkspace.wedding.name}` }),
+    );
 
-    const expenseActions = screen.getAllByRole("button", { name: "Add expense" });
-    expect(expenseActions).toHaveLength(2);
-    await fireEvent.press(expenseActions[0]);
-    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
-    expect(Haptics.selectionAsync).not.toHaveBeenCalled();
-    await fireEvent.press(expenseActions[1]);
-    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
-    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("home-scroll-view").props.style).toEqual({
+      filter: [{ blur: 8 }],
+    });
+
+    await fireEvent.press(
+      screen.getByTestId("wedding-keepsake-backdrop", { includeHiddenElements: true }),
+    );
+    expect(screen.getByTestId("home-scroll-view").props.style).toBeUndefined();
   });
 
-  it("reflows quick actions into two stable rows for large system text", async () => {
+  it("keeps one direct expense action without restoring the retired quick actions", async () => {
+    const screen = await render(<HomeDashboard />);
+
+    expect(screen.getAllByRole("button", { name: "Add expense" })).toHaveLength(1);
+    expect(screen.getByTestId("home-add-expense-fab")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Add task" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add event" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add guest" })).toBeNull();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add expense" }));
+    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/expenses/new");
+  });
+
+  it("keeps the single expense action at large system text", async () => {
     useWindowDimensionsSpy.mockReturnValue({
       fontScale: 1.2999999,
       height: 800,
@@ -121,13 +135,9 @@ describe("HomeDashboard", () => {
 
     const screen = await render(<HomeDashboard />);
 
-    expect(screen.getAllByTestId(/home-quick-action-row-/)).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: /Add (task|expense|event|guest)/ })).toHaveLength(
-      5,
-    );
-    expect(
-      screen.getByTestId("home-scroll-view").props.contentContainerStyle.paddingBottom,
-    ).toBeGreaterThan(48);
+    expect(screen.queryByTestId(/home-quick-action-row-/)).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Add expense" })).toHaveLength(1);
+    expect(screen.getByTestId("home-add-expense-fab")).toBeTruthy();
   });
 
   it("does not expose unfinished global search", async () => {
@@ -154,8 +164,28 @@ describe("HomeDashboard", () => {
     } as ReturnType<typeof useWorkspace>);
 
     const screen = await render(<HomeDashboard />);
-    expect(screen.getByText("Nothing needs attention")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: "Add task" })).toHaveLength(1);
+    expect(screen.getByText("No tasks yet")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Add your first task" }));
+    expect(mockRouter.navigate).toHaveBeenLastCalledWith("/tasks/new");
+  });
+
+  it("links completed-task empty state back to the full task list", async () => {
+    const snapshot = structuredClone(demoWorkspace);
+    snapshot.tasks = snapshot.tasks.map((task) => ({ ...task, status: "Completed" }));
+    mockUseWorkspace.mockReturnValue({
+      data: snapshot,
+      isError: false,
+      isLoading: false,
+    } as ReturnType<typeof useWorkspace>);
+
+    const screen = await render(<HomeDashboard />);
+    expect(screen.getByText("All tasks are wrapped up")).toBeTruthy();
+    const viewAllActions = screen.getAllByRole("button", { name: "View all tasks" });
+    await fireEvent.press(viewAllActions[viewAllActions.length - 1]!);
+    expect(mockRouter.navigate).toHaveBeenLastCalledWith({
+      params: { view: "tasks" },
+      pathname: "/plan",
+    });
   });
 
   it("ignores duplicate cover-picker taps while the picker is open", async () => {
@@ -260,6 +290,13 @@ describe("HomeDashboard", () => {
   });
 
   it("waits for task persistence before haptic feedback", async () => {
+    let resolvePersistence: ((value: typeof demoWorkspace) => void) | undefined;
+    mockMutateAsync.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePersistence = resolve;
+        }),
+    );
     const screen = await render(<HomeDashboard />);
     await fireEvent.press(
       screen.getByRole("checkbox", {
@@ -267,10 +304,10 @@ describe("HomeDashboard", () => {
       }),
     );
 
-    expect(mockMutate).toHaveBeenCalledTimes(1);
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1);
     expect(Haptics.impactAsync).not.toHaveBeenCalled();
-    const [, options] = mockMutate.mock.calls[0] as unknown as [unknown, { onSuccess: () => void }];
-    options.onSuccess();
+    await act(async () => resolvePersistence?.(demoWorkspace));
+    await waitFor(() => expect(Haptics.impactAsync).toHaveBeenCalledTimes(1));
     expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
   });
 });

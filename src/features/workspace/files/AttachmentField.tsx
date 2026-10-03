@@ -1,8 +1,10 @@
-import { FileText, Paperclip, Trash2 } from "lucide-react-native";
+import FileText from "lucide-react-native/icons/file-text";
+import Paperclip from "lucide-react-native/icons/paperclip";
+import Trash2 from "lucide-react-native/icons/trash-2";
 import { Pressable, View } from "react-native";
 
 import { AppText, Button } from "@/components/ui";
-import { tokens } from "@/theme";
+import { tokens, useAppTheme } from "@/theme";
 
 import type { AttachmentRef } from "../types";
 
@@ -21,13 +23,15 @@ export function AttachmentField({
   onPick: () => void;
   onRemove: () => void;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View className="gap-xs">
       <AppText variant="label">{label}</AppText>
       {attachment ? (
         <View className="flex-row items-center gap-sm rounded-control border border-borderSubtle bg-elevatedSurface p-sm">
           <View className="h-12 w-12 items-center justify-center rounded-control bg-primarySoft">
-            <FileText color={tokens.colors.primary} size={tokens.iconSize.md} />
+            <FileText color={theme.colors.primary} size={tokens.iconSize.md} />
           </View>
           <View className="min-w-0 flex-1">
             <AppText numberOfLines={1} variant="label">
@@ -40,10 +44,10 @@ export function AttachmentField({
           <Pressable
             accessibilityLabel={`Remove ${attachment.name}`}
             accessibilityRole="button"
-            className="min-h-12 min-w-12 items-center justify-center"
+            className="min-h-4xl min-w-4xl items-center justify-center"
             onPress={onRemove}
           >
-            <Trash2 color={tokens.colors.danger} size={tokens.iconSize.md} />
+            <Trash2 color={theme.colors.danger} size={tokens.iconSize.md} />
           </Pressable>
         </View>
       ) : (

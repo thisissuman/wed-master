@@ -1,9 +1,10 @@
 import { todayDateOnly, toDateOnly } from "@/lib/dates";
 
+import { netExpensePaise } from "./expense-amount";
+
 import type {
   BudgetCategoryIconKey,
   Expense,
-  GiftKind,
   GiftRecord,
   Household,
   ISODate,
@@ -15,17 +16,11 @@ import type {
 } from "./types";
 
 export type TaskFilterState = {
-  dueWindow: "All" | "This Week";
-  eventId: string;
-  overdueOnly: boolean;
-  priority: TaskPriority | "All" | "Urgent";
+  priority: TaskPriority | "All";
   status: TaskStatus | "All";
 };
 
 export const emptyTaskFilters = (): TaskFilterState => ({
-  dueWindow: "All",
-  eventId: "All",
-  overdueOnly: false,
   priority: "All",
   status: "All",
 });
@@ -108,35 +103,14 @@ export function isDateInCurrentWeek(date: string | undefined, today = todayDateO
   return date >= toDateOnly(start) && date <= toDateOnly(end);
 }
 
-export function filterTasks(tasks: Task[], filters: TaskFilterState, today = todayDateOnly()) {
+export function filterTasks(tasks: Task[], filters: TaskFilterState) {
   return tasks
     .filter((task) => filters.status === "All" || task.status === filters.status)
-    .filter((task) => {
-      if (filters.priority === "All") return true;
-      if (filters.priority === "Urgent") {
-        return task.priority === "High" || task.priority === "Critical";
-      }
-      return task.priority === filters.priority;
-    })
-    .filter((task) => filters.eventId === "All" || (task.eventId ?? "") === filters.eventId)
-    .filter(
-      (task) =>
-        !filters.overdueOnly ||
-        (task.status !== "Completed" &&
-          task.status !== "Cancelled" &&
-          isOverdue(task.dueDate, today)),
-    )
-    .filter((task) => filters.dueWindow === "All" || isDateInCurrentWeek(task.dueDate, today));
+    .filter((task) => filters.priority === "All" || task.priority === filters.priority);
 }
 
 export function taskFilterCount(filters: TaskFilterState) {
-  return [
-    filters.status !== "All",
-    filters.priority !== "All",
-    filters.eventId !== "All",
-    filters.overdueOnly,
-    filters.dueWindow !== "All",
-  ].filter(Boolean).length;
+  return [filters.status !== "All", filters.priority !== "All"].filter(Boolean).length;
 }
 
 export function weddingDateEvent(events: WeddingEvent[], weddingDate: string) {
@@ -148,7 +122,7 @@ export const expenseTotals = (expenses: Expense[]) =>
   expenses.reduce(
     (totals, expense) => ({
       estimatedPaise: totals.estimatedPaise + (expense.estimatedPaise ?? 0),
-      actualPaise: totals.actualPaise + expense.actualPaise,
+      actualPaise: totals.actualPaise + netExpensePaise(expense),
       paidPaise: totals.paidPaise + (expense.paidPaise ?? 0),
       outstandingPaise:
         totals.outstandingPaise + Math.max(0, expense.actualPaise - (expense.paidPaise ?? 0)),
@@ -159,7 +133,7 @@ export const expenseTotals = (expenses: Expense[]) =>
 export type HomeBudgetSummary = ReturnType<typeof homeBudgetSummary>;
 
 export function homeBudgetSummary(snapshot: WorkspaceSnapshot) {
-  const spentPaise = snapshot.expenses.reduce((sum, expense) => sum + expense.actualPaise, 0);
+  const spentPaise = snapshot.expenses.reduce((sum, expense) => sum + netExpensePaise(expense), 0);
   const targetPaise = snapshot.wedding.budgetTargetPaise;
   const hasTarget = targetPaise !== undefined && targetPaise > 0;
   const differencePaise = hasTarget ? targetPaise - spentPaise : undefined;
@@ -174,14 +148,37 @@ export function homeBudgetSummary(snapshot: WorkspaceSnapshot) {
     targetPaise: hasTarget ? targetPaise : undefined,
   } as const;
 }
-export const categoryTotals = (snapshot: WorkspaceSnapshot, categoryId: string) =>
-  expenseTotals(snapshot.expenses.filter((expense) => expense.categoryId === categoryId));
-
 export function selectRecentExpenses(expenses: Expense[]): Expense[] {
   return [...expenses].sort(
     (left, right) =>
       right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id),
   );
+}
+
+export type ExpenseDateGroup = {
+  date?: Expense["date"];
+  expenses: Expense[];
+};
+
+export function selectExpenseDateGroups(expenses: Expense[]): ExpenseDateGroup[] {
+  const groups = new Map<string, Expense[]>();
+  for (const expense of selectRecentExpenses(expenses)) {
+    const key = expense.date ?? "";
+    const group = groups.get(key) ?? [];
+    group.push(expense);
+    groups.set(key, group);
+  }
+
+  return [...groups.entries()]
+    .sort(([left], [right]) => {
+      if (!left) return 1;
+      if (!right) return -1;
+      return right.localeCompare(left);
+    })
+    .map(([date, groupedExpenses]) => ({
+      date: (date || undefined) as Expense["date"],
+      expenses: groupedExpenses,
+    }));
 }
 
 const normalizeExpenseTitle = (value: string) =>
@@ -236,6 +233,7 @@ export type CategorySpending = {
 export function categorySpending(snapshot: WorkspaceSnapshot): CategorySpending[] {
   const categories = new Map(snapshot.categories.map((category) => [category.id, category]));
   const totals = snapshot.expenses.reduce<Map<BudgetCategoryIconKey, number>>((result, expense) => {
+    if (expense.direction === "refund") return result;
     const iconKey = categories.get(expense.categoryId)?.iconKey ?? "other";
     result.set(iconKey, (result.get(iconKey) ?? 0) + expense.actualPaise);
     return result;
@@ -289,6 +287,7 @@ export function selectDailySpending(
   const totals = expenses.reduce<Map<ISODate, { actualPaise: number; expenseCount: number }>>(
     (result, expense) => {
       if (
+        expense.direction === "refund" ||
         !expense.date ||
         expense.actualPaise <= 0 ||
         (startDate && (expense.date < startDate || expense.date > today))
@@ -358,16 +357,36 @@ export function householdSummary(households: Household[]) {
   );
 }
 
+export type GuestFilterState = {
+  needsSupport: boolean;
+  status: Household["rsvpStatus"] | "All";
+};
+
+export const emptyGuestFilters = (): GuestFilterState => ({
+  needsSupport: false,
+  status: "All",
+});
+
+export function guestFilterCount(filters: GuestFilterState) {
+  return [filters.status !== "All", filters.needsSupport].filter(Boolean).length;
+}
+
 export function filterHouseholds(
   households: Household[],
-  filters: { query: string; side: string; status: string },
+  filters: GuestFilterState & { query: string },
 ) {
   const query = filters.query.trim().toLowerCase();
   return households.filter((household) => {
-    const sideMatches = filters.side === "all" || household.side === filters.side;
-    const statusMatches = filters.status === "all" || household.rsvpStatus === filters.status;
-    const searchMatches = !query || household.name.toLowerCase().includes(query);
-    return sideMatches && statusMatches && searchMatches;
+    const statusMatches = filters.status === "All" || household.rsvpStatus === filters.status;
+    const supportMatches =
+      !filters.needsSupport ||
+      household.accommodationStatus === "Needed" ||
+      household.transportStatus === "Needed";
+    const searchMatches =
+      !query ||
+      household.name.toLowerCase().includes(query) ||
+      household.guests.some((guest) => guest.name.toLowerCase().includes(query));
+    return statusMatches && supportMatches && searchMatches;
   });
 }
 
@@ -376,28 +395,4 @@ export function giftSummary(gifts: GiftRecord[]) {
     total: gifts.length,
     totalValuePaise: gifts.reduce((sum, gift) => sum + (gift.valuePaise ?? 0), 0),
   };
-}
-
-export function selectAndSortGifts(
-  gifts: GiftRecord[],
-  kind: GiftKind,
-  sort: "name" | "recent" | "value",
-) {
-  return gifts
-    .filter((gift) => (gift.kind ?? "Received") === kind)
-    .sort((left, right) => {
-      if (sort === "value") return (right.valuePaise ?? 0) - (left.valuePaise ?? 0);
-      if (sort === "name") return left.personName.localeCompare(right.personName);
-      return (right.date ?? "").localeCompare(left.date ?? "");
-    });
-}
-
-export function linkedVendorNames(expenses: Expense[]) {
-  return [
-    ...new Set(
-      expenses
-        .map((expense) => expense.vendorName?.trim())
-        .filter((name): name is string => Boolean(name)),
-    ),
-  ];
 }

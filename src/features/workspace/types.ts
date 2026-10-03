@@ -17,6 +17,7 @@ export type Wedding = {
   location: string;
   currency: "INR";
   coverPhotoUri?: string;
+  keepsakeMessage?: string;
   guestEstimate?: number;
   budgetTargetPaise?: number;
 };
@@ -72,6 +73,19 @@ export const taskPriorities = ["Low", "Medium", "High", "Critical"] as const;
 export type TaskPriority = (typeof taskPriorities)[number];
 export const taskStatuses = ["Not Started", "In Progress", "Completed", "Cancelled"] as const;
 export type TaskStatus = (typeof taskStatuses)[number];
+export const starterTaskKeys = [
+  "venue",
+  "photography",
+  "guestList",
+  "catering",
+  "makeup",
+  "outfits",
+  "accommodation",
+  "invitations",
+  "decor",
+  "transport",
+] as const;
+export type StarterTaskKey = (typeof starterTaskKeys)[number];
 
 export type TaskChecklistItem = {
   id: string;
@@ -80,8 +94,10 @@ export type TaskChecklistItem = {
 };
 
 export type Task = {
+  updatedAt?: string;
   id: string;
   title: string;
+  starterTaskKey?: StarterTaskKey;
   notes?: string;
   description?: string;
   category?: string;
@@ -116,6 +132,7 @@ export const paymentStatuses = ["Not Paid", "Partially Paid", "Paid"] as const;
 export type PaymentStatus = (typeof paymentStatuses)[number];
 
 export type Expense = {
+  direction?: "expense" | "refund";
   id: string;
   title: string;
   categoryId: string;
@@ -214,7 +231,7 @@ export type WorkspaceSnapshotV1 = {
     WeddingEvent,
     "coverPhotoUri" | "endTime" | "colorToken" | "iconKey" | "requiredItems"
   >[];
-  tasks: Omit<Task, "description" | "category" | "checklist" | "attachments">[];
+  tasks: Omit<Task, "starterTaskKey" | "description" | "category" | "checklist" | "attachments">[];
   categories: LegacyBudgetCategory[];
   expenses: Omit<WorkspaceExpenseV2, "date" | "eventId" | "receipt">[];
 };
@@ -223,7 +240,7 @@ export type WorkspaceSnapshotV2 = {
   version: 2;
   wedding: Wedding;
   events: WeddingEvent[];
-  tasks: Task[];
+  tasks: Omit<Task, "starterTaskKey">[];
   categories: LegacyBudgetCategory[];
   expenses: WorkspaceExpenseV2[];
   households: Omit<Household, "rsvpStatus">[];
@@ -246,7 +263,7 @@ export type WorkspaceSnapshotV3 = Omit<
   expenses: Expense[];
 };
 
-export type WorkspaceSnapshot = Omit<
+export type WorkspaceSnapshotV4 = Omit<
   WorkspaceSnapshotV3,
   "events" | "gifts" | "households" | "version"
 > & {
@@ -256,9 +273,14 @@ export type WorkspaceSnapshot = Omit<
   gifts: GiftRecord[];
 };
 
+export type WorkspaceSnapshot = Omit<WorkspaceSnapshotV4, "tasks" | "version"> & {
+  version: 5;
+  tasks: Task[];
+};
+
 export type CreateExpenseInput = Pick<
   Expense,
-  "actualPaise" | "categoryId" | "date" | "eventId" | "notes" | "receipt" | "title"
+  "actualPaise" | "categoryId" | "date" | "direction" | "eventId" | "notes" | "receipt" | "title"
 >;
 
 export type CreateExpenseResult = {
@@ -287,6 +309,7 @@ export type TaskRepository = {
       Partial<Pick<Task, "attachments" | "checklist">>,
   ): Promise<WorkspaceSnapshot>;
   updateTask(task: Task): Promise<WorkspaceSnapshot>;
+  updateTaskStatus(id: string, status: Task["status"]): Promise<WorkspaceSnapshot>;
   deleteTask(id: string): Promise<WorkspaceSnapshot>;
   restoreTask(task: Task): Promise<WorkspaceSnapshot>;
 };
@@ -325,14 +348,25 @@ export type EmergencyContactRepository = {
   restoreContact(contact: EmergencyContact): Promise<WorkspaceSnapshot>;
 };
 export type BackupRepository = {
-  addHistory(entry: BackupHistoryEntry): Promise<WorkspaceSnapshot>;
-  clearHistory(): Promise<WorkspaceSnapshot>;
+  addHistory(entry: BackupHistoryEntry): Promise<BackupHistoryMutationResult>;
+  clearHistory(): Promise<BackupHistoryMutationResult>;
+  removeHistory(id: string): Promise<BackupHistoryMutationResult>;
+};
+export type BackupHistoryMutationResult = {
+  removedEntries: BackupHistoryEntry[];
+  snapshot: WorkspaceSnapshot;
+};
+export type WorkspaceResidualKeyIdentifier =
+  "workspace-current" | "workspace-v4" | "workspace-v3" | "workspace-v2" | "workspace-v1";
+export type WorkspaceDeletionReport = {
+  authoritative: true;
+  residualKeys: WorkspaceResidualKeyIdentifier[];
 };
 export type WorkspaceRepository = {
   replaceSnapshot(snapshot: WorkspaceSnapshot): Promise<WorkspaceSnapshot>;
   resetDemo(): Promise<WorkspaceSnapshot>;
   createSnapshot(snapshot: WorkspaceSnapshot): Promise<WorkspaceSnapshot>;
-  deleteLocalData(): Promise<void>;
+  deleteLocalData(): Promise<WorkspaceDeletionReport>;
   getRecoveryText(): Promise<string | null>;
 };
 

@@ -1,8 +1,13 @@
-import { Modal, View } from "react-native";
+import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { shouldStackCompactControls } from "@/lib/responsive";
 
 import { AppText } from "./AppText";
 import { Button } from "./Button";
+
+const dialogMaxWidth = 480;
 
 type ConfirmationDialogProps = {
   cancelLabel?: string;
@@ -25,36 +30,68 @@ export function ConfirmationDialog({
   title,
   visible,
 }: ConfirmationDialogProps) {
+  const { fontScale, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
+  const stackActions = shouldStackCompactControls(width, fontScale);
+
   return (
     <Modal
       animationType={reduceMotion ? "none" : "fade"}
+      navigationBarTranslucent
       onRequestClose={() => {
         if (!pending) onCancel();
       }}
+      testID="confirmation-dialog-modal"
+      statusBarTranslucent
       transparent
       visible={visible}
     >
-      <View className="flex-1 items-center justify-center bg-overlay p-md">
+      <View
+        className="flex-1 items-center justify-center"
+        style={{
+          paddingBottom: Math.max(insets.bottom, 16),
+          paddingHorizontal: 16,
+          paddingTop: Math.max(insets.top, 16),
+        }}
+      >
+        <Pressable
+          accessibilityElementsHidden
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+          onPress={() => {
+            if (!pending) onCancel();
+          }}
+          style={StyleSheet.absoluteFill}
+          testID="confirmation-dialog-backdrop"
+        >
+          <View className="flex-1 bg-overlay" />
+        </Pressable>
         <View
           accessibilityRole="alert"
           accessibilityViewIsModal
           className="w-full gap-lg rounded-sheet bg-elevatedSurface p-xl shadow-elevated"
+          style={{ borderCurve: "continuous", maxWidth: dialogMaxWidth }}
+          testID="confirmation-dialog-panel"
         >
           <View className="gap-xs">
             <AppText variant="heading">{title}</AppText>
             <AppText tone="muted">{description}</AppText>
           </View>
-          <View className="flex-row gap-sm">
+          <View
+            className="gap-sm"
+            style={{ flexDirection: stackActions ? "column" : "row" }}
+            testID="confirmation-dialog-actions"
+          >
             <Button
-              className="flex-1"
+              className={stackActions ? "w-full" : "flex-1"}
               disabled={pending}
               label={cancelLabel}
               onPress={onCancel}
               variant="secondary"
             />
             <Button
-              className="flex-1"
+              className={stackActions ? "w-full" : "flex-1"}
               label={confirmLabel}
               loading={pending}
               onPress={onConfirm}

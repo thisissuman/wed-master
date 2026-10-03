@@ -6,6 +6,7 @@ import type {
   WeddingEvent,
   WorkspaceSnapshot,
 } from "./types";
+import { defaultKeepsakeMessage } from "./wedding-profile";
 import { toDateOnly } from "@/lib/dates";
 import { createCoreBudgetCategories } from "./expense-categories";
 
@@ -96,7 +97,7 @@ export function createDemoWorkspace(referenceDate = new Date()): WorkspaceSnapsh
   const date = (days: number) => dateWithOffset(referenceDate, days);
 
   return {
-    version: 4,
+    version: 5,
     wedding: {
       id: "wedding-1",
       name: "Suman & Sumita",
@@ -104,6 +105,7 @@ export function createDemoWorkspace(referenceDate = new Date()): WorkspaceSnapsh
       date: date(150),
       location: "Berhampur, Odisha",
       currency: "INR",
+      keepsakeMessage: defaultKeepsakeMessage,
       guestEstimate: 800,
       budgetTargetPaise: 2_800_000_000,
     },
@@ -406,7 +408,7 @@ export function createEmptyWorkspace(
 ): WorkspaceSnapshot {
   const events = createSuggestedEvents(wedding.date, starterEventSelection);
   return {
-    version: 4,
+    version: 5,
     wedding: {
       ...wedding,
       id: `wedding-${Date.now()}`,

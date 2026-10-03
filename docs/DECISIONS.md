@@ -104,7 +104,7 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 ## 2026-07-23: Quick expense capture and workspace snapshot v3
 
-**Decision:** Spending is captured progressively as title, one mandatory visual category, and a positive actual amount. Persist immediately with a local date and creation timestamp, then offer only optional date, note, and one attachment. The Money tab keeps `/budget` and owns the newest-first expense list. The drill-down `/budget/overview` route owns the wedding target editor, date-based spending trend, all-time insights, and category breakdown; Home, More, and Settings open that route. Snapshot v3 adds typed category icon/archive metadata and expense `createdAt` while retaining old accounting fields as hidden optional compatibility data.
+**Decision:** Spending is captured progressively as title, one mandatory visual category, and a positive actual amount. Persist immediately with a local date and creation timestamp, then offer only optional date, note, and one attachment. The Money tab keeps `/budget` and owns the newest-first expense list. The drill-down `/budget/overview` route owns the wedding target editor, date-based spending trend, all-time insights, and category breakdown; Home, the Money summary, and Settings open that route. Snapshot v3 adds typed category icon/archive metadata and expense `createdAt` while retaining old accounting fields as hidden optional compatibility data.
 
 **Why:** The previous Basics → Payment → Details workflow made a frequent mobile action feel like invoice accounting. Actual spending and target remaining answer the current user need without deleting historical data. The detailed trend uses the existing SVG/Reanimated stack instead of adding a chart or animation package.
 
@@ -112,11 +112,27 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 
 ## 2026-08-01: Canonical lavender local-beta implementation
 
-**Decision:** The live lavender-and-ivory implementation, `src/theme/tokens.json`, and the optimized `home-hearts-glow-v2.jpg` asset are the current visual authority. Legacy Emergent prompts are archived as historical inputs; the July design decisions remain history rather than active implementation guidance.
+**Decision:** At this checkpoint, the live lavender-and-ivory implementation, `src/theme/tokens.json`, and the optimized `home-hearts-glow-v2.jpg` asset became the visual authority. Legacy Emergent prompts were archived as historical inputs; the July design decisions remain history rather than active implementation guidance. The decorative-asset detail is superseded by the 2026-08-13 refinement below.
 
 **Why:** Obsolete green references and a missing mock-up filename were causing audits to describe a visual system the app no longer uses.
 
 **Consequence:** UI work follows the live semantic system, uses a compact navigation bar and expanded navigation rail, supports large text through shared responsive thresholds, and never restores archived prompt styling without a new product decision.
+
+## 2026-08-13: Selective night surfaces and restrained product motion
+
+**Decision:** Keep the warm ivory/lavender semantic base, but use deep-plum night surfaces for the navigation shell, wedding hero, and Money summary. Reserve the serif face for the wordmark, wedding identity, and countdown; functional page titles and forms use Manrope. Remove the full-screen heart artwork, repeated wordmarks, redundant shortcuts, routine card shadows, and fake drag affordances. Shared bottom sheets, selectors, segmented controls, press feedback, haptics, and short reduced-motion-aware transitions own interaction polish. This is not an app-wide dark mode and adds no UI-kit dependency.
+
+**Why:** Stronger hierarchy and calmer surfaces make high-frequency planning workflows feel premium without sacrificing legibility, native behavior, accessibility, or the existing Expo architecture.
+
+**Consequence:** Home has one wedding focal surface and four direct actions; Money owns the persistent Add expense action; More uses grouped rows. Compact navigation remains a bottom bar, expanded navigation remains a full-width accessible rail, and modal choice/filter experiences use the shared sheet contract.
+
+## 2026-08-14: Selectable Home wedding-card presentation
+
+**Decision:** Keep the application-wide lavender/ivory semantic system fixed, while allowing the Home wedding card to switch between Royal Plum and Lavender Pearl. Both presentations share identical raster geometry and code-native overlays for the cover photo, names, date, countdown, camera action, and progress.
+
+**Why:** The approved light pearl-and-lavender reference is a meaningful alternate invitation mood, but it does not require duplicating or dynamically recolouring the planner's functional UI.
+
+**Consequence:** Settings exposes two previewed, accessible radio choices. The selection is an AsyncStorage-backed device presentation preference, defaults to Royal Plum, and is intentionally outside the wedding workspace schema and backup contract. Adding another card theme requires a shell/medallion pair that satisfies the existing overlay-coordinate contract plus accessible code-native foreground colours.
 
 ## 2026-08-01: Local-beta activation and Android backup contract
 
@@ -133,3 +149,35 @@ Record only choices that are expensive to reverse or likely to confuse a future 
 **Why:** Tasks already provide the actionable event-planning model, and the removed controls made common mobile flows heavier without enough value. Household-level RSVP and a lightweight received-gift record match the intended local-beta workflow while preserving upgrade safety.
 
 **Consequence:** v3 migration derives household RSVP conservatively, annotates familiar starter-event names, and writes v4 without deleting older storage. Partial household attendance is intentionally not represented. Event cover files and other legacy fields remain until their owning record or workspace is deleted. The wedding photo uses native cropping only; no image-manipulation dependency is added.
+
+## 2026-08-22: App-wide Royal Plum and Lavender Pearl themes
+
+**Decision:** Promote Royal Plum and Lavender Pearl from Home-card presentations to complete manual application themes. Royal Plum is the fresh-install default. This supersedes the fixed-light and card-only contracts recorded on 2026-07-18, 2026-08-01, 2026-08-13, and 2026-08-14 without changing workspace data.
+
+**Why:** A card-only selection created a visual discontinuity between the Royal Plum wedding focal surface and the rest of the planner. One semantic palette contract lets navigation, onboarding, forms, charts, transient UI, and native Android chrome change coherently while preserving the established Lavender Pearl experience.
+
+**Consequence:** Static typography/layout tokens remain in `tokens.json`; runtime colours, gradients, translucent states, and shadow colours live in `palettes.json` and flow through `AppThemeProvider` plus CSS-variable-backed NativeWind roles. The existing `mangalya:wedding-card-theme:v1` preference key is retained, missing or invalid values resolve to Royal Plum, and failed persistence rolls the whole optimistic selection back. The theme remains a device preference outside workspace snapshots and backups. `expo-navigation-bar` is now a native dependency, so development clients must be rebuilt when adopting this change.
+
+## 2026-08-22: Keyboard-aware forms and stable starter tasks
+
+**Decision:** Standardize native form scrolling on `react-native-keyboard-controller`, with a root provider, focused-input-aware scroll regions, and measured keyboard-sticky submit actions. Workspace v5 adds an optional stable starter-task key and an opt-in ten-task Plan chooser. Task batches use the existing atomic snapshot replacement boundary; no repository or household schema expansion is introduced.
+
+**Why:** Android `KeyboardAvoidingView` behavior was inconsistent for lower fields and fixed footers, while title-only task deduplication could not survive user edits. A native keyboard coordinator and internal task identity solve both problems without adding a UI kit, remote service, or culturally mandatory workflow.
+
+**Consequence:** Development clients and preview APKs must be rebuilt for the native keyboard module. Existing v4 storage is migrated into the new v5 key without deletion; only exact curated task aliases receive a starter key. Home Quick actions remain unchanged, event and task suggestions are onboarding-only, Home owns the 56dp scene-anchored Add expense FAB, and people screens share semantic avatar/status/FAB primitives.
+
+## 2026-08-24: Device-local Inspire store and explicit cloud migration
+
+**Decision:** Add Inspire as the third primary destination and persist its metadata in a separate versioned AsyncStorage document with app-owned WebP detail/thumbnail media. Phase 1 is single-workspace, device-local, and excluded in full from the existing data-only export/import contract. Shared authorship, URLs, collections, comparison, selected direction, planner links, and AI remain deferred.
+
+**Why:** Image-heavy mutations should not rewrite unrelated planner data, and a local production slice can deliver a useful private mood board without pretending that cloud sharing, membership, or authorization exists. Separating the boundary also makes backup exclusion and future migration reviewable.
+
+**Consequence:** Full deletion, demo reset, import/recovery replacement, event deletion, and startup repair explicitly coordinate both stores and managed media. Fresh production workspaces remain empty; development-only demo reset installs the generated asset pack. A future remote implementation must use authenticated wedding membership, private Supabase Storage, RLS, remote cursor queries, and an explicit local-to-cloud import; it must not become a hidden sync engine.
+
+## 2026-08-30: Simplified Home creation and keepsake entry
+
+**Decision:** Remove the Home Quick actions strip, keep Add expense as the single Home creation FAB, and make the wedding card itself open the keepsake instead of showing a separate `Open keepsake` control. This supersedes the Home action consequences recorded on 2026-08-13 and 2026-08-22.
+
+**Why:** The wedding card already communicates the keepsake interaction, while the dedicated expense FAB preserves the developer-selected high-frequency action without repeating four creation shortcuts on Home.
+
+**Consequence:** Home ends after Budget overview with enough scroll clearance for a safe-area-aware 56dp Add expense FAB. The full wedding card is the accessible keepsake trigger; its camera control continues to change only the cover photo.

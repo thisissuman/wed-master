@@ -1,9 +1,9 @@
 import { type PropsWithChildren } from "react";
-import { Text, type TextProps } from "react-native";
+import { Text, type TextProps, useWindowDimensions } from "react-native";
 
-import { tokens } from "@/theme";
+import { tokens, useAppTheme, type AppThemeColorRole } from "@/theme";
 
-type AppTextVariant =
+export type AppTextVariant =
   | "body"
   | "caption"
   | "countdown"
@@ -16,8 +16,19 @@ type AppTextVariant =
   | "metadata"
   | "title"
   | "wordmark";
-type AppTextTone =
-  "accent" | "danger" | "muted" | "onPrimary" | "primary" | "secondary" | "success" | "warning";
+export type AppTextTone =
+  | "accent"
+  | "brand"
+  | "danger"
+  | "muted"
+  | "nightAccent"
+  | "onNight"
+  | "onNightMuted"
+  | "onPrimary"
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning";
 
 const variantClassNames: Record<AppTextVariant, string> = {
   body: "text-body text-textPrimary",
@@ -35,29 +46,56 @@ const variantClassNames: Record<AppTextVariant, string> = {
 };
 
 const variantFontFamilies: Record<AppTextVariant, string> = {
-  body: tokens.fontFamily.sansRegular,
-  caption: tokens.fontFamily.sansRegular,
+  body: tokens.fontFamily.sansMedium,
+  caption: tokens.fontFamily.sansMedium,
   countdown: tokens.fontFamily.serifMedium,
   display: tokens.fontFamily.sansBold,
-  formTitle: tokens.fontFamily.serifSemibold,
+  formTitle: tokens.fontFamily.sansBold,
   heading: tokens.fontFamily.sansSemibold,
   hero: tokens.fontFamily.serifSemibold,
   heroCompact: tokens.fontFamily.serifSemibold,
   label: tokens.fontFamily.sansSemibold,
   metadata: tokens.fontFamily.sansMedium,
-  title: tokens.fontFamily.serifSemibold,
+  title: tokens.fontFamily.sansBold,
   wordmark: tokens.fontFamily.serifSemibold,
 };
 
-const toneColors: Record<AppTextTone, string> = {
-  accent: tokens.colors.accent,
-  danger: tokens.colors.danger,
-  muted: tokens.colors.textSecondary,
-  onPrimary: tokens.colors.onPrimary,
-  primary: tokens.colors.primary,
-  secondary: tokens.colors.secondary,
-  success: tokens.colors.success,
-  warning: tokens.colors.warning,
+const tokenLineHeight = (variant: keyof typeof tokens.typography) => {
+  const configuration = tokens.typography[variant][1];
+  return Number.parseInt(
+    typeof configuration === "string" ? configuration : configuration.lineHeight,
+    10,
+  );
+};
+
+const variantLineHeights: Record<AppTextVariant, number> = {
+  body: tokenLineHeight("body"),
+  caption: tokenLineHeight("caption"),
+  countdown: tokenLineHeight("countdown"),
+  display: tokenLineHeight("display"),
+  formTitle: tokenLineHeight("formTitle"),
+  heading: tokenLineHeight("heading"),
+  hero: tokenLineHeight("hero"),
+  heroCompact: tokenLineHeight("heroCompact"),
+  label: tokenLineHeight("label"),
+  metadata: tokenLineHeight("metadata"),
+  title: tokenLineHeight("title"),
+  wordmark: tokenLineHeight("wordmark"),
+};
+
+const toneColorRoles: Record<AppTextTone, AppThemeColorRole> = {
+  accent: "accent",
+  brand: "headingAccent",
+  danger: "danger",
+  muted: "textSecondary",
+  nightAccent: "nightAccent",
+  onNight: "onNight",
+  onNightMuted: "onNightMuted",
+  onPrimary: "onPrimary",
+  primary: "textPrimary",
+  secondary: "secondary",
+  success: "success",
+  warning: "warning",
 };
 
 type AppTextProps = PropsWithChildren<
@@ -76,13 +114,19 @@ export function AppText({
   variant = "body",
   ...props
 }: AppTextProps) {
+  const theme = useAppTheme();
+  const { fontScale } = useWindowDimensions();
+
   return (
     <Text
       allowFontScaling
       className={`${variantClassNames[variant]} ${className}`}
       style={[
-        { fontFamily: variantFontFamilies[variant] },
-        tone ? { color: toneColors[tone] } : undefined,
+        {
+          fontFamily: variantFontFamilies[variant],
+          lineHeight: variantLineHeights[variant] * fontScale,
+        },
+        tone ? { color: theme.colors[toneColorRoles[tone]] } : undefined,
         style,
       ]}
       {...props}

@@ -1,6 +1,11 @@
 import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
-import { Check, Clock3, MapPin, Palette, PartyPopper, StickyNote } from "lucide-react-native";
+import Check from "lucide-react-native/icons/check";
+import Clock3 from "lucide-react-native/icons/clock-3";
+import MapPin from "lucide-react-native/icons/map-pin";
+import Palette from "lucide-react-native/icons/palette";
+import PartyPopper from "lucide-react-native/icons/party-popper";
+import StickyNote from "lucide-react-native/icons/sticky-note";
 import { useRef } from "react";
 import { View, type TextInput } from "react-native";
 import { Controller, useForm } from "react-hook-form";
@@ -8,21 +13,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { AppText, DateField, MotionPressable, Screen, TextField, TimeField } from "@/components/ui";
 import { toUserMessage } from "@/lib/errors";
-import { useFeedbackStore } from "@/features/feedback/feedback-store";
-import { tokens } from "@/theme";
+import { uiFieldLimits } from "@/lib/forms/fieldLimits";
+import { useSingleFlightSubmission } from "@/lib/forms/useSingleFlightSubmission";
+import { runNonCriticalNativeEffect } from "@/lib/native-effects";
+import { tokens, useAppTheme } from "@/theme";
 
+import { useCreatedItemHighlight } from "./created-item-highlight";
 import { eventFormSchema, type EventFormValues } from "./forms";
-import { useWorkspaceMutation } from "./provider";
+import { useWorkspace, useWorkspaceMutation } from "./provider";
 import { eventColorKeys, type EventColorKey, type WeddingEvent } from "./types";
 import { FormShell } from "./ui";
 import { useUnsavedChangesGuard } from "./useUnsavedChangesGuard";
-
-const eventColors: Record<EventColorKey, { color: string; label: string }> = {
-  botanical: { color: tokens.colors.eventBotanical, label: "Lavender" },
-  gold: { color: tokens.colors.eventGold, label: "Antique gold" },
-  terracotta: { color: tokens.colors.eventTerracotta, label: "Terracotta" },
-  sage: { color: tokens.colors.eventSage, label: "Sage" },
-};
 
 function EventColorField({
   error,
@@ -33,10 +34,18 @@ function EventColorField({
   onChange: (value: EventColorKey) => void;
   value: EventColorKey;
 }) {
+  const theme = useAppTheme();
+  const eventColors: Record<EventColorKey, { color: string; label: string }> = {
+    botanical: { color: theme.colors.eventBotanical, label: "Lavender" },
+    gold: { color: theme.colors.eventGold, label: "Antique gold" },
+    terracotta: { color: theme.colors.eventTerracotta, label: "Terracotta" },
+    sage: { color: theme.colors.eventSage, label: "Sage" },
+  };
+
   return (
     <View className="gap-xs">
       <View className="flex-row items-center gap-xs">
-        <Palette color={tokens.colors.textSecondary} size={tokens.iconSize.sm} />
+        <Palette color={theme.colors.textSecondary} size={tokens.iconSize.sm} />
         <AppText variant="label">Theme colour</AppText>
       </View>
       <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-sm">
@@ -54,17 +63,17 @@ function EventColorField({
               key={key}
               onPress={() => {
                 onChange(key);
-                void Haptics.selectionAsync();
+                runNonCriticalNativeEffect(() => Haptics.selectionAsync());
               }}
               pressedScale={0.92}
-              style={selected ? { boxShadow: tokens.elevation.card } : undefined}
+              style={selected ? { boxShadow: theme.elevation.card } : undefined}
             >
               <View
                 className="h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: option.color }}
               >
                 {selected ? (
-                  <Check color={tokens.colors.textPrimary} size={tokens.iconSize.md} />
+                  <Check color={theme.colors.textPrimary} size={tokens.iconSize.md} />
                 ) : null}
               </View>
             </MotionPressable>
@@ -84,8 +93,9 @@ function EventColorField({
 }
 
 export function EventForm({ event }: { event?: WeddingEvent }) {
+  const workspace = useWorkspace();
   const mutation = useWorkspaceMutation();
-  const showFeedback = useFeedbackStore((state) => state.show);
+  const markCreatedItem = useCreatedItemHighlight((state) => state.mark);
   const locationInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
   const {
@@ -120,8 +130,8 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
     isSubmitting: isSubmitting || mutation.isPending,
   });
 
-  const saveValues = async (values: EventFormValues) => {
-    await mutation.mutateAsync((repositories) =>
+  const saveValues = useSingleFlightSubmission(async (values: EventFormValues) => {
+    const snapshot = await mutation.mutateAsync((repositories) =>
       event
         ? repositories.events.updateEvent({
             ...event,
@@ -142,10 +152,13 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
             requiredItems: [],
           }),
     );
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showFeedback({ message: event ? "Event updated" : "Event created" });
+    if (!event) {
+      const existingIds = new Set(workspace.data?.events.map((item) => item.id) ?? []);
+      const created = snapshot.events.find((item) => !existingIds.has(item.id));
+      if (created) markCreatedItem("event", [created.id]);
+    }
     exitAfterSave();
-  };
+  });
 
   const save = () => {
     void handleSubmit(saveValues)();
@@ -172,6 +185,13 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
           error={errors[name]?.message}
           icon={icon}
           label={label}
+          maxLength={
+            name === "name"
+              ? uiFieldLimits.shortText
+              : name === "location"
+                ? uiFieldLimits.location
+                : uiFieldLimits.longText
+          }
           multiline={options?.multiline}
           onBlur={input.onBlur}
           onChangeText={input.onChange}
@@ -198,7 +218,6 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
   return (
     <Screen>
       <FormShell
-        description="Shape a celebration around the details your family chooses."
         isSubmitting={isSubmitting || mutation.isPending}
         onCancel={cancel}
         onSubmit={save}
@@ -207,7 +226,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
         title={event ? "Edit event" : "Add event"}
       >
         {field("name", "Event name", PartyPopper, {
-          placeholder: "e.g. Mehendi ceremony",
+          placeholder: "Mehendi",
           required: true,
         })}
         <Controller
@@ -259,7 +278,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
         </View>
         {field("location", "Venue", MapPin, {
           optional: true,
-          placeholder: "Venue name or address",
+          placeholder: "Venue or address",
         })}
         <Controller
           control={control}
@@ -275,7 +294,7 @@ export function EventForm({ event }: { event?: WeddingEvent }) {
         {field("notes", "Notes", StickyNote, {
           multiline: true,
           optional: true,
-          placeholder: "Add details or special notes",
+          placeholder: "Useful details",
         })}
       </FormShell>
     </Screen>
